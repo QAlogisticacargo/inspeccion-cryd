@@ -1,5 +1,5 @@
-const C="cryd-v6";
+const C="cryd-v8";
 self.addEventListener("install",e=>{self.skipWaiting();e.waitUntil(caches.open(C).then(c=>c.addAll(["./","index.html","styles.css","app.js","assets.js","manifest.webmanifest","icon-192.png"])).catch(()=>{}));});
 self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==C).map(x=>caches.delete(x)))).then(()=>self.clients.claim()));});
-self.addEventListener("fetch",e=>{if(e.request.method!=="GET"||e.request.url.indexOf(".json")>0&&e.request.url.indexOf("manifest")<0)return;
+self.addEventListener("fetch",e=>{if(e.request.method==="GET"&&new URL(e.request.url).origin!==location.origin&&e.request.url.indexOf(".json")<0){e.respondWith(caches.match(e.request).then(m=>m||fetch(e.request).then(r=>{if(r&&(r.status===200||r.type==="opaque")){const c=r.clone();caches.open(C).then(x=>x.put(e.request,c)).catch(()=>{});}return r;})));return;}if(e.request.method!=="GET"||e.request.url.indexOf(".json")>0&&e.request.url.indexOf("manifest")<0)return;
  e.respondWith(fetch(e.request).then(r=>{if(r&&(r.status===200||r.type==="opaque")){const c=r.clone();caches.open(C).then(x=>x.put(e.request,c)).catch(()=>{});}return r;}).catch(()=>caches.match(e.request).then(m=>m||caches.match("index.html"))));});

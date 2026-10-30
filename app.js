@@ -67,7 +67,7 @@ function saveRec(status){
 function load(id){const r=REC.find(x=>x.id===id);if(!r)return;S=clone(r.data);S.id=r.id;S.act=Math.max(0,S.lots.findIndex(l=>lotState(l)==="pend"));saveDraft();TAB="insp";render();window.scrollTo(0,0);toast("Folio "+r.folio+" cargado.");}
 function actPend(){if(!S.fecha){toast("Falta la fecha.");return;}dupGuard(()=>{const ok=saveRec("pendiente");toast(ok?"Folio "+S.folio+" guardado como pendiente.":"Guardado solo en esta sesión: el navegador no permite almacenar.");render();});}
 function actFin(){if(!S.codigo.trim()){toast("Falta el código.");return;}if(!S.lots.some(l=>used(l)&&l.lote)){toast("Captura al menos un lote.");return;}dupGuard(()=>{const ok=saveRec("completo");render();dlg({title:"Folio "+S.folio+" guardado",body:ok?"Quedó como completo. ¿Quieres generar el PDF para imprimir?":"Guardado solo en esta sesión: el navegador no permite almacenar. ¿Generar el PDF ahora?",buttons:[{t:"Cerrar"},{t:"Generar PDF",cls:"pri",fn:()=>runPdf(S)}]});});}
-function runPdf(d){try{makePdf(d);}catch(err){toast("No se pudo generar el PDF: "+(err&&err.message||err));}}
+function runPdf(d){try{makePdf(d);gstInc("pdf");}catch(err){toast("No se pudo generar el PDF: "+(err&&err.message||err));}}
 function actPdf(){dupGuard(()=>runPdf(S));}
 async function saveBlob(name,blob){
  try{if(window.claude&&claude.use){try{const dl=await claude.use("downloads");if(dl){await dl.save({filename:name,data:blob});toast("Archivo listo: "+name);return;}}catch(e){if(e&&e.code==="declined")return;}}
@@ -179,7 +179,7 @@ async function vLoad(kind,file){
  busy("Leyendo "+file.name+"…");
  try{const wb=XLSX.read(await file.arrayBuffer(),{type:"array"});VAL[kind]={name:file.name,wb,sheet:wb.SheetNames[0]};vParse(kind);}
  catch(e){toast("No se pudo abrir el archivo. Verifica que sea Excel (.xlsx, .xls) o CSV.");}
- finally{busy("");}
+ finally{OCRON=false;busy("");}
  VAL.res=null;render();}
 function vStatuses(){const f=VAL.prime;if(!f||f.map.estatus==null||f.map.cant==null||f.map.gcas==null)return[];const m=new Map();
  for(let i=f.hdr+1;i<f.rows.length;i++){const r=f.rows[i];if(!vG(r[f.map.gcas]))continue;const s=String(r[f.map.estatus]==null?"":r[f.map.estatus]).trim()||"(vacío)",e=m.get(s)||{s,n:0,q:0};e.n++;e.q+=vN(r[f.map.cant]);m.set(s,e);}
@@ -212,6 +212,7 @@ function vBuild(){
   if(!e.desc&&pr.map.desc!=null)e.desc=String(r[pr.map.desc]==null?"":r[pr.map.desc]).trim();}
  return {MS,MP,inf};}
 function vRun(){
+ gstInc("val");
  const {MS,MP,inf}=vBuild(),D=[],eq=(x,y)=>Math.abs(x-y)<0.0005;
  /* Igual que la macro: llave = GCAS + lote + planta + sloc. El orden y el número de filas de cada lado no importan. */
  const add=(t,o)=>D.push(Object.assign({t,g:"",l:"",pl:"",sl:"",S:[],P:[],txt:""},o));
@@ -284,7 +285,7 @@ function vExport(){
  saveBlob("Validacion_SAP_vs_PrIME_"+today()+".xlsx",new Blob([out],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}));}
 /* --- eventos --- */
 async function vPick(kind,e){const f=e.target.files[0];e.target.value="";if(f)await vLoad(kind,f);}
-$("#fsap").addEventListener("change",e=>vPick("sap",e));$("#fprime").addEventListener("change",e=>vPick("prime",e));
+$("#frcv").addEventListener("change",rcvPick);$("#fsap").addEventListener("change",e=>vPick("sap",e));$("#fprime").addEventListener("change",e=>vPick("prime",e));
 document.addEventListener("change",e=>{const t=e.target,d=t.dataset;
  if(d.vs){const k=d.vs;VAL[k].sheet=t.value;vParse(k);VAL.res=null;render();}
  else if(d.vh){const k=d.vh,f=VAL[k];f.hdr=Math.max(0,Math.min(f.rows.length-1,(+t.value||1)-1-f.r0));f.map=vMapRow(f.rows,f.hdr,k);VAL.res=null;render();}
@@ -305,22 +306,23 @@ let USERS=LS.get("cryd:users",[]);if(!Array.isArray(USERS))USERS=[];
 const saveUsers=()=>LS.set("cryd:users",USERS);
 const U={get(k,d){return ME&&!ME.guest?LS.get("cryd:u"+ME.emp+":"+k,d):(("g:"+k) in MEM?MEM["g:"+k]:d);},set(k,v){if(ME&&!ME.guest){const r=LS.set("cryd:u"+ME.emp+":"+k,v);cloudSoon();return r;}MEM["g:"+k]=v;return true;}};
 const GLYPH='<svg viewBox="0 0 24 24"><path d="M9 4h6l1 2h3v14H5V6h3z"/><path d="M9 13l2 2 4-4"/></svg>';
-const IC={insp:'<path d="M9 4h6l1 2h3v14H5V6h3z"/><path d="M9 13l2 2 4-4"/>',pend:'<circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3 2"/>',hist:'<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/>',val:'<path d="M4 8h14l-3-3M20 16H6l3 3"/>',perfil:'<circle cx="12" cy="8.5" r="3.6"/><path d="M5 20c.8-3.6 3.6-5.4 7-5.4s6.2 1.8 7 5.4"/>'};
-const TNAME={insp:"Maquila",pend:"Pendientes",hist:"Historial",val:"Validación",perfil:"Perfil"};
+const IC={insp:'<path d="M9 4h6l1 2h3v14H5V6h3z"/><path d="M9 13l2 2 4-4"/>',pend:'<circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3 2"/>',hist:'<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/>',val:'<path d="M4 8h14l-3-3M20 16H6l3 3"/>',rcv:'<path d="M4 8l8-4 8 4v8l-8 4-8-4z"/><path d="M4 8l8 4 8-4M12 12v8"/>',perfil:'<circle cx="12" cy="8.5" r="3.6"/><path d="M5 20c.8-3.6 3.6-5.4 7-5.4s6.2 1.8 7 5.4"/>'};
+const TNAME={insp:"Maquila",rcv:"Recibo",pend:"Pendientes",hist:"Historial",val:"Validación",perfil:"Perfil",admin:"Administrador"};
 const initials=u=>((u.nombre||"?")[0]+((u.apellido||"")[0]||"")).toUpperCase();
 const titleCase=s=>s.trim().replace(/\s+/g," ").toLowerCase().replace(/(^|[\s'-])([a-záéíóúüñ])/g,(m,a,b)=>a+b.toUpperCase());
 const NAME_RE=/^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ' .-]{2,40}$/;
 async function hashPin(emp,pin){try{const h=await crypto.subtle.digest("SHA-256",new TextEncoder().encode("cryd|"+emp+"|"+pin));return [...new Uint8Array(h)].map(x=>x.toString(16).padStart(2,"0")).join("");}catch(e){return "x"+btoa(emp+":"+pin);}}
 function loadUserData(){REC=U.get("rec",[]);if(!Array.isArray(REC))REC=[];WARN=U.get("warn",{dup:{},del:{}});WARN.dup=WARN.dup||{};WARN.del=WARN.del||{};VAL.stmap=U.get("stmap",{});
- const d=U.get("draft",null);if(d&&d.id&&Array.isArray(d.lots)&&d.lots.length===5)S=d;else newForm();}
+ const d=U.get("draft",null);if(d&&d.id&&Array.isArray(d.lots)&&d.lots.length===5)S=d;else newForm();rcvLoad();}
 function enterUser(u){ME={emp:u.emp,nombre:u.nombre,apellido:u.apellido,guest:false};LS.set("cryd:session",{emp:u.emp});AUTH={mode:"menu",f:{},err:""};loadUserData();TAB="insp";render();window.scrollTo(0,0);cloudStart();}
-function enterGuest(){Object.keys(MEM).forEach(k=>{if(k.indexOf("g:")===0)delete MEM[k];});ME={emp:"INVITADO",nombre:"Invitado",apellido:"",guest:true};LS.set("cryd:session",null);loadUserData();TAB="insp";render();window.scrollTo(0,0);}
-function logout(){ME=null;S=null;REC=[];WARN={dup:{},del:{}};VAL.sap=null;VAL.prime=null;VAL.res=null;LS.set("cryd:session",null);AUTH={mode:"menu",f:{},err:""};TAB="insp";render();window.scrollTo(0,0);}
+function enterGuest(){setTimeout(()=>gstInc("n"),50);Object.keys(MEM).forEach(k=>{if(k.indexOf("g:")===0)delete MEM[k];});ME={emp:"INVITADO",nombre:"Invitado",apellido:"",guest:true};LS.set("cryd:session",null);loadUserData();TAB="insp";render();window.scrollTo(0,0);}
+function logout(){RCUR=null;RS=[];RX=null;RIDX=null;ME=null;S=null;REC=[];WARN={dup:{},del:{}};VAL.sap=null;VAL.prime=null;VAL.res=null;LS.set("cryd:session",null);AUTH={mode:"menu",f:{},err:""};TAB="insp";render();window.scrollTo(0,0);}
 function authErr(t){AUTH.err=t;renderAuth();}
 async function doLogin(){const f=AUTH.f,emp=(f.emp||"").trim();let u=USERS.find(x=>x.emp===emp);
  if(f.curl&&f.curl.trim()&&f.curl.trim()!==cloudCfg())LS.set("cryd:cloud",{url:normUrl(f.curl)});
  if(!u&&cloudCfg()&&/^\d{4,8}$/.test(emp)){busy("Buscando tu cuenta en el servidor…");const r=await cloudGet(emp);busy("");if(r&&r.acct&&r.acct.nombre){u={emp,nombre:r.acct.nombre,apellido:r.acct.apellido||"",pin:r.acct.pin||null,created:Date.now()};USERS.push(u);saveUsers();}}
  if(!u)return authErr("No hay una cuenta con ese número de empleado"+(cloudCfg()?" ni en el servidor":" en este dispositivo")+". Crea una cuenta.");
+ if(cloudCfg()){const ra=await cloudGet(emp);if(ra&&ra.acct){if(ra.acct.off)return authErr("Esta cuenta está suspendida. Contacta al administrador.");if(ra.acct.reset&&ra.acct.reset>(u.resetSeen||0)){u.pin=null;u.resetSeen=ra.acct.reset;saveUsers();}}}
  if(u.pin&&(await hashPin(emp,f.pin||""))!==u.pin)return authErr("PIN incorrecto.");
  enterUser(u);}
 async function doSignup(){const f=AUTH.f,nombre=titleCase(f.nombre||""),apellido=titleCase(f.apellido||""),emp=(f.emp||"").trim();
@@ -328,6 +330,7 @@ async function doSignup(){const f=AUTH.f,nombre=titleCase(f.nombre||""),apellido
  if(!NAME_RE.test(apellido))return authErr("Escribe tu apellido (solo letras).");
  if(!/^\d{4,8}$/.test(emp))return authErr("El número de empleado debe tener solo dígitos (normalmente 5).");
  if(USERS.some(x=>x.emp===emp))return authErr("Ya existe una cuenta con ese número de empleado en este dispositivo. Inicia sesión.");
+ if(cloudCfg()){const ra=await cloudGet(emp);if(ra&&ra.acct&&ra.acct.nombre)return authErr("Ese número de empleado ya tiene cuenta en el servidor. Inicia sesión.");}
  let pin=null;
  if(f.usepin){if(!/^\d{4}$/.test(f.pin||""))return authErr("El PIN debe tener 4 dígitos.");if(f.pin!==f.pin2)return authErr("Los PIN no coinciden.");pin=await hashPin(emp,f.pin);}
  const make=()=>{const first=USERS.length===0,u={emp,nombre,apellido,pin,created:Date.now()};USERS.push(u);saveUsers();
@@ -348,15 +351,17 @@ function viewPerfil(){const g=ME.guest,th=LS.get("cryd:theme","system");
  <div class="card"><h2 class="sh">Apariencia</h2><div class="seg">${[["system","Sistema"],["light","Claro"],["dark","Oscuro"]].map(o=>`<button type="button" class="${th===o[0]?"on":""}" data-ua="theme:${o[0]}">${o[1]}</button>`).join("")}</div></div>
  <div class="card"><h2 class="sh">Cuenta</h2>${g?`<p class="mu" style="margin:6px 0 12px;font-size:14px">En modo invitado puedes capturar, generar PDF y validar inventarios, pero nada queda guardado al salir.</p><button type="button" class="btn pri" style="width:100%" data-ua="signupg">Crear una cuenta</button><button type="button" class="btn txt" style="width:100%;margin-top:8px" data-ua="logout">Salir del modo invitado</button>`:`<p class="mu" style="margin:6px 0 12px;font-size:14px">Tu cuenta y tus folios viven solo en este dispositivo. No se comparten con otros dispositivos ni compañeros. Exporta respaldos desde Historial.</p><button type="button" class="btn" style="width:100%" data-ua="logout">Cerrar sesión</button><button type="button" class="btn dg" style="width:100%;margin-top:10px" data-ua="delacc">Eliminar mi cuenta y datos</button>`}</div>
  ${g?"":viewCloud()}
- <p class="mu" style="text-align:center;font-size:12px">Procesos CRyD · versión 2.2</p>`;}
+ ${viewAdminCard()}
+ <p class="mu" style="text-align:center;font-size:12px">Procesos CRyD · versión 2.4</p>`;}
 function render(){
  if(!ME){renderAuth();return;}
  document.body.classList.remove("noauth");
- const tabs=ME.guest?["insp","val","perfil"]:["insp","pend","hist","val","perfil"];if(!tabs.includes(TAB))TAB="insp";
+ const tabs=ME.guest?["insp","rcv","val","perfil"]:["insp","rcv","pend","hist","val","perfil"];if(TAB!=="admin"&&!tabs.includes(TAB))TAB="insp";if(TAB==="admin"&&!admOn())TAB="perfil";
  const np=REC.filter(r=>r.status==="pendiente").length;
- $("#tabs").innerHTML=tabs.map(t=>`<button type="button" class="tab ${t===TAB?"on":""}" data-tab="${t}"><svg viewBox="0 0 24 24">${IC[t]}</svg>${TNAME[t]}${t==="pend"&&np?`<span class="pb">${np}</span>`:""}</button>`).join("");
+ try{LS.set("cryd:ui",{emp:ME.emp,tab:TAB});}catch(e){}
+ $("#tabs").innerHTML=tabs.map(t=>`<button type="button" class="tab ${t===TAB||(TAB==="admin"&&t==="perfil")?"on":""}" data-tab="${t}"><svg viewBox="0 0 24 24">${IC[t]}</svg>${TNAME[t]}${t==="pend"&&np?`<span class="pb">${np}</span>`:""}</button>`).join("");
  $("#who").textContent=initials(ME);
- const v=TAB==="insp"?viewInsp():TAB==="pend"?viewPend():TAB==="val"?viewVal():TAB==="perfil"?viewPerfil():viewHist();
+ const v=TAB==="insp"?viewInsp():TAB==="rcv"?viewRcv():TAB==="admin"?viewAdmin():TAB==="pend"?viewPend():TAB==="val"?viewVal():TAB==="perfil"?viewPerfil():viewHist();
  $("#app").innerHTML=`<h1 class="lt">${TNAME[TAB]}</h1>`+v;}
 function applyTheme(){const t=LS.get("cryd:theme","system"),r=document.documentElement;if(t==="light"||t==="dark")r.setAttribute("data-theme",t);else r.removeAttribute("data-theme");}
 document.addEventListener("input",e=>{const t=e.target,k=t.dataset.au;if(!k||t.type==="checkbox")return;let v=t.value;if(k==="emp"||k==="pin"||k==="pin2"){v=v.replace(/\D/g,"");if(v!==t.value)t.value=v;}AUTH.f[k]=v;});
@@ -382,7 +387,7 @@ const normUrl=s=>{s=(s||"").trim().replace(/\/+$/,"");if(s&&!/^https?:\/\//i.tes
 function cloudCfg(){const c=LS.get("cryd:cloud",null);return normUrl(c&&c.url?c.url:CLOUD_DEFAULT);}
 const cloudEp=emp=>cloudCfg()+"/cryd/u"+emp+".json";
 const hhmm=t=>new Date(t).toLocaleString("es-MX",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});
-function cloudPack(){const u=USERS.find(x=>x.emp===ME.emp)||{};return {ts:Date.now(),acct:{nombre:ME.nombre,apellido:ME.apellido,pin:u.pin||null},rec:REC,warn:WARN,draft:S,stmap:VAL.stmap||{}};}
+function cloudPack(){const u=USERS.find(x=>x.emp===ME.emp)||{};return {ts:Date.now(),acct:{nombre:ME.nombre,apellido:ME.apellido,pin:u.pin||null},rec:REC,warn:WARN,draft:S,stmap:VAL.stmap||{},rcvs:RS.filter(s=>s.lpn)};}
 function cloudSoon(){if(!ME||ME.guest||!cloudCfg())return;LS.set("cryd:u"+ME.emp+":cpend",1);clearTimeout(CT);CT=setTimeout(()=>cloudPush(false),2500);}
 async function cloudGet(emp){try{const r=await fetch(cloudEp(emp),{cache:"no-store"});if(!r.ok)throw 0;return await r.json();}catch(e){return undefined;}}
 async function cloudPush(manual,hide){
@@ -405,7 +410,10 @@ function cloudMerge(rm,force){
  const cts=LS.get("cryd:u"+ME.emp+":cts",0),pend=LS.get("cryd:u"+ME.emp+":cpend",0);
  const d=rm.draft;
  if(d&&d.id&&Array.isArray(d.lots)&&d.lots.length===5&&(force||!cts||(!pend&&(rm.ts||0)>cts))){S=d;n++;}
- U.set("rec",REC);U.set("warn",WARN);U.set("stmap",VAL.stmap);if(S)U.set("draft",S);
+ const rr=Array.isArray(rm.rcvs)?rm.rcvs:Object.values(rm.rcvs||{});
+ rr.forEach(r=>{if(!r||!r.id)return;if(!Array.isArray(r.items))r.items=[];if(!Array.isArray(r.extras))r.extras=[];r.items.forEach(i=>{if(!Array.isArray(i.ph))i.ph=[];});const i=RS.findIndex(x=>x.id===r.id);if(i<0){RS.push(r);n++;}else if((r.upd||0)>(RS[i].upd||0)){RS[i]=r;n++;}});
+ if(RCUR)RCUR=RS.find(x=>x.id===RCUR.id)||RCUR;
+ U.set("rcvs",RS);U.set("rec",REC);U.set("warn",WARN);U.set("stmap",VAL.stmap);if(S)U.set("draft",S);
  return n;
 }
 async function cloudStart(){
@@ -413,6 +421,7 @@ async function cloudStart(){
  if(navigator.onLine===false){CL.st="Sin conexión · se respaldará al volver el internet";return;}
  const rm=await cloudGet(ME.emp);
  if(rm===undefined){CL.st="No se pudo conectar con el servidor · se reintentará solo";cloudSoon();return;}
+ if(rm&&rm.acct&&rm.acct.off){logout();dlg({title:"Cuenta suspendida",body:"El administrador suspendió esta cuenta. Contáctalo para volver a usarla.",buttons:[{t:"Entendido",cls:"pri"}]});return;}
  let n=0;if(rm&&(rm.rec||rm.draft))n=cloudMerge(rm,false);
  await cloudPush(false);render();
  if(n)toast("Se recuperaron avances del servidor.");
@@ -442,7 +451,222 @@ document.addEventListener("input",e=>{if(e.target.dataset&&e.target.dataset.cu==
 addEventListener("online",()=>{if(ME&&!ME.guest&&LS.get("cryd:u"+ME.emp+":cpend",0))cloudPush(false);});
 document.addEventListener("visibilitychange",()=>{if(!ME||ME.guest||!cloudCfg())return;if(document.visibilityState==="hidden"){if(LS.get("cryd:u"+ME.emp+":cpend",0))cloudPush(false,true);}else if(LS.get("cryd:u"+ME.emp+":cpend",0))cloudPush(false);});
 setInterval(()=>{if(ME&&!ME.guest&&cloudCfg()&&LS.get("cryd:u"+ME.emp+":cpend",0))cloudPush(false);},60000);
-function boot(){applyTheme();const ses=LS.get("cryd:session",null),u=ses&&USERS.find(x=>x.emp===ses.emp);if(u){ME={emp:u.emp,nombre:u.nombre,apellido:u.apellido,guest:false};loadUserData();}render();if(u)cloudStart();}
+/* ---------- Recibo: validar LPN contra el inventario ---------- */
+let RX=null,RS=[],RCUR=null,RIDX=null,RUI={msg:null};
+const nlot=l=>vU(l).replace(/R$/,"");
+const rcvFix=t=>String(t).toUpperCase().replace(/O/g,"0").replace(/[IL]/g,"1");
+function rcvLoad(){RX=U.get("rcvx",null);RS=U.get("rcvs",[]);if(!Array.isArray(RS))RS=[];const c=U.get("rcvcur",null);RCUR=c?(RS.find(x=>x.id===c)||null):null;RIDX=null;RUI={msg:null};}
+function rcvSave(){if(RCUR){RCUR.upd=Date.now();if(RS.indexOf(RCUR)<0&&!RS.some(x=>x.id===RCUR.id))RS.push(RCUR);}
+ RS.slice().sort((a,b)=>(b.upd||0)-(a.upd||0)).slice(15).forEach(s=>{s.lpnPh="";(s.items||[]).forEach(i=>i.ph=[]);(s.extras||[]).forEach(i=>i.ph=[]);});
+ U.set("rcvs",RS);U.set("rcvcur",RCUR?RCUR.id:null);}
+const rcvDet=()=>RCUR.det||(RCUR.det={code:"",lote:"",cnt:"",th:[]});
+const RPAT={lpn:/load number|lpn|license|placa|carga/,gcas:/item number|gcas|material|codigo|sku|articulo/,desc:/descri/,lote:/lot number|lote|batch/,estatus:/status|estatus|estado/,cant:/unit quantity|unit qty|cantidad|qty|quantity/,sloc:/storage|sloc|almacen|ubicacion/,planta:/client|planta|plant/};
+function rcvMap(row){const m={},used=new Set();Object.keys(RPAT).forEach(f=>{for(let c=0;c<row.length;c++){if(used.has(c))continue;const h=nz(row[c]);if(!h||/display|date|fecha|time/.test(h))continue;if(RPAT[f].test(h)){m[f]=c;used.add(c);break;}}});return m;}
+function rcvIdx(){if(RIDX)return RIDX;RIDX=new Map();if(RX)RX.rows.forEach(r=>{let a=RIDX.get(r[0]);if(!a)RIDX.set(r[0],a=[]);a.push(r);});return RIDX;}
+async function rcvPick(e){const f=e.target.files[0];e.target.value="";if(!f)return;
+ if(typeof XLSX==="undefined"){toast("No se pudo cargar el lector de Excel. Revisa tu conexión.");return;}
+ busy("Leyendo "+f.name+"…");
+ try{const wb=XLSX.read(await f.arrayBuffer(),{type:"array"}),ws=wb.Sheets[wb.SheetNames[0]],rg=ws["!ref"]?XLSX.utils.decode_range(ws["!ref"]):{s:{r:0,c:0}};
+  const rows=XLSX.utils.sheet_to_json(ws,{header:1,raw:true,defval:"",blankrows:true});
+  let best={n:-1,r:0,m:{}};for(let r=0;r<Math.min(rows.length,30);r++){const m=rcvMap(rows[r]),n=Object.keys(m).length;if(n>best.n)best={n,r,m};}
+  const m=best.m,miss=[["lpn","LPN / Load Number"],["gcas","Item Number"],["lote","Lot Number"],["cant","Unit Quantity"]].filter(x=>m[x[0]]==null).map(x=>x[1]);
+  if(miss.length){busy("");toast("No encontré estas columnas: "+miss.join(", ")+".");return;}
+  const out=[];
+  for(let i=best.r+1;i<rows.length;i++){const r=rows[i];let v=r[m.lpn],s;
+   if(typeof v==="number"){const c=ws[XLSX.utils.encode_cell({r:rg.s.r+i,c:rg.s.c+m.lpn})];s=String(c&&c.w?c.w:v);}else s=String(v==null?"":v);
+   s=s.replace(/\D/g,"");if(s.length>=15&&s.length<20)s=s.padStart(20,"0");
+   const g=String(r[m.gcas]==null?"":r[m.gcas]).trim();if(!s||!g)continue;
+   const g2=k=>m[k]==null?"":String(r[m[k]]==null?"":r[m[k]]).trim();
+   out.push([s,g,g2("desc"),g2("lote"),g2("estatus"),vN(r[m.cant]),g2("sloc"),g2("planta")]);}
+  if(!out.length){busy("");toast("El archivo no tiene filas con LPN y código.");return;}
+  RX={name:f.name,at:Date.now(),rows:out};RIDX=null;const ok=U.set("rcvx",RX);
+  busy("");toast(ok===false?"Archivo cargado, pero no cupo guardarlo en el teléfono: no lo cierres o tendrás que subirlo otra vez.":"Inventario cargado: "+rcvIdx().size+" LPN.");
+ }catch(err){busy("");toast("No se pudo abrir el archivo. Verifica que sea Excel (.xlsx, .xls) o CSV.");}
+ render();}
+function rcvItems(lpn){const m=new Map();(rcvIdx().get(lpn)||[]).forEach(r=>{const k=vG(r[1])+"|"+nlot(r[3]);let e=m.get(k);if(!e){e={g:r[1],l:r[3],desc:r[2],est:r[4],exp:0,st:"pend",cnt:null,ph:[],note:""};m.set(k,e);}e.exp+=r[5];});return [...m.values()];}
+function rcvStart(){RCUR={id:uid(),lpn:"",at:Date.now(),status:"proceso",items:[],extras:[],lpnPh:"",det:null};RUI.msg=null;rcvSave();render();window.scrollTo(0,0);}
+async function rcvThumb(url){try{const im=await new Promise((ok,no)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=no;i.src=url;});const k=Math.min(1,170/Math.max(im.width,im.height)),c=document.createElement("canvas");c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext("2d").drawImage(im,0,0,c.width,c.height);return c.toDataURL("image/jpeg",.5);}catch(e){return "";}}
+async function ocrRaw(blob){OCRON=true;busy("Preparando lector…");try{if(typeof Tesseract==="undefined")throw new Error("lib");const img=await prep(blob),w=await getWorker("codigo"),r=await w.recognize(img);return (r&&r.data&&r.data.text)||"";}finally{OCRON=false;busy("");}}
+function rcvLpnFrom(txt){
+ const t=String(txt||"").split(/\s+/).map(x=>/^[\dOoIl|()\-]+$/.test(x)&&/\d/.test(x)?x.replace(/[Oo]/g,"0").replace(/[Il|]/g,"1"):x).join(" "),d=t.replace(/\D/g,""),idx=rcvIdx();
+ for(let i=0;i+20<=d.length;i++){const w=d.substr(i,20);if(idx.has(w))return {exact:w,near:"",raw:w};}
+ let near="",bd=3,raw="";
+ for(let i=0;i+20<=d.length;i++){const w=d.substr(i,20);if(!raw)raw=w;for(const k of idx.keys()){let n=0;for(let j=0;j<20&&n<bd;j++)if(k[j]!==w[j])n++;if(n<bd){bd=n;near=k;raw=w;}}}
+ return {exact:"",near,raw};}
+function rcvRead(txt,items){
+ const eg=new Set(items.map(i=>vG(i.g))),el=new Set(items.map(i=>nlot(i.l))),cands=[],lots=[],gen=[];
+ String(txt||"").toUpperCase().split(/[^A-Z0-9]+/).filter(Boolean).forEach(t=>{const f=rcvFix(t);if(/^\d{8}$/.test(f))cands.push(f);
+  const n=nlot(t),n2=nlot(f);if(el.has(n))lots.push(n);else if(el.has(n2))lots.push(n2);else if(/^[A-Z0-9]{10}$/.test(n)&&/\d/.test(n))gen.push(n);});
+ const code=cands.find(c=>eg.has(vG(c)))||cands[0]||"";let lote=lots[0]||"";
+ if(code&&lots.length){const mine=items.filter(i=>vG(i.g)===vG(code)).map(i=>nlot(i.l)),h=lots.find(l=>mine.includes(l));if(h)lote=h;}
+ if(!lote)lote=gen[0]||"";return {code,lote};}
+async function rcvPhoto(pv,target){
+ if(!ME)return;let txt="";
+ const th=await rcvThumb(pv.url);
+ try{txt=await ocrRaw(pv.blob);}catch(e){toast("No se pudo leer la foto. Inténtalo otra vez o captura a mano.");return;}
+ if(target==="r_lpn"){
+  if(!RCUR)return;const r=rcvLpnFrom(txt);
+  if(r.exact){rcvSetLpn(r.exact,th);return;}
+  if(r.near){dlg({title:"Revisa la LPN",body:"Leí "+r.raw+", que no está en el Excel. ¿Es "+r.near+"?",buttons:[{t:"Volver a tomar foto",fn:()=>{TARGET="r_lpn";$("#cam").click();}},{t:"Sí, usar esa",cls:"pri",fn:()=>rcvSetLpn(r.near,th)}]});return;}
+  RUI.msg={t:"no",x:r.raw?"Leí "+r.raw+" pero esa LPN no está en el Excel.":"No pude leer los 20 dígitos de la LPN."};
+  dlg({title:"LPN no encontrada",body:RUI.msg.x+" Vuelve a tomar la foto o escríbela a mano.",buttons:[{t:"Escribir a mano"},{t:"Volver a tomar foto",cls:"pri",fn:()=>{TARGET="r_lpn";$("#cam").click();}}]});render();return;}
+ if(!RCUR||!RCUR.lpn)return;
+ const r=rcvRead(txt,RCUR.items),d=rcvDet();
+ if(r.code)d.code=r.code;if(r.lote)d.lote=r.lote;if(th)d.th=(d.th||[]).concat(th).slice(-2);
+ if(r.code&&r.lote)RUI.msg={t:"ok",x:"Leí código "+r.code+" y lote "+r.lote+". Escribe la cantidad y valida."};
+ else if(r.code)RUI.msg={t:"no",x:"Leí el código "+r.code+". Falta el lote: toma otra foto donde se vea o escríbelo."};
+ else if(r.lote)RUI.msg={t:"no",x:"Leí el lote "+r.lote+". Falta el código: toma otra foto donde se vea o escríbelo."};
+ else RUI.msg={t:"no",x:"No pude leer código ni lote. Acércate, mejora la luz o captura a mano."};
+ rcvSave();render();toast(RUI.msg.x);}
+function rcvSetLpn(lpn,th){
+ const dup=RS.find(s=>s.lpn===lpn&&s.id!==RCUR.id);
+ const apply=()=>{RCUR.lpn=lpn;RCUR.items=rcvItems(lpn);RCUR.lpnPh=th||"";RCUR.status="proceso";RUI.msg={t:"ok",x:"LPN encontrada en el Excel: "+RCUR.items.length+" renglón(es) por verificar."};rcvSave();render();window.scrollTo(0,0);};
+ if(dup)dlg({title:"LPN ya registrada",body:"Esta LPN ya tiene un registro ("+(dup.status==="ok"?"correcta":dup.status==="dif"?"con diferencias":"en proceso")+"). ¿Abrir ese registro o empezar uno nuevo?",buttons:[{t:"Nuevo registro",fn:apply},{t:"Abrir el existente",cls:"pri",fn:()=>{RS=RS.filter(x=>x.id!==RCUR.id);RCUR=dup;rcvSave();render();}}]});
+ else apply();}
+function rcvManualLpn(){const v=(RUI.lpnTxt||"").replace(/\D/g,"");if(v.length!==20){toast("La LPN debe tener 20 dígitos.");return;}
+ if(!rcvIdx().has(v)){RUI.msg={t:"no",x:"La LPN "+v+" no está en el Excel."};dlg({title:"LPN no encontrada",body:RUI.msg.x+" Revisa los dígitos o carga un Excel más reciente.",buttons:[{t:"Entendido",cls:"pri"}]});render();return;}
+ rcvSetLpn(v,"");}
+function rcvRetake(){TARGET="r_item";$("#cam").click();}
+function rcvConfirm(){
+ const d=rcvDet(),code=String(d.code||"").trim().toUpperCase(),lote=String(d.lote||"").trim().toUpperCase(),cnt=parseInt(d.cnt,10);
+ if(!code||!lote){toast("Faltan el código y el lote.");return;}
+ if(!/^\d+$/.test(String(d.cnt||"").trim())){toast("Escribe la cantidad de cajas.");return;}
+ const its=RCUR.items,same=its.filter(i=>vG(i.g)===vG(code)),ex=same.find(i=>nlot(i.l)===nlot(lote));
+ const done=()=>{d.code="";d.lote="";d.cnt="";d.th=[];rcvSave();render();};
+ const th=(d.th||[]).slice(-1);
+ const rec=(kind,txt)=>dlg({title:kind,body:txt,buttons:[{t:"Corregir a mano"},{t:"Volver a tomar foto",fn:rcvRetake},{t:"Registrar diferencia",cls:"dg",fn:()=>{
+   if(kind==="Cantidad distinta"&&ex){ex.st="dif";ex.cnt=cnt;ex.ph=th;ex.note="Cantidad: Excel "+f2(ex.exp)+", contado "+cnt;}
+   else RCUR.extras.push({g:code,l:lote,cnt,ph:th,note:kind==="Lote distinto"?"Lote distinto al Excel (Excel: "+same.map(i=>i.l).join(", ")+")":"Código que no está en la LPN"});
+   RUI.msg={t:"no",x:"Diferencia registrada: "+kind+"."};done();}}]});
+ if(ex){
+  if(ex.st==="ok"){toast("Ese renglón ya estaba verificado.");return;}
+  if(Math.abs(cnt-ex.exp)<.0005){ex.st="ok";ex.cnt=cnt;ex.ph=th;ex.note="";RUI.msg={t:"ok",x:"Coincide con el Excel: código "+ex.g+", lote "+ex.l+", "+cnt+" caja(s)."};done();toast("Coincide con el Excel.");}
+  else rec("Cantidad distinta","Código "+ex.g+", lote "+ex.l+". Excel: "+f2(ex.exp)+" · Tú contaste: "+cnt+". Vuelve a contar o registra la diferencia.");
+ }else if(same.length)rec("Lote distinto","El código "+code+" sí está en la LPN, pero el lote "+lote+" no coincide. En el Excel: "+same.map(i=>i.l).join(", ")+". Vuelve a tomar la foto, corrígelo a mano o registra la diferencia.");
+ else rec("Código fuera de la LPN","El código "+code+" no está en la LPN "+RCUR.lpn+". Vuelve a tomar la foto, corrígelo a mano o registra la diferencia.");}
+function rcvFinish(){
+ const pend=RCUR.items.filter(i=>i.st==="pend"),go=()=>{pend.forEach(i=>{i.st="dif";i.note="No se verificó (faltante en la tarima)";});
+  RCUR.status=(RCUR.items.some(i=>i.st!=="ok")||RCUR.extras.length)?"dif":"ok";RCUR.done=Date.now();rcvSave();gstInc("rcv");render();window.scrollTo(0,0);};
+ if(pend.length)dlg({title:"Faltan por verificar",body:pend.length+" renglón(es) de la LPN no se han verificado. Si finalizas, se marcarán como diferencia.",buttons:[{t:"Seguir verificando"},{t:"Finalizar así",cls:"dg",fn:go}]});else go();}
+function rcvExport(list){
+ if(typeof XLSX==="undefined"){toast("No se pudo cargar el lector de Excel.");return;}
+ const r=[["LPN","Código","Lote","Descripción","Cant. Excel","Cant. contada","Resultado","Nota","Fecha"]];
+ list.forEach(s=>{const f=new Date(s.done||s.upd||Date.now()).toLocaleString("es-MX");(s.items||[]).forEach(i=>r.push([s.lpn,i.g,i.l,i.desc,i.exp,i.cnt==null?"":i.cnt,i.st==="ok"?"OK":i.st==="dif"?"Diferencia":"Pendiente",i.note||"",f]));(s.extras||[]).forEach(i=>r.push([s.lpn,i.g,i.l,"",0,i.cnt,"Extra",i.note||"",f]));});
+ const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(r),"Recibo");
+ saveBlob("Recibo_LPN_"+today()+".xlsx",new Blob([XLSX.write(wb,{bookType:"xlsx",type:"array"})],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}));}
+const rcvChip=s=>s==="ok"?'<span class="tg" style="background:var(--okb);color:var(--ok)">OK</span>':s==="dif"?'<span class="tg" style="background:var(--erb);color:var(--er)">Diferencia</span>':'<span class="tg">Pendiente</span>';
+const fmtL=l=>String(l||"").replace(/(\d{4})(?=\d)/g,"$1 ");
+function viewRcv(){
+ if(!RX)return `<div class="card"><h2 class="sh"><i>1</i>Excel del inventario</h2><p class="mu" style="margin:6px 0 12px;font-size:14px">Sube el Excel que trae las LPN con sus códigos, lotes y cantidades (Load Number, Item Number, Lot Number, Unit Quantity). Se lee en tu teléfono y no se envía a ningún servidor.</p><label class="btn pri" for="frcv" style="display:block;text-align:center">Elegir archivo de Excel</label></div>`;
+ const msg=RUI.msg?`<div class="vbanner ${RUI.msg.t==="ok"?"ok":"no"}" style="margin-bottom:12px;font-weight:600">${esc(RUI.msg.x)}</div>`:"";
+ if(!RCUR){
+  const ses=RS.filter(s=>s.lpn).sort((a,b)=>(b.upd||0)-(a.upd||0));
+  return `<div class="card"><h2 class="sh"><i>▤</i>Inventario cargado</h2><p class="mu" style="margin:6px 0 4px;font-size:14px">${esc(RX.name)} · ${rcvIdx().size} LPN · ${RX.rows.length} filas</p><div class="row3"><button type="button" class="btn pri full" data-r="new">Nueva LPN</button><label class="btn" for="frcv" style="text-align:center">Cambiar Excel</label>${ses.length?`<button type="button" class="btn" data-r="expall">Descargar resultados</button>`:""}</div></div>
+  <div class="card"><h2 class="sh"><i>≡</i>LPN registradas<em>${ses.length}</em></h2>${ses.length?ses.map(s=>`<div class="vx"><div class="t"><b>${esc(fmtL(s.lpn))}</b>${s.status==="proceso"?'<span class="tg">En proceso</span>':rcvChip(s.status)}</div><p style="margin:4px 0 0;font-size:12px;color:var(--mu)">${s.items.filter(i=>i.st==="ok").length} de ${s.items.length} verificados${s.extras.length?" · "+s.extras.length+" extra(s)":""} · ${esc(new Date(s.upd||s.at).toLocaleString("es-MX",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}))}</p><div class="row3" style="margin-top:8px"><button type="button" class="btn" data-r="open" data-id="${s.id}">${s.status==="proceso"?"Continuar":"Ver"}</button><button type="button" class="btn" data-r="del" data-id="${s.id}">Eliminar</button></div></div>`).join(""):'<p class="mu" style="margin:8px 0 0;font-size:14px">Aún no hay LPN. Toca "Nueva LPN" para empezar.</p>'}</div>`;}
+ const c=RCUR,ok=c.items.filter(i=>i.st==="ok").length;
+ if(c.lpn&&c.status!=="proceso"){
+  const good=c.status==="ok",bad=c.items.filter(i=>i.st!=="ok");
+  return `<div class="vbanner ${good?"ok":"no"}">${good?"✓ LPN correcta: todo coincide con el Excel.":"LPN con diferencias. Revisa el detalle."}</div>
+  <div class="card"><h2 class="sh"><i>▤</i>LPN ${esc(fmtL(c.lpn))}</h2><p class="mu" style="margin:4px 0 0;font-size:14px">${ok} de ${c.items.length} renglones OK${c.extras.length?" · "+c.extras.length+" extra(s)":""}</p>
+  ${bad.map(i=>`<div class="vx"><div class="t"><b>${esc(i.g)} · lote ${esc(i.l)}</b>${rcvChip(i.st)}</div><p style="margin:4px 0 0;font-size:13px">${esc(i.desc||"")}</p><p style="margin:4px 0 0;font-size:12px;color:var(--er)">${esc(i.note)}</p></div>`).join("")}
+  ${c.extras.map(i=>`<div class="vx"><div class="t"><b>${esc(i.g)} · lote ${esc(i.l)}</b><span class="tg">Extra</span></div><p style="margin:4px 0 0;font-size:12px;color:var(--er)">${esc(i.note)} · contado ${esc(i.cnt)}</p></div>`).join("")}
+  <div class="row3"><button type="button" class="btn pri full" data-r="new">Siguiente LPN</button><button type="button" class="btn" data-r="xl1">Descargar Excel</button><button type="button" class="btn" data-r="reopen">Reabrir</button><button type="button" class="btn full" data-r="exit">Ver lista de LPN</button></div></div>`;}
+ if(!c.lpn)return msg+`<div class="card"><h2 class="sh"><i>1</i>Etiqueta de la LPN</h2><p class="mu" style="margin:6px 0 8px;font-size:14px">Toma foto de la etiqueta de 20 dígitos o escríbela. Se valida contra el Excel.</p>
+  <label class="lb">LPN (20 dígitos)</label><div class="fld"><input data-rm="lpn" inputmode="numeric" maxlength="24" placeholder="00100370003108822317" value="${esc(RUI.lpnTxt||"")}">${sb("r_lpn")}</div>
+  <div class="row3"><button type="button" class="btn pri" data-r="lpnok">Validar LPN</button><button type="button" class="btn" data-r="exit">Cancelar</button></div></div>`;
+ const d=rcvDet();
+ return msg+`<div class="card"><div class="t" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><b style="font-size:17px">LPN ${esc(fmtL(c.lpn))}</b><span class="tg" style="background:var(--okb);color:var(--ok)">En el Excel</span></div><p class="mu" style="margin:6px 0 0;font-size:13px">${ok} de ${c.items.length} verificados${c.extras.length?" · "+c.extras.length+" extra(s)":""}. Avance guardado automáticamente.</p></div>
+ <div class="card"><h2 class="sh"><i>2</i>Código y lote</h2><p class="mu" style="margin:6px 0 4px;font-size:14px">Toma foto donde se vean el código y el lote, o por separado si están lejos. También puedes escribirlos.</p>
+  <div style="display:flex;align-items:center;gap:8px"><span style="font-weight:600">Foto</span>${sb("r_item")}</div>
+  <label class="lb">Código</label><input data-rd="code" inputmode="numeric" maxlength="8" placeholder="80XXXXXX" value="${esc(d.code)}">
+  <label class="lb">Lote</label><input data-rd="lote" autocapitalize="characters" placeholder="10 caracteres" value="${esc(d.lote)}">
+  <label class="lb">Cantidad de cajas</label><input data-rd="cnt" inputmode="numeric" placeholder="0" value="${esc(d.cnt)}">
+  ${(d.th||[]).length?`<div style="display:flex;gap:8px;margin-top:10px">${d.th.map(t=>`<img src="${t}" alt="" style="height:64px;border-radius:8px;border:1px solid var(--bd)">`).join("")}</div>`:""}
+  <div class="row3"><button type="button" class="btn pri full" data-r="conf">Validar contra el Excel</button></div></div>
+ <div class="card"><h2 class="sh"><i>≡</i>Renglones de la LPN</h2>${c.items.map(i=>`<div class="vx"><div class="t"><b>${esc(i.g)}</b>${rcvChip(i.st)}</div><p style="margin:4px 0 0;font-size:13px">${esc(i.desc||"")}</p><p style="margin:2px 0 0;font-size:12px;color:var(--mu)">Lote ${esc(i.l)}${i.st==="pend"?"":" · contado "+esc(i.cnt)+" de "+f2(i.exp)}</p>${i.note?`<p style="margin:2px 0 0;font-size:12px;color:var(--er)">${esc(i.note)}</p>`:""}${(i.ph||[]).length?`<img src="${i.ph[0]}" alt="" style="height:48px;margin-top:6px;border-radius:6px">`:""}</div>`).join("")}
+  ${c.extras.map(i=>`<div class="vx"><div class="t"><b>${esc(i.g)}</b><span class="tg">Extra</span></div><p style="margin:4px 0 0;font-size:12px;color:var(--er)">Lote ${esc(i.l)} · ${esc(i.note)}</p></div>`).join("")}</div>
+ <div class="row3"><button type="button" class="btn dk full" data-r="fin">Finalizar LPN</button><button type="button" class="btn full" data-r="exit">Guardar avance y salir</button></div>`;}
+document.addEventListener("input",e=>{const t=e.target,k=t.dataset&&t.dataset.rd;
+ if(k&&RCUR){let v=t.value;if(k==="code"||k==="cnt"){v=v.replace(/\D/g,"");if(v!==t.value)t.value=v;}rcvDet()[k]=v;clearTimeout(RT);RT=setTimeout(rcvSave,300);}
+ if(t.dataset&&t.dataset.rm==="lpn"){const v=t.value.replace(/\D/g,"");if(v!==t.value)t.value=v;RUI.lpnTxt=v;}});
+let RT=0;
+document.addEventListener("click",e=>{const b=e.target.closest("[data-r]");if(!b)return;const a=b.dataset.r,id=b.dataset.id;
+ if(a==="new")rcvStart();
+ else if(a==="exit"){if(RCUR&&!RCUR.lpn){RS=RS.filter(x=>x.id!==RCUR.id);}RCUR=null;RUI.msg=null;U.set("rcvs",RS);U.set("rcvcur",null);render();window.scrollTo(0,0);}
+ else if(a==="open"){RCUR=RS.find(x=>x.id===id)||null;RUI.msg=null;U.set("rcvcur",RCUR?RCUR.id:null);render();window.scrollTo(0,0);}
+ else if(a==="del")dlg({title:"Eliminar LPN",body:"Se borra este registro de la lista.",buttons:[{t:"Cancelar"},{t:"Eliminar",cls:"dg",fn:()=>{RS=RS.filter(x=>x.id!==id);U.set("rcvs",RS);render();}}]});
+ else if(a==="lpnok")rcvManualLpn();
+ else if(a==="conf")rcvConfirm();
+ else if(a==="fin")rcvFinish();
+ else if(a==="reopen"){RCUR.status="proceso";RUI.msg=null;rcvSave();render();}
+ else if(a==="xl1")rcvExport([RCUR]);
+ else if(a==="expall")rcvExport(RS.filter(s=>s.lpn));});
+/* ---------- invitados y administrador ---------- */
+function gst(){let g=LS.get("cryd:g",null);if(!g||!g.id)g={id:Math.random().toString(36).slice(2,8)+Date.now().toString(36).slice(-3),first:Date.now(),n:0,pdf:0,val:0,rcv:0};return g;}
+function gstInc(k){if(!ME||!ME.guest)return;const g=gst();g[k]=(g[k]||0)+1;g.last=Date.now();LS.set("cryd:g",g);const u=cloudCfg();if(!u||navigator.onLine===false)return;
+ try{fetch(u+"/cryd_guests/"+g.id+".json",{method:"PUT",body:JSON.stringify(Object.assign({ua:(navigator.userAgent.match(/iPhone|iPad|Android|Windows|Macintosh|Linux/)||["?"])[0]},g))}).catch(()=>{});}catch(e){}}
+const ADM={list:null,guests:null,err:"",exp:{},loading:false};
+const admOn=()=>LS.get("cryd:adm",0)===1;
+async function admHash(c){try{const h=await crypto.subtle.digest("SHA-256",new TextEncoder().encode("cryd|admin|"+c));return [...new Uint8Array(h)].map(x=>x.toString(16).padStart(2,"0")).join("");}catch(e){return "x"+btoa("admin:"+c);}}
+async function admLogin(){
+ const code=(ADM.code||"").trim();if(!cloudCfg()){toast("Primero conecta el servidor en Respaldo en servidor.");return;}
+ if(code.length<6){toast("El código debe tener al menos 6 caracteres.");return;}
+ busy("Verificando…");
+ try{const h=await admHash(code),r=await fetch(cloudCfg()+"/cryd_admin.json",{cache:"no-store"});if(!r.ok)throw 0;const cur=await r.json();
+  if(cur===null){const w=await fetch(cloudCfg()+"/cryd_admin.json",{method:"PUT",body:JSON.stringify({h,at:Date.now(),by:ME.emp})});if(!w.ok)throw 0;LS.set("cryd:adm",1);toast("Código de administrador creado.");}
+  else if(cur.h===h){LS.set("cryd:adm",1);toast("Acceso de administrador.");}
+  else{toast("Código incorrecto.");busy("");return;}
+ }catch(e){busy("");toast("No se pudo conectar con el servidor.");return;}
+ busy("");ADM.code="";TAB="admin";admLoad();render();}
+async function admLoad(){
+ const u=cloudCfg();if(!u)return;ADM.loading=true;ADM.err="";if(TAB==="admin")render();
+ try{const r=await fetch(u+"/cryd.json?shallow=true",{cache:"no-store"});if(!r.ok)throw 0;const keys=Object.keys((await r.json())||{}).filter(k=>/^u\d{4,8}$/.test(k));
+  const rows=await Promise.all(keys.map(k=>fetch(u+"/cryd/"+k+".json",{cache:"no-store"}).then(x=>x.json()).then(j=>({emp:k.slice(1),j:j||{}})).catch(()=>({emp:k.slice(1),j:{}}))));
+  ADM.list=rows.sort((a,b)=>((b.j.ts)||0)-((a.j.ts)||0));
+  const g=await fetch(u+"/cryd_guests.json",{cache:"no-store"}).then(x=>x.json()).catch(()=>null);
+  ADM.guests=Object.values(g||{}).sort((a,b)=>(b.last||0)-(a.last||0));
+ }catch(e){ADM.err="No se pudo leer el servidor. Revisa la conexión y las reglas de la base de datos.";}
+ ADM.loading=false;if(TAB==="admin")render();}
+async function admPatch(emp,body){const u=cloudCfg();const r=await fetch(u+"/cryd/u"+emp+"/acct.json",{method:"PATCH",body:JSON.stringify(body)});if(!r.ok)throw 0;}
+async function admAct(a,emp){
+ try{
+  if(a==="off"){await admPatch(emp,{off:true});toast("Cuenta "+emp+" suspendida.");}
+  else if(a==="on"){await admPatch(emp,{off:false});toast("Cuenta "+emp+" activada.");}
+  else if(a==="reset"){await admPatch(emp,{reset:Date.now(),pin:null});toast("PIN restablecido. La próxima vez entra sin PIN.");}
+  else if(a==="del"){const r=await fetch(cloudCfg()+"/cryd/u"+emp+".json",{method:"DELETE"});if(!r.ok)throw 0;toast("Datos del servidor eliminados.");}
+  else if(a==="gdel"){await fetch(cloudCfg()+"/cryd_guests/"+emp+".json",{method:"DELETE"});}
+ }catch(e){toast("No se pudo completar. Revisa la conexión.");}
+ admLoad();}
+function viewAdminCard(){
+ if(admOn())return `<div class="card"><h2 class="sh">Administrador</h2><p class="mu" style="margin:6px 0 12px;font-size:14px">Cuentas, invitados y avances de todos los usuarios que usan el servidor.</p><button type="button" class="btn pri" style="width:100%" data-ad="open">Abrir panel</button><button type="button" class="btn txt" style="width:100%;margin-top:6px" data-ad="lock">Salir del modo administrador</button></div>`;
+ return `<div class="card"><h2 class="sh">Administrador</h2><p class="mu" style="margin:6px 0 8px;font-size:13px">Solo para el responsable de la app. La primera vez crea tu código (mínimo 6 caracteres); después úsalo para entrar.</p><input data-ad-in type="password" autocomplete="off" placeholder="Código de administrador" value="${esc(ADM.code||"")}"><button type="button" class="btn" style="width:100%;margin-top:10px" data-ad="login">Entrar</button></div>`;}
+function viewAdmin(){
+ if(!admOn())return '<p class="mu">Sin acceso.</p>';
+ const fh=t=>t?new Date(t).toLocaleString("es-MX",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}):"—";
+ let h=`<div class="row3" style="margin-top:0"><button type="button" class="btn" data-ad="refresh">${ADM.loading?"Actualizando…":"Actualizar"}</button><button type="button" class="btn" data-ad="back">Volver</button></div>${ADM.err?`<div class="vbanner no" style="margin-top:12px">${esc(ADM.err)}</div>`:""}`;
+ const L=ADM.list||[];
+ h+=`<div class="card"><h2 class="sh"><i>👤</i>Cuentas<em>${L.length}</em></h2>${L.length?L.map(x=>{const j=x.j,a=j.acct||{},rec=Array.isArray(j.rec)?j.rec:Object.values(j.rec||{}),pn=rec.filter(r=>r&&r.status==="pendiente").length,rs=Array.isArray(j.rcvs)?j.rcvs:Object.values(j.rcvs||{}),open=ADM.exp[x.emp];
+  return `<div class="vx"><div class="t"><b>${esc((a.nombre||"?")+" "+(a.apellido||""))}</b><span class="tg" ${a.off?'style="background:var(--erb);color:var(--er)"':''}>${a.off?"Suspendida":"Activa"}</span></div><p style="margin:4px 0 0;font-size:12px;color:var(--mu)">No. ${esc(x.emp)}${a.pin?" · con PIN":""} · último respaldo ${esc(fh(j.ts))}</p><p style="margin:2px 0 0;font-size:12px;color:var(--mu)">${rec.length} folios (${pn} pendientes) · ${rs.length} LPN</p>
+  <div class="row3" style="margin-top:8px"><button type="button" class="btn" data-ad="exp" data-id="${x.emp}">${open?"Ocultar":"Ver detalle"}</button><button type="button" class="btn" data-ad="${a.off?"on":"off"}" data-id="${x.emp}">${a.off?"Activar":"Suspender"}</button><button type="button" class="btn" data-ad="reset" data-id="${x.emp}">Restablecer PIN</button><button type="button" class="btn" data-ad="del" data-id="${x.emp}">Borrar datos</button></div>
+  ${open?`<div style="margin-top:8px;font-size:12px;color:var(--mu)">${rec.slice(-15).reverse().map(r=>r?esc(r.folio)+" · "+esc(r.status):"").join("<br>")||"Sin folios."}${rs.length?"<br><b>LPN:</b> "+rs.slice(-10).reverse().map(s=>s?esc(s.lpn)+" · "+esc(s.status):"").join("<br>"):""}</div>`:""}</div>`;}).join(""):'<p class="mu" style="margin:8px 0 0;font-size:14px">Aún no hay cuentas respaldadas en el servidor.</p>'}</div>`;
+ const G=ADM.guests||[];
+ h+=`<div class="card"><h2 class="sh"><i>👥</i>Invitados<em>${G.length}</em></h2>${G.length?G.map(g=>`<div class="vx"><div class="t"><b>Invitado ${esc(g.id)}</b><span class="tg">${esc(g.ua||"")}</span></div><p style="margin:4px 0 0;font-size:12px;color:var(--mu)">Última vez ${esc(fh(g.last))} · ${g.n||0} ingresos · ${g.pdf||0} PDF · ${g.val||0} validaciones · ${g.rcv||0} LPN</p><div class="row3" style="margin-top:8px"><button type="button" class="btn" data-ad="gdel" data-id="${esc(g.id)}">Quitar del registro</button></div></div>`).join(""):'<p class="mu" style="margin:8px 0 0;font-size:14px">Aún no hay invitados registrados.</p>'}</div>`;
+ return h;}
+document.addEventListener("input",e=>{if(e.target.dataset&&e.target.dataset.adIn!==undefined)ADM.code=e.target.value;});
+document.addEventListener("click",e=>{const b=e.target.closest("[data-ad]");if(!b)return;const a=b.dataset.ad,id=b.dataset.id;
+ if(a==="login")admLogin();
+ else if(a==="open"){TAB="admin";admLoad();render();window.scrollTo(0,0);}
+ else if(a==="lock"){LS.set("cryd:adm",0);toast("Saliste del modo administrador.");render();}
+ else if(a==="back"){TAB="perfil";render();}
+ else if(a==="refresh")admLoad();
+ else if(a==="exp"){ADM.exp[id]=!ADM.exp[id];render();}
+ else if(a==="del")dlg({title:"Borrar datos del servidor",body:"Se borra el respaldo de la cuenta "+id+" en el servidor. Si esa persona sigue usando su teléfono, el respaldo se vuelve a crear. Para bloquear el acceso usa Suspender.",buttons:[{t:"Cancelar"},{t:"Borrar",cls:"dg",fn:()=>admAct("del",id)}]});
+ else if(a==="gdel"||a==="off"||a==="on"||a==="reset")admAct(a,id);});
+/* ---------- recuperar avances ---------- */
+function flushAll(){try{if(ME&&!ME.guest){if(S)saveDraft();if(RCUR)rcvSave();LS.set("cryd:ui",{emp:ME.emp,tab:TAB});if(cloudCfg()&&LS.get("cryd:u"+ME.emp+":cpend",0))cloudPush(false,true);}}catch(e){}}
+addEventListener("pagehide",flushAll);document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden")flushAll();});
+let ERRN=0;addEventListener("error",()=>{flushAll();if(ERRN++<2)toast("Algo falló, pero tu avance está guardado.");});addEventListener("unhandledrejection",()=>{flushAll();});
+function boot(){applyTheme();warmOcr();const ses=LS.get("cryd:session",null),u=ses&&USERS.find(x=>x.emp===ses.emp);if(u){ME={emp:u.emp,nombre:u.nombre,apellido:u.apellido,guest:false};loadUserData();const ui=LS.get("cryd:ui",null);if(ui&&ui.emp===ME.emp&&["insp","rcv","pend","hist","val","perfil"].includes(ui.tab))TAB=ui.tab;}render();if(u)cloudStart();}
 
 /* ---------- cámara y galería ---------- */
 const PROMPT='Lee la etiqueta o documento de la foto. Extrae: codigo (código de producto/SKU/material), lote (lote/batch) y descripcion (nombre completo del producto, por ejemplo toalla femenina, jabón o shampoo, con su marca o variante y el contenido o cantidad exactamente como aparece, por ejemplo 400 ml, 30 piezas o 3 en 1). El código tiene 8 dígitos y empieza con 80. El lote tiene 10 caracteres entre números y letras: devuelve solo el lote, sin prefijos. Transcribe exactamente lo que ves, sin inventar. Responde SOLO un JSON {"codigo":"","lote":"","descripcion":""}; usa cadena vacía si no ves el dato.';
@@ -469,11 +693,11 @@ async function onFile(e,src){const f=e.target.files[0];e.target.value="";if(!f)r
 $("#gal").addEventListener("change",e=>onFile(e,"gal"));$("#cam").addEventListener("change",e=>onFile(e,"cam"));
 $("#pvno").onclick=()=>{$("#pv").hidden=true;};
 $("#pvc").onclick=()=>{$("#pv").hidden=true;$("#cam").click();};
-$("#pvuse").onclick=()=>{$("#pv").hidden=true;if(PV)ocr(PV.blob,TARGET);};
-const WK={};
-const getWorker=t=>WK[t]||(WK[t]=(async()=>{const w=await Tesseract.createWorker(t==="desc"?"spa":"eng",1,{logger:m=>{if(m.status==="recognizing text")busy("Leyendo etiqueta… "+Math.round((m.progress||0)*100)+"%");else if(m.status)busy("Preparando lector…");}});
+$("#pvuse").onclick=()=>{$("#pv").hidden=true;if(PV){if(String(TARGET).indexOf("r_")===0)rcvPhoto(PV,TARGET);else ocr(PV.blob,TARGET);}};
+const WK={};let OCRON=false;
+const getWorker=t=>(t=t==="lote"?"codigo":t,WK[t])||(WK[t]=(async()=>{const w=await Tesseract.createWorker(t==="desc"?"spa":"eng",1,{logger:m=>{if(!OCRON)return;if(m.status==="recognizing text")busy("Leyendo etiqueta… "+Math.round((m.progress||0)*100)+"%");else if(m.status)busy("Preparando lector…");}});
  await w.setParameters({tessedit_pageseg_mode:t==="desc"?"3":"11"});return w;})());
-async function prep(blob){const bm=await createImageBitmap(blob),k=Math.min(2,Math.max(1,1600/Math.max(bm.width,bm.height))),c=document.createElement("canvas");c.width=Math.round(bm.width*k);c.height=Math.round(bm.height*k);
+async function prep(blob){const bm=await createImageBitmap(blob),k=Math.min(1,1100/Math.max(bm.width,bm.height)),c=document.createElement("canvas");c.width=Math.round(bm.width*k);c.height=Math.round(bm.height*k);
  const x=c.getContext("2d");x.drawImage(bm,0,0,c.width,c.height);const im=x.getImageData(0,0,c.width,c.height),p=im.data,g=new Uint8Array(p.length/4);let lo=255,hi=0;
  for(let i=0,j=0;i<p.length;i+=4,j++){const v=(p[i]*.299+p[i+1]*.587+p[i+2]*.114)|0;g[j]=v;if(v<lo)lo=v;if(v>hi)hi=v;}
  const sc=hi>lo?255/(hi-lo):1;for(let i=0,j=0;i<p.length;i+=4,j++){const v=Math.max(0,Math.min(255,(g[j]-lo)*sc))|0;p[i]=p[i+1]=p[i+2]=v;}x.putImageData(im,0,0);return c;}
@@ -487,8 +711,9 @@ function readDesc(t){const lines=String(t||"").split("\n").map(x=>x.trim()).filt
  const unitRe=/\d+(?:[.,]\d+)?\s*(?:ml|g|gr|kg|l|lt|oz|pzas?|pzs|piezas?|pack|toallas?|bolsas?|u|un|und)\b/i,prodRe=/toalla|jab[oó]n|shampoo|champ[uú]|acondicionador|pa[nñ]al|detergente|suavizante|crema|desodorante|pasta|enjuague|rastrillo|cepillo|bolsas|naturella/i,skip=/lote|lot\b|batch|c[oó]digo|sku|caduc|exp|fecha/i;
  const k=lines.filter(l=>!skip.test(l)&&!/80\d{6}/.test(l)&&(prodRe.test(l)||unitRe.test(l)));
  const r=k.length?k.join(" "):(lines.filter(l=>!skip.test(l)&&!/^[\d\W]+$/.test(l)).sort((a,b)=>b.length-a.length)[0]||"");return r.slice(0,140).trim();}
+function warmOcr(){if(typeof Tesseract==="undefined"||navigator.onLine===false)return;const go=()=>{getWorker("codigo").then(()=>getWorker("desc")).catch(()=>{delete WK.codigo;delete WK.desc;});};setTimeout(go,1500);}
 async function ocr(blob,target){
- const idx=S.act;busy("Preparando lector…");
+ const idx=S.act;OCRON=true;busy("Preparando lector…");
  try{if(typeof Tesseract==="undefined")throw new Error("lib");
   const img=await prep(blob),w=await getWorker(target),r=await w.recognize(img),txt=(r&&r.data&&r.data.text)||"";let val="",sel="";
   if(target==="codigo"){val=readCod(txt);if(val){S.codigo=val;sel='[data-k="codigo"]';}}
@@ -529,7 +754,7 @@ function makePdf(S){
  box(L,y,25,H,"Lote (s):",{b:1});box(135,y,32,H,"Tamaño de muestra:",{b:1});
  const yL=y;S.lots.forEach((l,i)=>{if(used(l)){fb(35+i*19,y,19,H,l.lote);fb(167+i*24,y,24,H,l.muestra);}});y+=H;
  box(L,y,25,H,"Cantidad (s):",{b:1});S.lots.forEach((l,i)=>{if(used(l))fb(35+i*19,y,19,H,cs(l.cant));});
- runs.forEach(([a,b])=>{const n=b-a+1;d.rect(35+a*19,yL,n*19,2*H);na(35+a*19,yL,n*19,2*H);d.rect(167+a*24,yL,n*24,H);na(167+a*24,yL,n*24,H);});y+=H+1.5;
+ runs.forEach(([a,b])=>{const n=b-a+1;for(let k=a;k<=b;k++){d.rect(35+k*19,yL,19,H);d.rect(35+k*19,yL+H,19,H);d.rect(167+k*24,yL,24,H);}na(35+a*19,yL,n*19,2*H);na(167+a*24,yL,n*24,H);});y+=H+1.5;
  box(L,y,W,5,"CRITERIOS DE INSPECCIÓN",{fill:G,b:1,col:[255,255,255]});y+=5;
  box(L,y,10,10,"No.",{fill:g,b:1,c:1});box(20,y,22,10,"Tipo de defecto",{fill:g,b:1,c:1});box(42,y,88,10,"Criterio de inspección",{fill:g,b:1,c:1});
  S.lots.forEach((l,i)=>{box(X0+i*CW,y,CW,5,"Lote No. "+(i+1),{fill:g,b:1,c:1});box(X0+i*CW,y+5,CW,5,"Ac: "+l.ac+"   Re: "+l.re,{c:1,sz:6.5});});y+=10;
@@ -542,7 +767,7 @@ function makePdf(S){
  box(L,y,120,H,"Total de defectos:",{fill:g,b:1});S.lots.forEach((l,k)=>{if(used(l))box(X0+k*CW,y,CW,H,String(defects(l)),{fill:g,c:1,b:1});});y+=H;
  box(L,y,120,12,"Observaciones:",{fill:g,b:1});S.lots.forEach((l,k)=>{if(!used(l))return;d.setFillColor(...g);d.rect(X0+k*CW,y,CW,12,"FD");d.setFontSize(5.5);d.setFont("helvetica","normal");d.setTextColor(0);if(isNA(l.obs))na(X0+k*CW,y,CW,12);else d.text(d.splitTextToSize(l.obs||"",CW-2).slice(0,4),X0+k*CW+1,y+3);});y+=12;
  box(L,y,120,H,"**Dictamen:",{fill:g,b:1});S.lots.forEach((l,k)=>{if(used(l))box(X0+k*CW,y,CW,H,l.dict,{fill:g,c:1,b:1});});y+=H;
- runs.forEach(([a,b])=>{const x=X0+a*CW,w=(b-a+1)*CW,gy=r0+12*RH;d.rect(x,r0,w,12*RH);d.setFillColor(...g);d.rect(x,gy,w,y-gy,"FD");na(x,r0,w,y-r0,RH);});
+ runs.forEach(([a,b])=>{const x=X0+a*CW,w=(b-a+1)*CW,gy=r0+12*RH;d.setFillColor(...g);d.rect(x,gy,w,y-gy,"F");for(let k=a;k<=b;k++){const cx=X0+k*CW;for(let j=0;j<12;j++)d.rect(cx,r0+j*RH,CW,RH);d.rect(cx,gy,CW,H);d.rect(cx,gy+H,CW,12);d.rect(cx,gy+H+12,CW,H);}na(x,r0,w,y-r0,RH);});
  txt("* Ac = Valor de tabla ANSI Z1.4 de aceptación y Re = Valor de tabla ANSI Z1.4 de rechazo.",L,y+4,{sz:6});txt("**Liberado / Rechazado",L,y+7.5,{sz:6});y+=10;
  txt("Firma Analista de Calidad CRyD:",148.5,y+1,{b:1,sz:8,al:"center"});d.line(100,y+9,197,y+9);y+=16;
  txt("Rev. 18",50,y,{sz:6,al:"center"});txt("Ref. PR-OP-1715-1220-302",148.5,y,{sz:6,al:"center"});txt("Cod. FO-OP-1715-1220-119",240,y,{sz:6,al:"center"});

@@ -7,6 +7,8 @@ App web para el área CRyD. Funciona en iPhone, Android y computadora, y se pued
 - **Validación SAP vs PrIME:** compara código (GCAS), lote, planta, sloc, cantidades y estatus, e indica la fila de cada archivo. Solo PrIME trae LPN.
   - SAP: ignora Bloqueado, Base Unit of Measure, Transit and Transfer y la última fila. Libre y Calidad vienen en columnas separadas.
   - PrIME: solo lee de la columna A a la H. El estatus viene escrito en una columna y se asigna a Libre, Calidad o Ignorar.
+- **Recibo:** sube el Excel con LPN, valida cada LPN (foto de la etiqueta, foto de código y lote por separado o juntos) contra el Excel y avisa diferencias de código, lote o cantidad.
+- **Administrador:** en Perfil, con código propio, para ver y gestionar cuentas e invitados (requiere el servidor).
 - **Cuentas:** nombre, apellido y número de empleado, con PIN opcional. También hay modo invitado.
 
 ## Publicar en GitHub Pages

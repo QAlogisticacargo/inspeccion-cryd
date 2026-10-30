@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Procesos CRyD</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#f2f5f7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0e171c" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Procesos CRyD">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body class="noauth">
+<header class="top" id="top"><div class="tin"><div class="brand"><span class="bi"><svg viewBox="0 0 24 24"><path d="M9 4h6l1 2h3v14H5V6h3z"/><path d="M9 13l2 2 4-4"/></svg></span>Procesos CRyD</div><button type="button" class="who" id="who" aria-label="Perfil"></button></div></header>
+<main id="app"></main>
+<nav class="tabs" id="tabs"></nav>
+<input id="cam" type="file" accept="image/*" capture="environment" hidden>
+<input id="gal" type="file" accept="image/*" hidden>
+<input id="imp" type="file" accept=".json,application/json" hidden>
+<input id="fsap" type="file" accept=".xlsx,.xls,.xlsm,.csv" hidden>
+<input id="fprime" type="file" accept=".xlsx,.xls,.xlsm,.csv" hidden>
+<div id="cv" class="ov" hidden>
+ <video id="vd" playsinline muted autoplay></video><div class="frame" id="fr"></div>
+ <div class="cvm" id="cvm" hidden><p>La cámara integrada no está disponible en esta vista.</p><label class="btn pri" for="cam">Abrir la cámara del teléfono</label></div>
+ <div class="bar"><button class="btn" id="cvx" type="button">Cerrar</button><button class="shut" id="shut" type="button" aria-label="Capturar"></button><span style="width:74px"></span></div>
+</div>
+<div id="pv" class="ov" hidden>
+ <img class="pv" id="pvimg" alt="">
+ <div class="bar"><button class="btn" id="pvno" type="button">Cancelar</button><label class="btn" id="pvg" for="gal">Elegir otra</label><button class="btn" id="pvc" type="button" hidden>Repetir</button><button class="btn pri" id="pvuse" type="button">Usar foto</button></div>
+</div>
+<div id="dlg" hidden><div><h3 id="dlgT"></h3><p id="dlgB"></p><div id="dlgBtns"></div></div></div>
+<div id="busy" hidden></div><div id="toast" hidden></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="assets.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

@@ -41,7 +41,11 @@ function draftSoon(){clearTimeout(DT);DT=setTimeout(saveDraft,400);}
 
 /* ---------- avisos ---------- */
 function toast(t){const e=$("#toast");e.textContent=t;e.hidden=false;clearTimeout(TT);TT=setTimeout(()=>e.hidden=true,3200);}
-function busy(t){const e=$("#busy");e.textContent=t||"";e.hidden=!t;}
+let BT=0;
+function busy(t,cancel){const e=$("#busy");clearTimeout(BT);if(!t){e.hidden=true;e.className="";e.textContent="";return;}
+ e.className=cancel?"can":"";e.textContent="";const sp=document.createElement("span");sp.textContent=t;e.appendChild(sp);
+ if(cancel){const b=document.createElement("button");b.type="button";b.textContent="Cancelar";b.onclick=()=>{busy("");try{cancel();}catch(x){}};e.appendChild(b);}
+ e.hidden=false;BT=setTimeout(()=>{busy("");toast("Tardó demasiado. Inténtalo de nuevo o captura a mano.");},90000);}
 function dlg(o){$("#dlgT").textContent=o.title;$("#dlgB").textContent=o.body;const bx=$("#dlgBtns");bx.innerHTML="";o.buttons.forEach(b=>{const e=document.createElement("button");e.type="button";e.textContent=b.t;e.className="btn "+(b.cls||"");e.onclick=()=>{$("#dlg").hidden=true;if(b.fn)b.fn();};bx.appendChild(e);});$("#dlg").hidden=false;}
 function dupGuard(next){
  const f=(S.folio||"").trim().toUpperCase();if(!f){toast("Captura o genera el folio primero.");return;}
@@ -78,7 +82,7 @@ async function saveBlob(name,blob){
 function exportRecs(list,name){saveBlob(name,new Blob([JSON.stringify({app:"inspeccion-cryd",version:1,records:list})],{type:"application/json"}));}
 
 /* ---------- vistas ---------- */
-const sb=t=>`<button type="button" class="ico" data-scan="${t}" data-src="cam" aria-label="Tomar foto"><img src="${IC_CAM}" alt=""></button><label class="ico" data-scan="${t}" data-src="gal" for="gal" aria-label="Galería"><img src="${IC_GAL}" alt=""></label>`;
+const sb=t=>`<button type="button" class="ico" data-scan="${t}" data-src="cam" aria-label="Tomar foto"><img src="${IC_CAM}" alt=""><span>Tomar foto</span></button><label class="ico" data-scan="${t}" data-src="gal" for="gal" aria-label="Cargar foto"><img src="${IC_GAL}" alt=""><span>Cargar foto</span></label>`;
 const fld=(lb,attr,val,o={})=>`<label class="lb">${lb}</label><div class="fld"><input ${attr} value="${esc(val)}"${o.ph?` placeholder="${o.ph}"`:""}${o.im?` inputmode="${o.im}"`:""}>${o.suf?`<span class="suf">${o.suf}</span>`:""}${o.scan?sb(o.scan):""}${o.extra||""}</div>`;
 const chips=()=>S.lots.map((x,i)=>`<button type="button" class="chip ${i===S.act?"on":""}" data-lot="${i}"><span class="dot ${lotState(x)}"></span>Lote ${i+1}<i>${esc(x.lote)||"—"}</i></button>`).join("");
 function viewInsp(){
@@ -102,14 +106,14 @@ function viewInsp(){
   <label class="lb">Dictamen</label><select data-l="dict">${["","Liberado","Rechazado"].map(o=>`<option ${l.dict===o?"selected":""}>${o}</option>`).join("")}</select></div>
  <div class="card"><h2 class="sh"><i>5</i>Guardar</h2>
   <p style="margin:0 0 4px;color:var(--mu);font-size:13px">Lotes sin captura salen con diagonal NA y *. La firma manual va en el * al final de la hoja.</p>
-  ${ME&&ME.guest?`<p class="mu" style="margin:10px 0 0;font-size:13px">Modo invitado: los folios no se guardan. Crea una cuenta en Perfil para guardar, dejar pendientes y ver el historial.</p><div class="row3"><button type="button" class="btn pri full" data-a="pdf">Generar PDF</button></div>`:`<div class="row3"><button type="button" class="btn" data-a="pend">Dejar pendiente</button><button type="button" class="btn dk" data-a="fin">Finalizar y guardar</button><button type="button" class="btn pri full" data-a="pdf">Generar PDF</button></div>`}</div>`;
+  <div class="row3"><button type="button" class="btn" data-a="pend">Dejar pendiente</button><button type="button" class="btn dk" data-a="fin">Finalizar y guardar</button><button type="button" class="btn pri full" data-a="pdf">Generar PDF</button></div></div>`;
 }
 const lotsInfo=d=>{const s=d.lots.map(lotState);const ok=s.filter(x=>x==="ok").length,pe=s.filter(x=>x==="pend").length;return ok+" inspeccionado"+(ok===1?"":"s")+(pe?" · "+pe+" pendiente"+(pe===1?"":"s"):"");};
 const folNum=r=>{const p=parseFolio(r.folio);return p?p.n:0;};
-const item=r=>`<div class="item"><div class="h"><b>${esc(r.folio)}</b><span class="bd ${r.status==="pendiente"?"pend":"ok"}">${r.status}</span><span style="margin-left:auto;color:var(--mu);font-size:13px">${fmtF(r.fecha)}</span></div>
+const item=r=>`<div class="item"><div class="h"><b>${esc(r.folio)}</b><span class="bd ${r.status==="pendiente"?"pend":"ok"}">${r.status==="dup"?"para borrar":r.status}</span>${r.status==="pendiente"?attBadge(r.id):""}<span style="margin-left:auto;color:var(--mu);font-size:13px">${fmtF(r.fecha)}</span></div>
  <p>${esc(r.data.codigo)||"Sin código"}${r.data.desc?" · "+esc(r.data.desc):""}</p><p>${lotsInfo(r.data)}</p>
  <div class="ac"><button type="button" class="btn ${r.status==="pendiente"?"pri":""}" data-a="open" data-id="${r.id}">${r.status==="pendiente"?"Retomar":"Abrir"}</button><button type="button" class="btn" data-a="pdfrec" data-id="${r.id}">PDF</button><button type="button" class="btn dg" data-a="del" data-id="${r.id}">Eliminar</button></div></div>`;
-function viewPend(){const l=REC.filter(r=>r.status==="pendiente").sort((a,b)=>b.upd-a.upd);
+function viewPendMaq(){const l=REC.filter(r=>r.status==="pendiente").sort((a,b)=>b.upd-a.upd);
  return `<div class="card"><h2 class="sh"><i>${l.length}</i>Folios pendientes</h2><p style="margin:0;color:var(--mu);font-size:13px">Folios con lotes sin maquilar. Retómalos para agregar los lotes que faltan.</p>${l.length?l.map(item).join(""):'<div class="emp">No hay folios pendientes.</div>'}</div>`;}
 function histList(){
  const q=HQ.trim().toLowerCase(),list=REC.filter(r=>!q||(r.folio+" "+r.data.codigo+" "+r.data.desc).toLowerCase().includes(q)),g={};
@@ -118,7 +122,7 @@ function histList(){
  return ms.map((m,i)=>{const a=g[m].sort((x,y)=>folNum(y)-folNum(x)||y.upd-x.upd),pe=a.filter(r=>r.status==="pendiente").length;
   return `<details class="mes" ${i===0||q?"open":""}><summary><span>${mesName(m)}</span><small>${a.length} folio${a.length===1?"":"s"}${pe?" · "+pe+" pend.":""}</small></summary>${a.map(item).join("")}<div class="row3"><button type="button" class="btn full" data-a="expm" data-id="${m}">Exportar respaldo de ${mesName(m)}</button></div></details>`;}).join("");
 }
-function viewHist(){return `<div class="card"><h2 class="sh"><i>▤</i>Historial por mes</h2>${STORE_OK?"":'<p style="color:var(--r);font-size:13px">Este navegador no permite guardar datos. Exporta un respaldo antes de salir.</p>'}
+function viewHistMaq(){return `<div class="card"><h2 class="sh"><i>▤</i>Folios de maquila por mes</h2>${STORE_OK?"":'<p style="color:var(--r);font-size:13px">Este navegador no permite guardar datos. Exporta un respaldo antes de salir.</p>'}
  <input id="hq" placeholder="Buscar folio, código o producto" value="${esc(HQ)}" style="margin:6px 0 4px">
  <div class="row3"><button type="button" class="btn" data-a="expall">Exportar todo</button><label class="btn" for="imp">Importar respaldo</label></div></div><div id="hl">${histList()}</div>`;}
 
@@ -135,10 +139,10 @@ document.addEventListener("change",e=>{const t=e.target;if(t.dataset.r!==undefin
 document.addEventListener("click",e=>{
  const sc=e.target.closest("[data-scan]");
  if(sc){TARGET=sc.dataset.scan;if(sc.dataset.src==="cam")$("#cam").click();return;}
- const tb=e.target.closest(".tab");if(tb){TAB=tb.dataset.tab;render();window.scrollTo(0,0);return;}
+ const tb=e.target.closest("[data-tab]");if(tb){TAB=tb.dataset.tab;render();window.scrollTo(0,0);return;}
  const ch=e.target.closest("[data-lot]");if(ch){S.act=+ch.dataset.lot;saveDraft();render();return;}
  const b=e.target.closest("[data-a]");if(!b)return;const a=b.dataset.a,id=b.dataset.id,l=S.lots[S.act];
- if(a==="new")dlg({title:"Nuevo folio",body:"Se limpiará el formulario actual. Lo guardado en Historial no se pierde.",buttons:[{t:"Cancelar"},{t:"Nuevo folio",cls:"pri",fn:()=>{newForm();render();window.scrollTo(0,0);}}]});
+ if(a==="new")attGate("insp",()=>dlg({title:"Nuevo folio",body:"Se limpiará el formulario actual. Lo guardado en Historial no se pierde.",buttons:[{t:"Cancelar"},{t:"Nuevo folio",cls:"pri",fn:()=>{newForm();render();window.scrollTo(0,0);}}]}));
  else if(a==="autofolio"){S.folio=nextFolio(S.fecha);saveDraft();render();}
  else if(a==="all0"){l.res.fill("0");auto(l);saveDraft();render();}
  else if(a==="clr"){l.res.fill("");l.dict="";saveDraft();render();}
@@ -189,7 +193,7 @@ function vMissing(){const m=[];["sap","prime"].forEach(k=>{const f=VAL[k],n=k===
  const f=VAL.sap;if(f&&f.map.libre==null&&f.map.cal==null&&f.map.blo==null)m.push("SAP: al menos una columna de cantidad");
  if(VAL.prime&&VAL.prime.map.estatus!=null&&vStatuses().some(x=>!vBucket(x.s)))m.push("PrIME: asignar todos los estatus");return m;}
 function vBuild(){
- const sap=VAL.sap,pr=VAL.prime,ln=l=>{l=vU(l);return VAL.opt.noR?l.replace(/R$/,""):l;},isTot=x=>/^(total|overall|grand|resultado|result|suma|gran total)/i.test(String(x==null?"":x).trim());
+ const sap=VAL.sap,pr=VAL.prime,ln=l=>vU(l),isTot=x=>/^(total|overall|grand|resultado|result|suma|gran total)/i.test(String(x==null?"":x).trim());
  const MS=new Map(),MP=new Map(),inf={sap:{n:0,g:new Set()},pr:{n:0,g:new Set(),lpn:new Set(),dup:new Map(),bad:[],ign:0,by:new Map()}};
  const NS=pr.map.sloc==null;
  let sapEnd=sap.rows.length-1;while(sapEnd>sap.hdr&&sap.rows[sapEnd].every(c=>c===""||c==null))sapEnd--;
@@ -230,7 +234,8 @@ function vRun(){
  VAL.res={ns:VAL.prime.map.sloc==null,D,names:[VAL.sap.name,VAL.prime.name],at:new Date(),
   sap:{n:inf.sap.n,g:inf.sap.g.size,c:MS.size,skip:inf.sap.skip?VAL.sap.r0+inf.sap.skip+1:0,libre:sm(MS,"libre"),cal:sm(MS,"cal"),blo:0},
   pr:{n:inf.pr.n,g:inf.pr.g.size,c:MP.size,lpn:inf.pr.lpn.size,ign:inf.pr.ign,libre:sm(MP,"libre"),cal:sm(MP,"cal"),blo:0,by:[...inf.pr.by].map(x=>({s:x[0],n:x[1].n,q:f2(x[1].q),b:x[1].b}))}};
- VAL.filter="Todos";VAL.lim=100;}
+ VAL.filter="Todos";VAL.lim=100;
+ try{hlogAdd({k:"val",t:"Validación SAP vs PrIME",s:(D.length?D.length+" diferencia"+(D.length===1?"":"s"):"Todo OK")+" · "+VAL.sap.name+" vs "+VAL.prime.name,st:D.length?"dif":"ok"});}catch(e){}}
 /* --- vistas --- */
 const vColOpts=(f,cur,kind)=>{const h=f.rows[f.hdr]||[],mx=kind==="prime"?Math.min(8,h.length):h.length;let o="";for(let c=0;c<mx;c++)o+=`<option value="${c}" ${c===cur?"selected":""}>${XLSX.utils.encode_col(c+f.c0)}: ${esc(String(h[c]==null?"":h[c]).trim()||"(vacío)")}</option>`;return o;};
 function vFileCard(kind,title,n){
@@ -270,7 +275,7 @@ function viewVal(){
  h+=vFileCard("sap","Archivo de SAP",1)+vFileCard("prime","Archivo de PrIME (con LPN)",2);
  if(st.length)h+=`<div class="card"><h2 class="sh"><i>3</i>Estatus de PrIME<em>equivalencia con SAP</em></h2><p style="margin:0 0 4px;color:var(--mu);font-size:13px">SAP se compara en Libre (Unrestricted) y Calidad (Quality Inspection). Asigna cada estatus de PrIME a uno de ellos, o elige Ignorar (por ejemplo, Bloqueado). Queda guardado para la próxima vez.</p>
   ${st.map(x=>{const cur=VAL.stmap[nz(x.s)]||vGuess(x.s);return `<div class="crit"><p><b style="color:var(--tx)">${esc(x.s)}</b><br><span style="font-size:12px;color:var(--mu)">${x.n} filas · cantidad ${f2(x.q)}</span></p><select style="width:150px;flex:none" data-vst="${esc(x.s)}">${[["","Elegir…"],["libre","Libre"],["cal","Calidad"],["ign","Ignorar"]].map(o=>`<option value="${o[0]}" ${o[0]===cur?"selected":""}>${o[1]}</option>`).join("")}</select></div>`;}).join("")}</div>`;
- h+=`<div class="card"><h2 class="sh"><i>${st.length?4:3}</i>Comparar</h2><label class="lrow"><span>Ignorar la última fila de SAP (totales)</span><input type="checkbox" class="sw" data-vo="sapLast" ${VAL.opt.sapLast?"checked":""}></label><label class="lrow"><span>Comparar lotes sin la R final (Recuperación)</span><input type="checkbox" class="sw" data-vo="noR" ${VAL.opt.noR?"checked":""}></label>
+ h+=`<div class="card"><h2 class="sh"><i>${st.length?4:3}</i>Comparar</h2><label class="lrow"><span>Ignorar la última fila de SAP (totales)</span><input type="checkbox" class="sw" data-vo="sapLast" ${VAL.opt.sapLast?"checked":""}></label>
   ${miss.length?`<p style="margin:0 0 10px;color:var(--wn);font-size:13px">Falta: ${esc(miss.slice(0,3).join(" · "))}</p>`:""}
   <div class="row3"><button type="button" class="btn pri" data-va="cmp" ${miss.length?"disabled style=\"opacity:.5\"":""}>Comparar archivos</button><button type="button" class="btn" data-va="clr">Limpiar</button></div></div>`;
  return h+(VAL.res?vResHtml():"");}
@@ -285,7 +290,7 @@ function vExport(){
  saveBlob("Validacion_SAP_vs_PrIME_"+today()+".xlsx",new Blob([out],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}));}
 /* --- eventos --- */
 async function vPick(kind,e){const f=e.target.files[0];e.target.value="";if(f)await vLoad(kind,f);}
-$("#frcv").addEventListener("change",rcvPick);$("#fsap").addEventListener("change",e=>vPick("sap",e));$("#fprime").addEventListener("change",e=>vPick("prime",e));
+$("#fsap").addEventListener("change",e=>vPick("sap",e));$("#fprime").addEventListener("change",e=>vPick("prime",e));
 document.addEventListener("change",e=>{const t=e.target,d=t.dataset;
  if(d.vs){const k=d.vs;VAL[k].sheet=t.value;vParse(k);VAL.res=null;render();}
  else if(d.vh){const k=d.vh,f=VAL[k];f.hdr=Math.max(0,Math.min(f.rows.length-1,(+t.value||1)-1-f.r0));f.map=vMapRow(f.rows,f.hdr,k);VAL.res=null;render();}
@@ -304,19 +309,20 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-va]");if(!
 let ME=null,AUTH={mode:"menu",f:{},err:""};
 let USERS=LS.get("cryd:users",[]);if(!Array.isArray(USERS))USERS=[];
 const saveUsers=()=>LS.set("cryd:users",USERS);
-const U={get(k,d){return ME&&!ME.guest?LS.get("cryd:u"+ME.emp+":"+k,d):(("g:"+k) in MEM?MEM["g:"+k]:d);},set(k,v){if(ME&&!ME.guest){const r=LS.set("cryd:u"+ME.emp+":"+k,v);cloudSoon();return r;}MEM["g:"+k]=v;return true;}};
+const U={get(k,d){return ME&&!ME.guest?LS.get("cryd:u"+ME.emp+":"+k,d):LS.get("cryd:ug:"+k,d);},set(k,v){if(ME&&!ME.guest){const r=LS.set("cryd:u"+ME.emp+":"+k,v);cloudSoon();return r;}return LS.set("cryd:ug:"+k,v);}};
 const GLYPH='<svg viewBox="0 0 24 24"><path d="M9 4h6l1 2h3v14H5V6h3z"/><path d="M9 13l2 2 4-4"/></svg>';
-const IC={insp:'<path d="M9 4h6l1 2h3v14H5V6h3z"/><path d="M9 13l2 2 4-4"/>',pend:'<circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3 2"/>',hist:'<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/>',val:'<path d="M4 8h14l-3-3M20 16H6l3 3"/>',rcv:'<path d="M4 8l8-4 8 4v8l-8 4-8-4z"/><path d="M4 8l8 4 8-4M12 12v8"/>',perfil:'<circle cx="12" cy="8.5" r="3.6"/><path d="M5 20c.8-3.6 3.6-5.4 7-5.4s6.2 1.8 7 5.4"/>'};
-const TNAME={insp:"Maquila",rcv:"Recibo",pend:"Pendientes",hist:"Historial",val:"Validación",perfil:"Perfil",admin:"Administrador"};
+const IC={insp:'<path d="M9 4h6l1 2h3v14H5V6h3z"/><path d="M9 13l2 2 4-4"/>',pend:'<circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3 2"/>',hist:'<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/>',val:'<path d="M4 8h14l-3-3M20 16H6l3 3"/>',rcv:'<path d="M4 8l8-4 8 4v8l-8 4-8-4z"/><path d="M4 8l8 4 8-4M12 12v8"/>',perfil:'<circle cx="12" cy="8.5" r="3.6"/><path d="M5 20c.8-3.6 3.6-5.4 7-5.4s6.2 1.8 7 5.4"/>',home:'<path d="M4 11l8-7 8 7v9H5z"/><path d="M10 20v-6h4v6"/>',sur:'<path d="M3 7h11v9H3zM14 10h4l3 3v3h-7"/><circle cx="7" cy="18" r="1.6"/><circle cx="17" cy="18" r="1.6"/>',dash:'<rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="4" rx="1.5"/><rect x="13" y="10" width="7" height="10" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/>',more:'<circle cx="6" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="18" cy="12" r="1.4"/>'};
+const TNAME={home:"Inicio",rcv:"Recibo",sur:"Surtido",val:"Validación",insp:"Maquila",dash:"Dashboards",pend:"Pendientes",hist:"Historial",more:"Más",perfil:"Perfil",admin:"Administrador"};
 const initials=u=>((u.nombre||"?")[0]+((u.apellido||"")[0]||"")).toUpperCase();
 const titleCase=s=>s.trim().replace(/\s+/g," ").toLowerCase().replace(/(^|[\s'-])([a-záéíóúüñ])/g,(m,a,b)=>a+b.toUpperCase());
 const NAME_RE=/^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ' .-]{2,40}$/;
 async function hashPin(emp,pin){try{const h=await crypto.subtle.digest("SHA-256",new TextEncoder().encode("cryd|"+emp+"|"+pin));return [...new Uint8Array(h)].map(x=>x.toString(16).padStart(2,"0")).join("");}catch(e){return "x"+btoa(emp+":"+pin);}}
 function loadUserData(){REC=U.get("rec",[]);if(!Array.isArray(REC))REC=[];WARN=U.get("warn",{dup:{},del:{}});WARN.dup=WARN.dup||{};WARN.del=WARN.del||{};VAL.stmap=U.get("stmap",{});
- const d=U.get("draft",null);if(d&&d.id&&Array.isArray(d.lots)&&d.lots.length===5)S=d;else newForm();rcvLoad();}
-function enterUser(u){ME={emp:u.emp,nombre:u.nombre,apellido:u.apellido,guest:false};LS.set("cryd:session",{emp:u.emp});AUTH={mode:"menu",f:{},err:""};loadUserData();TAB="insp";render();window.scrollTo(0,0);cloudStart();}
-function enterGuest(){setTimeout(()=>gstInc("n"),50);Object.keys(MEM).forEach(k=>{if(k.indexOf("g:")===0)delete MEM[k];});ME={emp:"INVITADO",nombre:"Invitado",apellido:"",guest:true};LS.set("cryd:session",null);loadUserData();TAB="insp";render();window.scrollTo(0,0);}
-function logout(){RCUR=null;RS=[];RX=null;RIDX=null;ME=null;S=null;REC=[];WARN={dup:{},del:{}};VAL.sap=null;VAL.prime=null;VAL.res=null;LS.set("cryd:session",null);AUTH={mode:"menu",f:{},err:""};TAB="insp";render();window.scrollTo(0,0);}
+ const d=U.get("draft",null);if(d&&d.id&&Array.isArray(d.lots)&&d.lots.length===5)S=d;else newForm();lpLoad();hlogLoad();dshLoad();attLoad();GPL="";setTimeout(()=>{marksPull();gPush();},2500);}
+function enterUser(u){ME={emp:u.emp,nombre:u.nombre,apellido:u.apellido,guest:false};LS.set("cryd:session",{emp:u.emp});AUTH={mode:"menu",f:{},err:""};loadUserData();TAB="home";render();window.scrollTo(0,0);cloudStart();}
+function enterGuest(){const raw=String(AUTH.f.gname!==undefined?AUTH.f.gname:LS.get("cryd:gname","")).trim().slice(0,30),nm=raw?titleCase(raw):"";LS.set("cryd:gname",nm);
+ ME={emp:"INVITADO",nombre:nm||"Invitado",apellido:"",guest:true};LS.set("cryd:session",{guest:1});AUTH={mode:"menu",f:{},err:""};loadUserData();TAB="home";render();window.scrollTo(0,0);setTimeout(()=>gstInc("n"),50);}
+function logout(){lpReset();ME=null;S=null;REC=[];WARN={dup:{},del:{}};VAL.sap=null;VAL.prime=null;VAL.res=null;LS.set("cryd:session",null);AUTH={mode:"menu",f:{},err:""};TAB="home";render();window.scrollTo(0,0);}
 function authErr(t){AUTH.err=t;renderAuth();}
 async function doLogin(){const f=AUTH.f,emp=(f.emp||"").trim();let u=USERS.find(x=>x.emp===emp);
  if(f.curl&&f.curl.trim()&&f.curl.trim()!==cloudCfg())LS.set("cryd:cloud",{url:normUrl(f.curl)});
@@ -337,36 +343,42 @@ async function doSignup(){const f=AUTH.f,nombre=titleCase(f.nombre||""),apellido
   if(first)["rec","warn","draft","stmap"].forEach(k=>{const v=LS.get("cryd:"+k,null);if(v!=null)LS.set("cryd:u"+emp+":"+k,v);});
   enterUser(u);};
  if(emp.length!==5)dlg({title:"Número de empleado",body:"Normalmente tiene 5 dígitos. ¿Confirmas que "+emp+" es correcto?",buttons:[{t:"Corregir"},{t:"Confirmar",cls:"pri",fn:make}]});else make();}
+const FOOT='<footer class="foot">Soluciones en Logística Cargo<br>Desarrollado por Manuel ChD · Todos los derechos reservados</footer>';
 function renderAuth(){
  document.body.classList.add("noauth");$("#tabs").innerHTML="";
  const A=AUTH,f=A.f,v=k=>esc(f[k]||""),er=A.err?`<div class="aerr">${esc(A.err)}</div>`:"";
- let h=`<div class="aw"><div class="aicon">${GLYPH}</div><h1>Procesos CRyD</h1><p class="asub">Maquila · Validación SAP vs PrIME</p>`;
- if(A.mode==="menu")h+=`<div class="abtns"><button type="button" class="btn pri" data-ua="mode:login">Iniciar sesión</button><button type="button" class="btn" data-ua="mode:signup">Crear cuenta</button><button type="button" class="btn txt" data-ua="guest">Continuar como invitado</button></div><p class="anote">Las cuentas se guardan solo en este dispositivo. Como invitado puedes usar la app, pero los folios no se guardan.</p>`;
- else if(A.mode==="login")h+=(USERS.length?`<div class="lst">${USERS.map(u=>`<button type="button" class="lr ${f.emp===u.emp?"on":""}" data-ua="pick:${esc(u.emp)}"><span class="av">${esc(initials(u))}</span><span><b>${esc(u.nombre+" "+u.apellido)}</b><small>No. ${esc(u.emp)}${u.pin?" · con PIN":""}</small></span></button>`).join("")}</div>`:"")+er
-  +`<div class="card"><label class="lb">Número de empleado</label><input data-au="emp" inputmode="numeric" maxlength="8" autocomplete="off" value="${v("emp")}" placeholder="12345"><label class="lb">PIN (si lo configuraste)</label><input data-au="pin" type="password" inputmode="numeric" maxlength="4" autocomplete="off" value="${v("pin")}" placeholder="••••"><label class="lb">Servidor de respaldo (opcional)</label><input data-au="curl" autocomplete="off" autocapitalize="off" value="${esc(f.curl!==undefined?f.curl:cloudCfg())}" placeholder="https://tu-proyecto.firebaseio.com"></div><div class="abtns"><button type="button" class="btn pri" data-ua="doLogin">Entrar</button><button type="button" class="btn txt" data-ua="mode:menu">Volver</button></div>`+(USERS.length?"":`<p class="anote">Aún no hay cuentas en este dispositivo. Crea una para empezar.</p>`);
- else h+=er+`<div class="card"><label class="lb">Nombre</label><input data-au="nombre" autocomplete="given-name" value="${v("nombre")}"><label class="lb">Apellido</label><input data-au="apellido" autocomplete="family-name" value="${v("apellido")}"><label class="lb">Número de empleado DHL</label><input data-au="emp" inputmode="numeric" maxlength="8" autocomplete="off" value="${v("emp")}" placeholder="5 dígitos"><label class="lrow"><span>Proteger con PIN de 4 dígitos</span><input type="checkbox" class="sw" data-au="usepin" ${f.usepin?"checked":""}></label>${f.usepin?`<label class="lb">PIN</label><input data-au="pin" type="password" inputmode="numeric" maxlength="4" autocomplete="off" value="${v("pin")}"><label class="lb">Repetir PIN</label><input data-au="pin2" type="password" inputmode="numeric" maxlength="4" autocomplete="off" value="${v("pin2")}">`:""}</div><div class="abtns"><button type="button" class="btn pri" data-ua="doSignup">Crear cuenta y entrar</button><button type="button" class="btn txt" data-ua="mode:menu">Volver</button></div>`;
- $("#app").innerHTML=h+`</div>`;}
+ let h=`<div class="aw"><div class="aicon">${GLYPH}</div><h1>Procesos CRyD</h1><p class="asub">Soluciones en Logística Cargo</p>`;
+ if(A.mode==="menu")h+=`<div class="card"><label class="lb">¿Cómo te llamas? (opcional)</label><input data-au="gname" autocomplete="given-name" maxlength="30" placeholder="Tu nombre" value="${esc(f.gname!==undefined?f.gname:LS.get("cryd:gname",""))}"></div><div class="abtns"><button type="button" class="btn pri" data-ua="guest">Entrar</button><button type="button" class="btn txt" data-ua="mode:login">Acceso administrador</button></div><p class="anote">Recibo, Surtido, Validación, Maquila y Dashboards en un solo lugar. Tu avance se guarda en este dispositivo aunque la app se cierre.</p>`;
+ else h+=`<h2 style="margin:0 0 10px;font-size:20px">Acceso administrador</h2>`+(USERS.length?`<div class="lst">${USERS.map(u=>`<button type="button" class="lr ${f.emp===u.emp?"on":""}" data-ua="pick:${esc(u.emp)}"><span class="av">${esc(initials(u))}</span><span><b>${esc(u.nombre+" "+u.apellido)}</b><small>No. ${esc(u.emp)}${u.pin?" · con PIN":""}</small></span></button>`).join("")}</div>`:"")+er
+  +`<div class="card"><label class="lb">Número de empleado</label><input data-au="emp" inputmode="numeric" maxlength="8" autocomplete="off" value="${v("emp")}" placeholder="12345"><label class="lb">PIN (si lo configuraste)</label><input data-au="pin" type="password" inputmode="numeric" maxlength="4" autocomplete="off" value="${v("pin")}" placeholder="••••"></div><div class="abtns"><button type="button" class="btn pri" data-ua="doLogin">Entrar</button><button type="button" class="btn txt" data-ua="mode:menu">Volver</button></div>`;
+ $("#app").innerHTML=h+`</div>`+FOOT;}
 function viewPerfil(){const g=ME.guest,th=LS.get("cryd:theme","system");
- return `<div class="card center"><div class="av big">${g?"I":esc(initials(ME))}</div><h2 class="nm">${g?"Invitado":esc(ME.nombre+" "+ME.apellido)}</h2><p class="mu" style="margin:4px 0 0">${g?"Sin cuenta · los folios no se guardan":"No. de empleado "+esc(ME.emp)}</p></div>
+ return `<div class="card center"><div class="av big">${esc(initials(ME))}</div><h2 class="nm">${esc(g?ME.nombre:ME.nombre+" "+ME.apellido)}</h2><p class="mu" style="margin:4px 0 0">${g?"Invitado · tus datos se guardan en este dispositivo":"No. de empleado "+esc(ME.emp)+" · Administrador"}</p></div>
+ ${g?`<div class="card"><h2 class="sh">Tu nombre</h2><input data-gn value="${esc(ME.nombre==="Invitado"?"":ME.nombre)}" maxlength="30" placeholder="Cómo quieres que te llame"></div>`:""}
  <div class="card"><h2 class="sh">Apariencia</h2><div class="seg">${[["system","Sistema"],["light","Claro"],["dark","Oscuro"]].map(o=>`<button type="button" class="${th===o[0]?"on":""}" data-ua="theme:${o[0]}">${o[1]}</button>`).join("")}</div></div>
- <div class="card"><h2 class="sh">Cuenta</h2>${g?`<p class="mu" style="margin:6px 0 12px;font-size:14px">En modo invitado puedes capturar, generar PDF y validar inventarios, pero nada queda guardado al salir.</p><button type="button" class="btn pri" style="width:100%" data-ua="signupg">Crear una cuenta</button><button type="button" class="btn txt" style="width:100%;margin-top:8px" data-ua="logout">Salir del modo invitado</button>`:`<p class="mu" style="margin:6px 0 12px;font-size:14px">Tu cuenta y tus folios viven solo en este dispositivo. No se comparten con otros dispositivos ni compañeros. Exporta respaldos desde Historial.</p><button type="button" class="btn" style="width:100%" data-ua="logout">Cerrar sesión</button><button type="button" class="btn dg" style="width:100%;margin-top:10px" data-ua="delacc">Eliminar mi cuenta y datos</button>`}</div>
+ <div class="card"><h2 class="sh">Instalar en el teléfono</h2><p class="mu" style="margin:6px 0 0;font-size:14px">Para abrirla como app: en Safari toca Compartir y elige "Agregar a pantalla de inicio". En Chrome, menú ⋮ y "Instalar app".</p></div>
+ <div class="card"><h2 class="sh">Sesión</h2>${g?`<p class="mu" style="margin:6px 0 12px;font-size:14px">Tu avance de Recibo, Surtido, Validación, Maquila y Dashboards queda guardado aquí. Si la app se cierra, al volver a entrar continúas donde ibas.</p><button type="button" class="btn" style="width:100%" data-ua="logout">Salir</button><button type="button" class="btn dg" style="width:100%;margin-top:10px" data-ua="gwipe">Borrar mis datos de este dispositivo</button>`:`<p class="mu" style="margin:6px 0 12px;font-size:14px">Tu cuenta y tus avances se respaldan en el servidor. Si cambias de teléfono, entra con tu número de empleado y se recuperan.</p><button type="button" class="btn" style="width:100%" data-ua="logout">Cerrar sesión</button><button type="button" class="btn dg" style="width:100%;margin-top:10px" data-ua="delacc">Eliminar mi cuenta y datos</button>`}</div>
  ${g?"":viewCloud()}
- ${viewAdminCard()}
- <p class="mu" style="text-align:center;font-size:12px">Procesos CRyD · versión 2.5</p>`;}
+ ${g?"":viewAdminCard()}
+ ${festPerfil()}
+ <p class="mu" style="text-align:center;font-size:12px">Procesos CRyD · versión 3.0</p>`;}
+const BAR=["home","rcv","sur","val","insp","more"],MORE=["dash","pend","hist","perfil","admin"];
 function render(){
  if(!ME){renderAuth();return;}
  document.body.classList.remove("noauth");
- const tabs=ME.guest?["insp","rcv","val","perfil"]:["insp","rcv","pend","hist","val","perfil"];if(TAB!=="admin"&&!tabs.includes(TAB))TAB="insp";if(TAB==="admin"&&!admOn())TAB="perfil";
- const np=REC.filter(r=>r.status==="pendiente").length;
- try{LS.set("cryd:ui",{emp:ME.emp,tab:TAB});}catch(e){}
- $("#tabs").innerHTML=tabs.map(t=>`<button type="button" class="tab ${t===TAB||(TAB==="admin"&&t==="perfil")?"on":""}" data-tab="${t}"><svg viewBox="0 0 24 24">${IC[t]}</svg>${TNAME[t]}${t==="pend"&&np?`<span class="pb">${np}</span>`:""}</button>`).join("");
+ if(!TNAME[TAB])TAB="home";if(TAB==="admin"&&!admOn())TAB="perfil";
+ const np=pendCount(),act=MORE.includes(TAB)?"more":TAB;
+ try{LS.set("cryd:ui",{emp:ME.emp,tab:TAB,ts:Date.now()});}catch(e){}
+ $("#tabs").innerHTML=BAR.map(t=>`<button type="button" class="tab ${t===act?"on":""}" data-tab="${t}"><svg viewBox="0 0 24 24">${IC[t]}</svg>${TNAME[t]}${t==="more"&&np?`<span class="pb">${np}</span>`:""}</button>`).join("");
  $("#who").textContent=initials(ME);
- const v=TAB==="insp"?viewInsp():TAB==="rcv"?viewRcv():TAB==="admin"?viewAdmin():TAB==="pend"?viewPend():TAB==="val"?viewVal():TAB==="perfil"?viewPerfil():viewHist();
- $("#app").innerHTML=`<h1 class="lt">${TNAME[TAB]}</h1>`+v;}
+ const V={home:viewHome,rcv:()=>lpView("rcv"),sur:()=>lpView("sur"),val:viewVal,insp:viewInsp,dash:viewDash,pend:viewPend,hist:viewHist,more:viewMore,perfil:viewPerfil,admin:viewAdmin};
+ const back=MORE.includes(TAB)?`<button type="button" class="back" data-tab="more">‹ Más</button>`:"";
+ $("#app").innerHTML=(TAB==="home"?"":back+`<h1 class="lt">${TNAME[TAB]}</h1>`)+V[TAB]()+FOOT;
+ if(TAB==="rcv"||TAB==="sur"||TAB==="insp")warmOcr();if(typeof firstHelp==="function")setTimeout(firstHelp,250);}
 function applyTheme(){const t=LS.get("cryd:theme","system"),r=document.documentElement;if(t==="light"||t==="dark")r.setAttribute("data-theme",t);else r.removeAttribute("data-theme");}
 document.addEventListener("input",e=>{const t=e.target,k=t.dataset.au;if(!k||t.type==="checkbox")return;let v=t.value;if(k==="emp"||k==="pin"||k==="pin2"){v=v.replace(/\D/g,"");if(v!==t.value)t.value=v;}AUTH.f[k]=v;});
 document.addEventListener("change",e=>{const t=e.target;if(t.dataset.au==="usepin"){AUTH.f.usepin=t.checked;renderAuth();}});
-document.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.dataset&&e.target.dataset.au){e.preventDefault();if(AUTH.mode==="login")doLogin();else if(AUTH.mode==="signup")doSignup();}});
+document.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.dataset&&e.target.dataset.au){e.preventDefault();if(AUTH.mode==="login")doLogin();else if(AUTH.mode==="menu")enterGuest();}});
 document.addEventListener("click",e=>{
  if(e.target.closest("#who")){TAB="perfil";render();window.scrollTo(0,0);return;}
  const b=e.target.closest("[data-ua]");if(!b)return;const p=b.dataset.ua.split(":"),a=p[0],v=p[1];
@@ -376,9 +388,9 @@ document.addEventListener("click",e=>{
  else if(a==="pick"){AUTH.f.emp=v;AUTH.f.pin="";AUTH.err="";renderAuth();}
  else if(a==="logout")logout();
  else if(a==="csave")cloudSave();else if(a==="cnow")cloudPush(true);else if(a==="crec")cloudRecover();else if(a==="coff"){LS.set("cryd:cloud",null);CL.st="";toast("Respaldo en servidor desactivado.");render();}
- else if(a==="signupg"){logout();AUTH.mode="signup";renderAuth();}
+ else if(a==="gwipe")dlg({title:"Borrar mis datos",body:"Se borran de este dispositivo tus folios, LPN, validaciones y dashboards guardados. No se puede deshacer.",buttons:[{t:"Cancelar"},{t:"Borrar",cls:"dg",fn:()=>{try{Object.keys(localStorage).filter(k=>k.indexOf("cryd:ug:")===0).forEach(k=>localStorage.removeItem(k));}catch(x){}lpReset();loadUserData();toast("Datos borrados.");TAB="home";render();}}]});
  else if(a==="theme"){LS.set("cryd:theme",v);applyTheme();render();}
- else if(a==="delacc")dlg({title:"Eliminar cuenta",body:"Se borrarán tu cuenta y todos tus folios guardados en este dispositivo. No se puede deshacer.",buttons:[{t:"Cancelar"},{t:"Eliminar",cls:"dg",fn:()=>{const e2=ME.emp;["rec","warn","draft","stmap"].forEach(k=>{try{localStorage.removeItem("cryd:u"+e2+":"+k);}catch(x){}});USERS=USERS.filter(u=>u.emp!==e2);saveUsers();logout();toast("Cuenta eliminada.");}}]});});
+ else if(a==="delacc")dlg({title:"Eliminar cuenta",body:"Se borrarán tu cuenta y todos tus folios guardados en este dispositivo. No se puede deshacer.",buttons:[{t:"Cancelar"},{t:"Eliminar",cls:"dg",fn:()=>{const e2=ME.emp;["rec","warn","draft","stmap","rcvx","rcvs","rcvcur","surx","surs","surcur","hlog","dsh"].forEach(k=>{try{localStorage.removeItem("cryd:u"+e2+":"+k);}catch(x){}});USERS=USERS.filter(u=>u.emp!==e2);saveUsers();logout();toast("Cuenta eliminada.");}}]});});
 
 /* ---------- respaldo en servidor (Firebase Realtime Database, vía REST) ---------- */
 const CLOUD_DEFAULT="https://procesos-cryd-default-rtdb.firebaseio.com";/* opcional: pon aquí la dirección del servidor para que todos tus compañeros la usen sin configurar */
@@ -387,7 +399,7 @@ const normUrl=s=>{s=(s||"").trim().replace(/\/+$/,"");if(s&&!/^https?:\/\//i.tes
 function cloudCfg(){const c=LS.get("cryd:cloud",null);return normUrl(c&&c.url?c.url:CLOUD_DEFAULT);}
 const cloudEp=emp=>cloudCfg()+"/cryd/u"+emp+".json";
 const hhmm=t=>new Date(t).toLocaleString("es-MX",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});
-function cloudPack(){const u=USERS.find(x=>x.emp===ME.emp)||{};return {ts:Date.now(),acct:{nombre:ME.nombre,apellido:ME.apellido,pin:u.pin||null},rec:REC,warn:WARN,draft:S,stmap:VAL.stmap||{},rcvs:RS.filter(s=>s.lpn)};}
+function cloudPack(){const u=USERS.find(x=>x.emp===ME.emp)||{};return {ts:Date.now(),acct:{nombre:ME.nombre,apellido:ME.apellido,pin:u.pin||null},rec:REC,warn:WARN,draft:S,stmap:VAL.stmap||{},rcvs:LP.rcv.S.filter(s=>s.lpn),surs:LP.sur.S.filter(s=>s.lpn),hlog:HLOG,dsh:DSH,att:ATT};}
 function cloudSoon(){if(!ME||ME.guest||!cloudCfg())return;LS.set("cryd:u"+ME.emp+":cpend",1);clearTimeout(CT);CT=setTimeout(()=>cloudPush(false),2500);}
 async function cloudGet(emp){try{const r=await fetch(cloudEp(emp),{cache:"no-store"});if(!r.ok)throw 0;return await r.json();}catch(e){return undefined;}}
 async function cloudPush(manual,hide){
@@ -410,10 +422,8 @@ function cloudMerge(rm,force){
  const cts=LS.get("cryd:u"+ME.emp+":cts",0),pend=LS.get("cryd:u"+ME.emp+":cpend",0);
  const d=rm.draft;
  if(d&&d.id&&Array.isArray(d.lots)&&d.lots.length===5&&(force||!cts||(!pend&&(rm.ts||0)>cts))){S=d;n++;}
- const rr=Array.isArray(rm.rcvs)?rm.rcvs:Object.values(rm.rcvs||{});
- rr.forEach(r=>{if(!r||!r.id)return;if(!Array.isArray(r.items))r.items=[];if(!Array.isArray(r.extras))r.extras=[];r.items.forEach(i=>{if(!Array.isArray(i.ph))i.ph=[];});const i=RS.findIndex(x=>x.id===r.id);if(i<0){RS.push(r);n++;}else if((r.upd||0)>(RS[i].upd||0)){RS[i]=r;n++;}});
- if(RCUR)RCUR=RS.find(x=>x.id===RCUR.id)||RCUR;
- U.set("rcvs",RS);U.set("rec",REC);U.set("warn",WARN);U.set("stmap",VAL.stmap);if(S)U.set("draft",S);
+ n+=lpMerge("rcv",rm.rcvs)+lpMerge("sur",rm.surs)+hlogMerge(rm.hlog)+dshMerge(rm.dsh);
+ U.set("rec",REC);U.set("warn",WARN);U.set("stmap",VAL.stmap);if(S)U.set("draft",S);
  return n;
 }
 async function cloudStart(){
@@ -451,159 +461,9 @@ document.addEventListener("input",e=>{if(e.target.dataset&&e.target.dataset.cu==
 addEventListener("online",()=>{if(ME&&!ME.guest&&LS.get("cryd:u"+ME.emp+":cpend",0))cloudPush(false);});
 document.addEventListener("visibilitychange",()=>{if(!ME||ME.guest||!cloudCfg())return;if(document.visibilityState==="hidden"){if(LS.get("cryd:u"+ME.emp+":cpend",0))cloudPush(false,true);}else if(LS.get("cryd:u"+ME.emp+":cpend",0))cloudPush(false);});
 setInterval(()=>{if(ME&&!ME.guest&&cloudCfg()&&LS.get("cryd:u"+ME.emp+":cpend",0))cloudPush(false);},60000);
-/* ---------- Recibo: validar LPN contra el inventario ---------- */
-let RX=null,RS=[],RCUR=null,RIDX=null,RUI={msg:null};
-const nlot=l=>vU(l).replace(/R$/,"");
-const rcvFix=t=>String(t).toUpperCase().replace(/O/g,"0").replace(/[IL]/g,"1");
-function rcvLoad(){RX=U.get("rcvx",null);RS=U.get("rcvs",[]);if(!Array.isArray(RS))RS=[];const c=U.get("rcvcur",null);RCUR=c?(RS.find(x=>x.id===c)||null):null;RIDX=null;RUI={msg:null};}
-function rcvSave(){if(RCUR){RCUR.upd=Date.now();if(RS.indexOf(RCUR)<0&&!RS.some(x=>x.id===RCUR.id))RS.push(RCUR);}
- RS.slice().sort((a,b)=>(b.upd||0)-(a.upd||0)).slice(15).forEach(s=>{s.lpnPh="";(s.items||[]).forEach(i=>i.ph=[]);(s.extras||[]).forEach(i=>i.ph=[]);});
- U.set("rcvs",RS);U.set("rcvcur",RCUR?RCUR.id:null);}
-const rcvDet=()=>RCUR.det||(RCUR.det={code:"",lote:"",cnt:"",th:[]});
-const RPAT={lpn:/load number|lpn|license|placa|carga/,gcas:/item number|gcas|material|codigo|sku|articulo/,desc:/descri/,lote:/lot number|lote|batch/,estatus:/status|estatus|estado/,cant:/unit quantity|unit qty|cantidad|qty|quantity/,sloc:/storage|sloc|almacen|ubicacion/,planta:/client|planta|plant/};
-function rcvMap(row){const m={},used=new Set();Object.keys(RPAT).forEach(f=>{for(let c=0;c<row.length;c++){if(used.has(c))continue;const h=nz(row[c]);if(!h||/display|date|fecha|time/.test(h))continue;if(RPAT[f].test(h)){m[f]=c;used.add(c);break;}}});return m;}
-function rcvIdx(){if(RIDX)return RIDX;RIDX=new Map();if(RX)RX.rows.forEach(r=>{let a=RIDX.get(r[0]);if(!a)RIDX.set(r[0],a=[]);a.push(r);});return RIDX;}
-async function rcvPick(e){const f=e.target.files[0];e.target.value="";if(!f)return;
- if(typeof XLSX==="undefined"){toast("No se pudo cargar el lector de Excel. Revisa tu conexión.");return;}
- busy("Leyendo "+f.name+"…");
- try{const wb=XLSX.read(await f.arrayBuffer(),{type:"array"}),ws=wb.Sheets[wb.SheetNames[0]],rg=ws["!ref"]?XLSX.utils.decode_range(ws["!ref"]):{s:{r:0,c:0}};
-  const rows=XLSX.utils.sheet_to_json(ws,{header:1,raw:true,defval:"",blankrows:true});
-  let best={n:-1,r:0,m:{}};for(let r=0;r<Math.min(rows.length,30);r++){const m=rcvMap(rows[r]),n=Object.keys(m).length;if(n>best.n)best={n,r,m};}
-  const m=best.m,miss=[["lpn","LPN / Load Number"],["gcas","Item Number"],["lote","Lot Number"],["cant","Unit Quantity"]].filter(x=>m[x[0]]==null).map(x=>x[1]);
-  if(miss.length){busy("");toast("No encontré estas columnas: "+miss.join(", ")+".");return;}
-  const out=[];
-  for(let i=best.r+1;i<rows.length;i++){const r=rows[i];let v=r[m.lpn],s;
-   if(typeof v==="number"){const c=ws[XLSX.utils.encode_cell({r:rg.s.r+i,c:rg.s.c+m.lpn})];s=String(c&&c.w?c.w:v);}else s=String(v==null?"":v);
-   s=s.replace(/\D/g,"");if(s.length>=15&&s.length<20)s=s.padStart(20,"0");
-   const g=String(r[m.gcas]==null?"":r[m.gcas]).trim();if(!s||!g)continue;
-   const g2=k=>m[k]==null?"":String(r[m[k]]==null?"":r[m[k]]).trim();
-   out.push([s,g,g2("desc"),g2("lote"),g2("estatus"),vN(r[m.cant]),g2("sloc"),g2("planta")]);}
-  if(!out.length){busy("");toast("El archivo no tiene filas con LPN y código.");return;}
-  RX={name:f.name,at:Date.now(),rows:out};RIDX=null;const ok=U.set("rcvx",RX);
-  busy("");toast(ok===false?"Archivo cargado, pero no cupo guardarlo en el teléfono: no lo cierres o tendrás que subirlo otra vez.":"Inventario cargado: "+rcvIdx().size+" LPN.");
- }catch(err){busy("");toast("No se pudo abrir el archivo. Verifica que sea Excel (.xlsx, .xls) o CSV.");}
- render();}
-function rcvItems(lpn){const m=new Map();(rcvIdx().get(lpn)||[]).forEach(r=>{const k=vG(r[1])+"|"+nlot(r[3]);let e=m.get(k);if(!e){e={g:r[1],l:r[3],desc:r[2],est:r[4],exp:0,st:"pend",cnt:null,ph:[],note:""};m.set(k,e);}e.exp+=r[5];});return [...m.values()];}
-function rcvStart(){RCUR={id:uid(),lpn:"",at:Date.now(),status:"proceso",items:[],extras:[],lpnPh:"",det:null};RUI.msg=null;rcvSave();render();window.scrollTo(0,0);}
-async function rcvThumb(url){try{const im=await new Promise((ok,no)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=no;i.src=url;});const k=Math.min(1,170/Math.max(im.width,im.height)),c=document.createElement("canvas");c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext("2d").drawImage(im,0,0,c.width,c.height);return c.toDataURL("image/jpeg",.5);}catch(e){return "";}}
-async function ocrRaw(blob){OCRON=true;busy("Preparando lector…");try{if(typeof Tesseract==="undefined")throw new Error("lib");const img=await prep(blob),w=await getWorker("codigo"),r=await w.recognize(img);return (r&&r.data&&r.data.text)||"";}finally{OCRON=false;busy("");}}
-function rcvLpnFrom(txt){
- const t=String(txt||"").split(/\s+/).map(x=>/^[\dOoIl|()\-]+$/.test(x)&&/\d/.test(x)?x.replace(/[Oo]/g,"0").replace(/[Il|]/g,"1"):x).join(" "),d=t.replace(/\D/g,""),idx=rcvIdx();
- for(let i=0;i+20<=d.length;i++){const w=d.substr(i,20);if(idx.has(w))return {exact:w,near:"",raw:w};}
- let near="",bd=3,raw="";
- for(let i=0;i+20<=d.length;i++){const w=d.substr(i,20);if(!raw)raw=w;for(const k of idx.keys()){let n=0;for(let j=0;j<20&&n<bd;j++)if(k[j]!==w[j])n++;if(n<bd){bd=n;near=k;raw=w;}}}
- return {exact:"",near,raw};}
-function rcvRead(txt,items){
- const eg=new Set(items.map(i=>vG(i.g))),el=new Set(items.map(i=>nlot(i.l))),cands=[],lots=[],gen=[];
- String(txt||"").toUpperCase().split(/[^A-Z0-9]+/).filter(Boolean).forEach(t=>{const f=rcvFix(t);if(/^\d{8}$/.test(f))cands.push(f);
-  const n=nlot(t),n2=nlot(f);if(el.has(n))lots.push(n);else if(el.has(n2))lots.push(n2);else if(/^[A-Z0-9]{10}$/.test(n)&&/\d/.test(n))gen.push(n);});
- const code=cands.find(c=>eg.has(vG(c)))||cands[0]||"";let lote=lots[0]||"";
- if(code&&lots.length){const mine=items.filter(i=>vG(i.g)===vG(code)).map(i=>nlot(i.l)),h=lots.find(l=>mine.includes(l));if(h)lote=h;}
- if(!lote)lote=gen[0]||"";return {code,lote};}
-async function rcvPhoto(pv,target){
- if(!ME)return;let txt="";
- const th=await rcvThumb(pv.url);
- try{txt=await ocrRaw(pv.blob);}catch(e){toast("No se pudo leer la foto. Inténtalo otra vez o captura a mano.");return;}
- if(target==="r_lpn"){
-  if(!RCUR)return;const r=rcvLpnFrom(txt);
-  if(r.exact){rcvSetLpn(r.exact,th);return;}
-  if(r.near){dlg({title:"Revisa la LPN",body:"Leí "+r.raw+", que no está en el Excel. ¿Es "+r.near+"?",buttons:[{t:"Volver a tomar foto",fn:()=>{TARGET="r_lpn";$("#cam").click();}},{t:"Sí, usar esa",cls:"pri",fn:()=>rcvSetLpn(r.near,th)}]});return;}
-  RUI.msg={t:"no",x:r.raw?"Leí "+r.raw+" pero esa LPN no está en el Excel.":"No pude leer los 20 dígitos de la LPN."};
-  dlg({title:"LPN no encontrada",body:RUI.msg.x+" Vuelve a tomar la foto o escríbela a mano.",buttons:[{t:"Escribir a mano"},{t:"Volver a tomar foto",cls:"pri",fn:()=>{TARGET="r_lpn";$("#cam").click();}}]});render();return;}
- if(!RCUR||!RCUR.lpn)return;
- const r=rcvRead(txt,RCUR.items),d=rcvDet();
- if(r.code)d.code=r.code;if(r.lote)d.lote=r.lote;if(th)d.th=(d.th||[]).concat(th).slice(-2);
- if(r.code&&r.lote)RUI.msg={t:"ok",x:"Leí código "+r.code+" y lote "+r.lote+". Escribe la cantidad y valida."};
- else if(r.code)RUI.msg={t:"no",x:"Leí el código "+r.code+". Falta el lote: toma otra foto donde se vea o escríbelo."};
- else if(r.lote)RUI.msg={t:"no",x:"Leí el lote "+r.lote+". Falta el código: toma otra foto donde se vea o escríbelo."};
- else RUI.msg={t:"no",x:"No pude leer código ni lote. Acércate, mejora la luz o captura a mano."};
- rcvSave();render();toast(RUI.msg.x);}
-function rcvSetLpn(lpn,th){
- const dup=RS.find(s=>s.lpn===lpn&&s.id!==RCUR.id);
- const apply=()=>{RCUR.lpn=lpn;RCUR.items=rcvItems(lpn);RCUR.lpnPh=th||"";RCUR.status="proceso";RUI.msg={t:"ok",x:"LPN encontrada en el Excel: "+RCUR.items.length+" renglón(es) por verificar."};rcvSave();render();window.scrollTo(0,0);};
- if(dup)dlg({title:"LPN ya registrada",body:"Esta LPN ya tiene un registro ("+(dup.status==="ok"?"correcta":dup.status==="dif"?"con diferencias":"en proceso")+"). ¿Abrir ese registro o empezar uno nuevo?",buttons:[{t:"Nuevo registro",fn:apply},{t:"Abrir el existente",cls:"pri",fn:()=>{RS=RS.filter(x=>x.id!==RCUR.id);RCUR=dup;rcvSave();render();}}]});
- else apply();}
-function rcvManualLpn(){const v=(RUI.lpnTxt||"").replace(/\D/g,"");if(v.length!==20){toast("La LPN debe tener 20 dígitos.");return;}
- if(!rcvIdx().has(v)){RUI.msg={t:"no",x:"La LPN "+v+" no está en el Excel."};dlg({title:"LPN no encontrada",body:RUI.msg.x+" Revisa los dígitos o carga un Excel más reciente.",buttons:[{t:"Entendido",cls:"pri"}]});render();return;}
- rcvSetLpn(v,"");}
-function rcvRetake(){TARGET="r_item";$("#cam").click();}
-function rcvConfirm(){
- const d=rcvDet(),code=String(d.code||"").trim().toUpperCase(),lote=String(d.lote||"").trim().toUpperCase(),cnt=parseInt(d.cnt,10);
- if(!code||!lote){toast("Faltan el código y el lote.");return;}
- if(!/^\d+$/.test(String(d.cnt||"").trim())){toast("Escribe la cantidad de cajas.");return;}
- const its=RCUR.items,same=its.filter(i=>vG(i.g)===vG(code)),ex=same.find(i=>nlot(i.l)===nlot(lote));
- const done=()=>{d.code="";d.lote="";d.cnt="";d.th=[];rcvSave();render();};
- const th=(d.th||[]).slice(-1);
- const rec=(kind,txt)=>dlg({title:kind,body:txt,buttons:[{t:"Corregir a mano"},{t:"Volver a tomar foto",fn:rcvRetake},{t:"Registrar diferencia",cls:"dg",fn:()=>{
-   if(kind==="Cantidad distinta"&&ex){ex.st="dif";ex.cnt=cnt;ex.ph=th;ex.note="Cantidad: Excel "+f2(ex.exp)+", contado "+cnt;}
-   else RCUR.extras.push({g:code,l:lote,cnt,ph:th,note:kind==="Lote distinto"?"Lote distinto al Excel (Excel: "+same.map(i=>i.l).join(", ")+")":"Código que no está en la LPN"});
-   RUI.msg={t:"no",x:"Diferencia registrada: "+kind+"."};done();}}]});
- if(ex){
-  if(ex.st==="ok"){toast("Ese renglón ya estaba verificado.");return;}
-  if(Math.abs(cnt-ex.exp)<.0005){ex.st="ok";ex.cnt=cnt;ex.ph=th;ex.note="";RUI.msg={t:"ok",x:"Coincide con el Excel: código "+ex.g+", lote "+ex.l+", "+cnt+" caja(s)."};done();toast("Coincide con el Excel.");}
-  else rec("Cantidad distinta","Código "+ex.g+", lote "+ex.l+". Excel: "+f2(ex.exp)+" · Tú contaste: "+cnt+". Vuelve a contar o registra la diferencia.");
- }else if(same.length)rec("Lote distinto","El código "+code+" sí está en la LPN, pero el lote "+lote+" no coincide. En el Excel: "+same.map(i=>i.l).join(", ")+". Vuelve a tomar la foto, corrígelo a mano o registra la diferencia.");
- else rec("Código fuera de la LPN","El código "+code+" no está en la LPN "+RCUR.lpn+". Vuelve a tomar la foto, corrígelo a mano o registra la diferencia.");}
-function rcvFinish(){
- const pend=RCUR.items.filter(i=>i.st==="pend"),go=()=>{pend.forEach(i=>{i.st="dif";i.note="No se verificó (faltante en la tarima)";});
-  RCUR.status=(RCUR.items.some(i=>i.st!=="ok")||RCUR.extras.length)?"dif":"ok";RCUR.done=Date.now();rcvSave();gstInc("rcv");render();window.scrollTo(0,0);};
- if(pend.length)dlg({title:"Faltan por verificar",body:pend.length+" renglón(es) de la LPN no se han verificado. Si finalizas, se marcarán como diferencia.",buttons:[{t:"Seguir verificando"},{t:"Finalizar así",cls:"dg",fn:go}]});else go();}
-function rcvExport(list){
- if(typeof XLSX==="undefined"){toast("No se pudo cargar el lector de Excel.");return;}
- const r=[["LPN","Código","Lote","Descripción","Cant. Excel","Cant. contada","Resultado","Nota","Fecha"]];
- list.forEach(s=>{const f=new Date(s.done||s.upd||Date.now()).toLocaleString("es-MX");(s.items||[]).forEach(i=>r.push([s.lpn,i.g,i.l,i.desc,i.exp,i.cnt==null?"":i.cnt,i.st==="ok"?"OK":i.st==="dif"?"Diferencia":"Pendiente",i.note||"",f]));(s.extras||[]).forEach(i=>r.push([s.lpn,i.g,i.l,"",0,i.cnt,"Extra",i.note||"",f]));});
- const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(r),"Recibo");
- saveBlob("Recibo_LPN_"+today()+".xlsx",new Blob([XLSX.write(wb,{bookType:"xlsx",type:"array"})],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}));}
-const rcvChip=s=>s==="ok"?'<span class="tg" style="background:var(--okb);color:var(--ok)">OK</span>':s==="dif"?'<span class="tg" style="background:var(--erb);color:var(--er)">Diferencia</span>':'<span class="tg">Pendiente</span>';
-const fmtL=l=>String(l||"").replace(/(\d{4})(?=\d)/g,"$1 ");
-function viewRcv(){
- if(!RX)return `<div class="card"><h2 class="sh"><i>1</i>Excel del inventario</h2><p class="mu" style="margin:6px 0 12px;font-size:14px">Sube el Excel que trae las LPN con sus códigos, lotes y cantidades (Load Number, Item Number, Lot Number, Unit Quantity). Se lee en tu teléfono y no se envía a ningún servidor.</p><label class="btn pri" for="frcv" style="display:block;text-align:center">Elegir archivo de Excel</label></div>`;
- const msg=RUI.msg?`<div class="vbanner ${RUI.msg.t==="ok"?"ok":"no"}" style="margin-bottom:12px;font-weight:600">${esc(RUI.msg.x)}</div>`:"";
- if(!RCUR){
-  const ses=RS.filter(s=>s.lpn).sort((a,b)=>(b.upd||0)-(a.upd||0));
-  return `<div class="card"><h2 class="sh"><i>▤</i>Inventario cargado</h2><p class="mu" style="margin:6px 0 4px;font-size:14px">${esc(RX.name)} · ${rcvIdx().size} LPN · ${RX.rows.length} filas</p><div class="row3"><button type="button" class="btn pri full" data-r="new">Nueva LPN</button><label class="btn" for="frcv" style="text-align:center">Cambiar Excel</label>${ses.length?`<button type="button" class="btn" data-r="expall">Descargar resultados</button>`:""}</div></div>
-  <div class="card"><h2 class="sh"><i>≡</i>LPN registradas<em>${ses.length}</em></h2>${ses.length?ses.map(s=>`<div class="vx"><div class="t"><b>${esc(fmtL(s.lpn))}</b>${s.status==="proceso"?'<span class="tg">En proceso</span>':rcvChip(s.status)}</div><p style="margin:4px 0 0;font-size:12px;color:var(--mu)">${s.items.filter(i=>i.st==="ok").length} de ${s.items.length} verificados${s.extras.length?" · "+s.extras.length+" extra(s)":""} · ${esc(new Date(s.upd||s.at).toLocaleString("es-MX",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}))}</p><div class="row3" style="margin-top:8px"><button type="button" class="btn" data-r="open" data-id="${s.id}">${s.status==="proceso"?"Continuar":"Ver"}</button><button type="button" class="btn" data-r="del" data-id="${s.id}">Eliminar</button></div></div>`).join(""):'<p class="mu" style="margin:8px 0 0;font-size:14px">Aún no hay LPN. Toca "Nueva LPN" para empezar.</p>'}</div>`;}
- const c=RCUR,ok=c.items.filter(i=>i.st==="ok").length;
- if(c.lpn&&c.status!=="proceso"){
-  const good=c.status==="ok",bad=c.items.filter(i=>i.st!=="ok");
-  return `<div class="vbanner ${good?"ok":"no"}">${good?"✓ LPN correcta: todo coincide con el Excel.":"LPN con diferencias. Revisa el detalle."}</div>
-  <div class="card"><h2 class="sh"><i>▤</i>LPN ${esc(fmtL(c.lpn))}</h2><p class="mu" style="margin:4px 0 0;font-size:14px">${ok} de ${c.items.length} renglones OK${c.extras.length?" · "+c.extras.length+" extra(s)":""}</p>
-  ${bad.map(i=>`<div class="vx"><div class="t"><b>${esc(i.g)} · lote ${esc(i.l)}</b>${rcvChip(i.st)}</div><p style="margin:4px 0 0;font-size:13px">${esc(i.desc||"")}</p><p style="margin:4px 0 0;font-size:12px;color:var(--er)">${esc(i.note)}</p></div>`).join("")}
-  ${c.extras.map(i=>`<div class="vx"><div class="t"><b>${esc(i.g)} · lote ${esc(i.l)}</b><span class="tg">Extra</span></div><p style="margin:4px 0 0;font-size:12px;color:var(--er)">${esc(i.note)} · contado ${esc(i.cnt)}</p></div>`).join("")}
-  <div class="row3"><button type="button" class="btn pri full" data-r="new">Siguiente LPN</button><button type="button" class="btn" data-r="xl1">Descargar Excel</button><button type="button" class="btn" data-r="reopen">Reabrir</button><button type="button" class="btn full" data-r="exit">Ver lista de LPN</button></div></div>`;}
- if(!c.lpn)return msg+`<div class="card"><h2 class="sh"><i>1</i>Etiqueta de la LPN</h2><p class="mu" style="margin:6px 0 8px;font-size:14px">Toma foto de la etiqueta de 20 dígitos o escríbela. Se valida contra el Excel.</p>
-  <label class="lb">LPN (20 dígitos)</label><div class="fld"><input data-rm="lpn" inputmode="numeric" maxlength="24" placeholder="00100370003108822317" value="${esc(RUI.lpnTxt||"")}">${sb("r_lpn")}</div>
-  <div class="row3"><button type="button" class="btn pri" data-r="lpnok">Validar LPN</button><button type="button" class="btn" data-r="exit">Cancelar</button></div></div>`;
- const d=rcvDet();
- return msg+`<div class="card"><div class="t" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><b style="font-size:17px">LPN ${esc(fmtL(c.lpn))}</b><span class="tg" style="background:var(--okb);color:var(--ok)">En el Excel</span></div><p class="mu" style="margin:6px 0 0;font-size:13px">${ok} de ${c.items.length} verificados${c.extras.length?" · "+c.extras.length+" extra(s)":""}. Avance guardado automáticamente.</p></div>
- <div class="card"><h2 class="sh"><i>2</i>Código y lote</h2><p class="mu" style="margin:6px 0 4px;font-size:14px">Toma foto donde se vean el código y el lote, o por separado si están lejos. También puedes escribirlos.</p>
-  <div style="display:flex;align-items:center;gap:8px"><span style="font-weight:600">Foto</span>${sb("r_item")}</div>
-  <label class="lb">Código</label><input data-rd="code" inputmode="numeric" maxlength="8" placeholder="80XXXXXX" value="${esc(d.code)}">
-  <label class="lb">Lote</label><input data-rd="lote" autocapitalize="characters" placeholder="10 caracteres" value="${esc(d.lote)}">
-  <label class="lb">Cantidad de cajas</label><input data-rd="cnt" inputmode="numeric" placeholder="0" value="${esc(d.cnt)}">
-  ${(d.th||[]).length?`<div style="display:flex;gap:8px;margin-top:10px">${d.th.map(t=>`<img src="${t}" alt="" style="height:64px;border-radius:8px;border:1px solid var(--bd)">`).join("")}</div>`:""}
-  <div class="row3"><button type="button" class="btn pri full" data-r="conf">Validar contra el Excel</button></div></div>
- <div class="card"><h2 class="sh"><i>≡</i>Renglones de la LPN</h2>${c.items.map(i=>`<div class="vx"><div class="t"><b>${esc(i.g)}</b>${rcvChip(i.st)}</div><p style="margin:4px 0 0;font-size:13px">${esc(i.desc||"")}</p><p style="margin:2px 0 0;font-size:12px;color:var(--mu)">Lote ${esc(i.l)}${i.st==="pend"?"":" · contado "+esc(i.cnt)+" de "+f2(i.exp)}</p>${i.note?`<p style="margin:2px 0 0;font-size:12px;color:var(--er)">${esc(i.note)}</p>`:""}${(i.ph||[]).length?`<img src="${i.ph[0]}" alt="" style="height:48px;margin-top:6px;border-radius:6px">`:""}</div>`).join("")}
-  ${c.extras.map(i=>`<div class="vx"><div class="t"><b>${esc(i.g)}</b><span class="tg">Extra</span></div><p style="margin:4px 0 0;font-size:12px;color:var(--er)">Lote ${esc(i.l)} · ${esc(i.note)}</p></div>`).join("")}</div>
- <div class="row3"><button type="button" class="btn dk full" data-r="fin">Finalizar LPN</button><button type="button" class="btn full" data-r="exit">Guardar avance y salir</button></div>`;}
-document.addEventListener("input",e=>{const t=e.target,k=t.dataset&&t.dataset.rd;
- if(k&&RCUR){let v=t.value;if(k==="code"||k==="cnt"){v=v.replace(/\D/g,"");if(v!==t.value)t.value=v;}rcvDet()[k]=v;clearTimeout(RT);RT=setTimeout(rcvSave,300);}
- if(t.dataset&&t.dataset.rm==="lpn"){const v=t.value.replace(/\D/g,"");if(v!==t.value)t.value=v;RUI.lpnTxt=v;}});
-let RT=0;
-document.addEventListener("click",e=>{const b=e.target.closest("[data-r]");if(!b)return;const a=b.dataset.r,id=b.dataset.id;
- if(a==="new")rcvStart();
- else if(a==="exit"){if(RCUR&&!RCUR.lpn){RS=RS.filter(x=>x.id!==RCUR.id);}RCUR=null;RUI.msg=null;U.set("rcvs",RS);U.set("rcvcur",null);render();window.scrollTo(0,0);}
- else if(a==="open"){RCUR=RS.find(x=>x.id===id)||null;RUI.msg=null;U.set("rcvcur",RCUR?RCUR.id:null);render();window.scrollTo(0,0);}
- else if(a==="del")dlg({title:"Eliminar LPN",body:"Se borra este registro de la lista.",buttons:[{t:"Cancelar"},{t:"Eliminar",cls:"dg",fn:()=>{RS=RS.filter(x=>x.id!==id);U.set("rcvs",RS);render();}}]});
- else if(a==="lpnok")rcvManualLpn();
- else if(a==="conf")rcvConfirm();
- else if(a==="fin")rcvFinish();
- else if(a==="reopen"){RCUR.status="proceso";RUI.msg=null;rcvSave();render();}
- else if(a==="xl1")rcvExport([RCUR]);
- else if(a==="expall")rcvExport(RS.filter(s=>s.lpn));});
 /* ---------- invitados y administrador ---------- */
 function gst(){let g=LS.get("cryd:g",null);if(!g||!g.id)g={id:Math.random().toString(36).slice(2,8)+Date.now().toString(36).slice(-3),first:Date.now(),n:0,pdf:0,val:0,rcv:0};return g;}
-function gstInc(k){if(!ME||!ME.guest)return;const g=gst();g[k]=(g[k]||0)+1;g.last=Date.now();LS.set("cryd:g",g);const u=cloudCfg();if(!u||navigator.onLine===false)return;
+function gstInc(k){if(!ME||!ME.guest)return;const g=gst();g[k]=(g[k]||0)+1;g.last=Date.now();g.nm=ME.nombre||"";try{g.pl=attPl();}catch(e){}LS.set("cryd:g",g);const u=cloudCfg();if(!u||navigator.onLine===false)return;
  try{fetch(u+"/cryd_guests/"+g.id+".json",{method:"PUT",body:JSON.stringify(Object.assign({ua:(navigator.userAgent.match(/iPhone|iPad|Android|Windows|Macintosh|Linux/)||["?"])[0]},g))}).catch(()=>{});}catch(e){}}
 const ADM={list:null,guests:null,err:"",exp:{},loading:false};
 const admOn=()=>LS.get("cryd:adm",0)===1;
@@ -625,6 +485,7 @@ async function admLoad(){
   ADM.list=rows.sort((a,b)=>((b.j.ts)||0)-((a.j.ts)||0));
   const g=await fetch(u+"/cryd_guests.json",{cache:"no-store"}).then(x=>x.json()).catch(()=>null);
   ADM.guests=Object.values(g||{}).sort((a,b)=>(b.last||0)-(a.last||0));
+  ADM.marks=await fetch(u+"/cryd_marks.json",{cache:"no-store"}).then(x=>x.json()).catch(()=>null)||{};
  }catch(e){ADM.err="No se pudo leer el servidor. Revisa la conexión y las reglas de la base de datos.";}
  ADM.loading=false;if(TAB==="admin")render();}
 async function admPatch(emp,body){const u=cloudCfg();const r=await fetch(u+"/cryd/u"+emp+"/acct.json",{method:"PATCH",body:JSON.stringify(body)});if(!r.ok)throw 0;}
@@ -640,17 +501,49 @@ async function admAct(a,emp){
 function viewAdminCard(){
  if(admOn())return `<div class="card"><h2 class="sh">Administrador</h2><p class="mu" style="margin:6px 0 12px;font-size:14px">Cuentas, invitados y avances de todos los usuarios que usan el servidor.</p><button type="button" class="btn pri" style="width:100%" data-ad="open">Abrir panel</button><button type="button" class="btn txt" style="width:100%;margin-top:6px" data-ad="lock">Salir del modo administrador</button></div>`;
  return `<div class="card"><h2 class="sh">Administrador</h2><p class="mu" style="margin:6px 0 8px;font-size:13px">Solo para el responsable de la app. La primera vez crea tu código (mínimo 6 caracteres); después úsalo para entrar.</p><input data-ad-in type="password" autocomplete="off" placeholder="Código de administrador" value="${esc(ADM.code||"")}"><button type="button" class="btn" style="width:100%;margin-top:10px" data-ad="login">Entrar</button></div>`;}
+
+/* ---- atención y duplicados (administrador) ---- */
+const MN={rcv:"Recibo",sur:"Surtido",insp:"Maquila"};
+function admAtt(){const E=[],mk=ADM.marks||{},arr=v=>Array.isArray(v)?v:Object.values(v||{});
+ (ADM.list||[]).forEach(x=>{const j=x.j,a=j.acct||{},who=((a.nombre||"")+" "+(a.apellido||"")).trim()||("No. "+x.emp),src="u"+x.emp,at=j.att||{};
+  [["rcv",j.rcvs],["sur",j.surs]].forEach(([m,v])=>arr(v).forEach(s=>{if(s&&s.id&&s.lpn)E.push({who,src,m,k:s.lpn,id:s.id,st:s.status,ok:(s.items||[]).filter(i=>i.st==="ok").length,n:(s.items||[]).length,u:s.upd||s.at||0,w:(at[s.id]||{}).wn||0,a:(at[s.id]||{}).att?1:0});}));
+  arr(j.rec).forEach(r=>{if(r&&r.id&&(r.status==="pendiente"||r.status==="dup"||r.status==="completo"))E.push({who,src,m:"insp",k:r.folio,id:r.id,st:r.status,ok:0,n:0,u:r.upd||0,w:(at[r.id]||{}).wn||0,a:(at[r.id]||{}).att?1:0});});});
+ (ADM.guests||[]).forEach(g=>{const who="Invitado "+(g.nm&&g.nm!=="Invitado"?g.nm+" · ":"")+g.id,src="g"+g.id;arr(g.pl).forEach(p=>E.push({who,src,m:p.m,k:p.k,id:p.id,st:p.st,ok:p.ok||0,n:p.n||0,u:p.u||0,w:p.w||0,a:p.a||0}));});
+ E.forEach(e=>{const k=(mk[e.src]||{})[e.id];if(k&&k.st==="dup")e.st="dup";e.del=!!(k&&k.st==="del");});
+ const live=E.filter(e=>!e.del),G={};live.forEach(e=>{(G[e.m+"|"+e.k]=G[e.m+"|"+e.k]||[]).push(e);});
+ const dups=[],singles=[];
+ Object.keys(G).forEach(k=>{const g=G[k],act=g.filter(e=>e.st!=="dup");
+  if(g.length>1&&g.some(e=>e.st==="proceso"||e.st==="pendiente"||e.st==="dup"||e.a)){const sc=e=>(e.st==="ok"||e.st==="dif"||e.st==="completo"?1000:0)+e.ok*10+(e.st==="dup"?-5000:0)+e.u/1e13;g.sort((x,y)=>sc(y)-sc(x));dups.push(g);}
+  else g.forEach(e=>{if(e.a||(e.w&&(e.st==="proceso"||e.st==="pendiente"))||e.st==="dup")singles.push(e);});});
+ return {dups,singles};}
+function admEnt(e,best){const f=t=>t?new Date(t).toLocaleString("es-MX",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}):"—";
+ const tag=e.st==="dup"?'<span class="tg" style="background:var(--erb);color:var(--er)">Para borrar</span>':e.a?'<span class="tg" style="background:var(--erb);color:var(--er)">⚠ Atención</span>':e.w?'<span class="tg">aviso '+e.w+'/2</span>':'';
+ const sc=best===1?'<span class="tg" style="background:var(--okb);color:var(--ok)">Probable correcto</span>':best===0?'<span class="tg">Probable duplicado</span>':'';
+ const sts=e.st==="ok"?"correcta":e.st==="dif"?"con diferencias":e.st==="proceso"?"en proceso":e.st==="pendiente"?"pendiente":e.st==="completo"?"completo":e.st;
+ const bt=e.st==="dup"?`<button type="button" class="btn" data-ad="mk" data-src="${e.src}" data-id="${e.id}" data-st="ok">Restaurar</button><button type="button" class="btn dg" data-ad="mk" data-src="${e.src}" data-id="${e.id}" data-st="del">Borrar definitivamente</button>`:`<button type="button" class="btn dg" data-ad="mk" data-src="${e.src}" data-id="${e.id}" data-st="dup">Marcar para borrar</button>`;
+ return `<div class="vx" style="margin-top:8px"><div class="t"><b>${esc(e.who)}</b>${tag}${sc}</div><p style="margin:4px 0 0;font-size:12px;color:var(--mu)">${MN[e.m]||e.m} · ${esc(e.m==="insp"?"folio "+e.k:"LPN "+lpFmt(e.k))} · ${esc(sts)}${e.n?" · "+e.ok+" de "+e.n+" verificados":""} · últ. cambio ${esc(f(e.u))}</p><div class="row3" style="margin-top:6px">${bt}</div></div>`;}
+function admAttCard(){const r=admAtt(),n=r.dups.length+r.singles.length;
+ let h=`<div class="card"><h2 class="sh"><i>⚠</i>Atención y duplicados<em>${n}</em></h2><p class="mu" style="margin:6px 0 0;font-size:13px">Procesos sin terminar con avisos y registros repetidos. «Marcar para borrar» solo los aparta (no se pierden); bórralos definitivamente cuando quieras.</p>`;
+ if(!n)return h+'<div class="emp">Sin procesos con atención ni duplicados.</div></div>';
+ r.dups.forEach(g=>{h+=`<div style="margin-top:12px"><b style="font-size:14px">Duplicado · ${MN[g[0].m]||g[0].m} ${esc(g[0].m==="insp"?g[0].k:lpFmt(g[0].k))}</b>${g.map((e,i)=>admEnt(e,i===0?1:0)).join("")}</div>`;});
+ if(r.singles.length)h+=`<div style="margin-top:12px"><b style="font-size:14px">Sin terminar con atención</b>${r.singles.map(e=>admEnt(e,-1)).join("")}</div>`;
+ return h+"</div>";}
+async function admMark(src,id,st){const u=cloudCfg();if(!u)return;
+ const go=async()=>{try{const r=await fetch(u+"/cryd_marks/"+src+"/"+id+".json",{method:"PUT",body:JSON.stringify({st,at:Date.now()})});if(!r.ok)throw 0;ADM.marks=ADM.marks||{};(ADM.marks[src]=ADM.marks[src]||{})[id]={st,at:Date.now()};toast(st==="dup"?"Marcado para borrar. El usuario lo verá al abrir la app.":st==="del"?"Se borrará del teléfono del usuario.":"Restaurado.");render();}catch(e){toast("No se pudo guardar la marca. Revisa la conexión.");}};
+ if(st==="del")dlg({title:"Borrar definitivamente",body:"Se eliminará este registro del teléfono del usuario la próxima vez que abra la app. No se puede deshacer.",buttons:[{t:"Cancelar"},{t:"Borrar",cls:"dg",fn:go}]});else go();}
+
 function viewAdmin(){
  if(!admOn())return '<p class="mu">Sin acceso.</p>';
  const fh=t=>t?new Date(t).toLocaleString("es-MX",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}):"—";
  let h=`<div class="row3" style="margin-top:0"><button type="button" class="btn" data-ad="refresh">${ADM.loading?"Actualizando…":"Actualizar"}</button><button type="button" class="btn" data-ad="back">Volver</button></div>${ADM.err?`<div class="vbanner no" style="margin-top:12px">${esc(ADM.err)}</div>`:""}`;
  const L=ADM.list||[];
+ h+=admAttCard();
  h+=`<div class="card"><h2 class="sh"><i>👤</i>Cuentas<em>${L.length}</em></h2>${L.length?L.map(x=>{const j=x.j,a=j.acct||{},rec=Array.isArray(j.rec)?j.rec:Object.values(j.rec||{}),pn=rec.filter(r=>r&&r.status==="pendiente").length,rs=Array.isArray(j.rcvs)?j.rcvs:Object.values(j.rcvs||{}),open=ADM.exp[x.emp];
   return `<div class="vx"><div class="t"><b>${esc((a.nombre||"?")+" "+(a.apellido||""))}</b><span class="tg" ${a.off?'style="background:var(--erb);color:var(--er)"':''}>${a.off?"Suspendida":"Activa"}</span></div><p style="margin:4px 0 0;font-size:12px;color:var(--mu)">No. ${esc(x.emp)}${a.pin?" · con PIN":""} · último respaldo ${esc(fh(j.ts))}</p><p style="margin:2px 0 0;font-size:12px;color:var(--mu)">${rec.length} folios (${pn} pendientes) · ${rs.length} LPN</p>
   <div class="row3" style="margin-top:8px"><button type="button" class="btn" data-ad="exp" data-id="${x.emp}">${open?"Ocultar":"Ver detalle"}</button><button type="button" class="btn" data-ad="${a.off?"on":"off"}" data-id="${x.emp}">${a.off?"Activar":"Suspender"}</button><button type="button" class="btn" data-ad="reset" data-id="${x.emp}">Restablecer PIN</button><button type="button" class="btn" data-ad="del" data-id="${x.emp}">Borrar datos</button></div>
   ${open?`<div style="margin-top:8px;font-size:12px;color:var(--mu)">${rec.slice(-15).reverse().map(r=>r?esc(r.folio)+" · "+esc(r.status):"").join("<br>")||"Sin folios."}${rs.length?"<br><b>LPN:</b> "+rs.slice(-10).reverse().map(s=>s?esc(s.lpn)+" · "+esc(s.status):"").join("<br>"):""}</div>`:""}</div>`;}).join(""):'<p class="mu" style="margin:8px 0 0;font-size:14px">Aún no hay cuentas respaldadas en el servidor.</p>'}</div>`;
  const G=ADM.guests||[];
- h+=`<div class="card"><h2 class="sh"><i>👥</i>Invitados<em>${G.length}</em></h2>${G.length?G.map(g=>`<div class="vx"><div class="t"><b>Invitado ${esc(g.id)}</b><span class="tg">${esc(g.ua||"")}</span></div><p style="margin:4px 0 0;font-size:12px;color:var(--mu)">Última vez ${esc(fh(g.last))} · ${g.n||0} ingresos · ${g.pdf||0} PDF · ${g.val||0} validaciones · ${g.rcv||0} LPN</p><div class="row3" style="margin-top:8px"><button type="button" class="btn" data-ad="gdel" data-id="${esc(g.id)}">Quitar del registro</button></div></div>`).join(""):'<p class="mu" style="margin:8px 0 0;font-size:14px">Aún no hay invitados registrados.</p>'}</div>`;
+ h+=`<div class="card"><h2 class="sh"><i>👥</i>Invitados<em>${G.length}</em></h2>${G.length?G.map(g=>`<div class="vx"><div class="t"><b>${esc(g.nm&&g.nm!=="Invitado"?g.nm+" · ":"")}Invitado ${esc(g.id)}</b><span class="tg">${esc(g.ua||"")}</span></div><p style="margin:4px 0 0;font-size:12px;color:var(--mu)">Última vez ${esc(fh(g.last))} · ${g.n||0} ingresos · ${g.pdf||0} PDF · ${g.val||0} validaciones · ${g.rcv||0} recibos · ${g.sur||0} surtidos · ${g.dash||0} dashboards</p><div class="row3" style="margin-top:8px"><button type="button" class="btn" data-ad="gdel" data-id="${esc(g.id)}">Quitar del registro</button></div></div>`).join(""):'<p class="mu" style="margin:8px 0 0;font-size:14px">Aún no hay invitados registrados.</p>'}</div>`;
  return h;}
 document.addEventListener("input",e=>{if(e.target.dataset&&e.target.dataset.adIn!==undefined)ADM.code=e.target.value;});
 document.addEventListener("click",e=>{const b=e.target.closest("[data-ad]");if(!b)return;const a=b.dataset.ad,id=b.dataset.id;
@@ -659,14 +552,18 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-ad]");if(!
  else if(a==="lock"){LS.set("cryd:adm",0);toast("Saliste del modo administrador.");render();}
  else if(a==="back"){TAB="perfil";render();}
  else if(a==="refresh")admLoad();
+ else if(a==="mk")admMark(b.dataset.src,id,b.dataset.st);
  else if(a==="exp"){ADM.exp[id]=!ADM.exp[id];render();}
  else if(a==="del")dlg({title:"Borrar datos del servidor",body:"Se borra el respaldo de la cuenta "+id+" en el servidor. Si esa persona sigue usando su teléfono, el respaldo se vuelve a crear. Para bloquear el acceso usa Suspender.",buttons:[{t:"Cancelar"},{t:"Borrar",cls:"dg",fn:()=>admAct("del",id)}]});
  else if(a==="gdel"||a==="off"||a==="on"||a==="reset")admAct(a,id);});
 /* ---------- recuperar avances ---------- */
-function flushAll(){try{if(ME&&!ME.guest){if(S)saveDraft();if(RCUR)rcvSave();LS.set("cryd:ui",{emp:ME.emp,tab:TAB});if(cloudCfg()&&LS.get("cryd:u"+ME.emp+":cpend",0))cloudPush(false,true);}}catch(e){}}
+function flushAll(){try{if(ME){if(S)saveDraft();lpFlush();LS.set("cryd:ui",{emp:ME.emp,tab:TAB,ts:Date.now()});if(!ME.guest&&cloudCfg()&&LS.get("cryd:u"+ME.emp+":cpend",0))cloudPush(false,true);}}catch(e){}}
 addEventListener("pagehide",flushAll);document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden")flushAll();});
 let ERRN=0;addEventListener("error",()=>{flushAll();if(ERRN++<2)toast("Algo falló, pero tu avance está guardado.");});addEventListener("unhandledrejection",()=>{flushAll();});
-function boot(){applyTheme();warmOcr();const ses=LS.get("cryd:session",null),u=ses&&USERS.find(x=>x.emp===ses.emp);if(u){ME={emp:u.emp,nombre:u.nombre,apellido:u.apellido,guest:false};loadUserData();const ui=LS.get("cryd:ui",null);if(ui&&ui.emp===ME.emp&&["insp","rcv","pend","hist","val","perfil"].includes(ui.tab))TAB=ui.tab;}render();if(u)cloudStart();}
+function boot(){applyTheme();const ses=LS.get("cryd:session",null),ui=LS.get("cryd:ui",null),fresh=ui&&ui.ts&&Date.now()-ui.ts<10*60*1000;
+ if(ses&&ses.guest){ME={emp:"INVITADO",nombre:LS.get("cryd:gname","")||"Invitado",apellido:"",guest:true};loadUserData();TAB=fresh&&ui.emp==="INVITADO"&&TNAME[ui.tab]?ui.tab:"home";}
+ else{const u=ses&&USERS.find(x=>x.emp===ses.emp);if(u){ME={emp:u.emp,nombre:u.nombre,apellido:u.apellido,guest:false};loadUserData();TAB=fresh&&ui.emp===ME.emp&&TNAME[ui.tab]?ui.tab:"home";}}
+ render();if(ME&&!ME.guest)cloudStart();}
 
 /* ---------- cámara y galería ---------- */
 const PROMPT='Lee la etiqueta o documento de la foto. Extrae: codigo (código de producto/SKU/material), lote (lote/batch) y descripcion (nombre completo del producto, por ejemplo toalla femenina, jabón o shampoo, con su marca o variante y el contenido o cantidad exactamente como aparece, por ejemplo 400 ml, 30 piezas o 3 en 1). El código tiene 8 dígitos y empieza con 80. El lote tiene 10 caracteres entre números y letras: devuelve solo el lote, sin prefijos. Transcribe exactamente lo que ves, sin inventar. Responde SOLO un JSON {"codigo":"","lote":"","descripcion":""}; usa cadena vacía si no ves el dato.';
@@ -689,18 +586,41 @@ async function shrink(file){
  const url=c.toDataURL("image/jpeg",.85),bin=atob(url.split(",")[1]),u8=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u8[i]=bin.charCodeAt(i);
  return {blob:new Blob([u8],{type:"image/jpeg"}),url};}
 function showPreview(img,src){PV={blob:img.blob,src,url:img.url};const e=$("#pvimg");e.style.background="#fff";e.src=img.url;$("#pvg").hidden=src!=="gal";$("#pvc").hidden=src==="gal";$("#cv").hidden=true;$("#pv").hidden=false;}
-async function onFile(e,src){const f=e.target.files[0];e.target.value="";if(!f)return;busy("Preparando foto…");try{showPreview(await shrink(f),src);}catch(err){toast("No se pudo abrir esa imagen.");}busy("");}
+const tmo=(p,ms)=>new Promise((ok,no)=>{const t=setTimeout(()=>no(new Error("timeout")),ms);p.then(v=>{clearTimeout(t);ok(v);},e=>{clearTimeout(t);no(e);});});
+async function onFile(e,src){const f=e.target.files[0];e.target.value="";if(!f)return;busy("Preparando foto…");await new Promise(r=>setTimeout(r,40));
+ try{showPreview(await tmo(shrink(f),25000),src);}catch(err){toast(err&&err.message==="timeout"?"La foto tardó demasiado en abrirse. Prueba con otra o usa la cámara.":"No se pudo abrir esa imagen.");}busy("");}
 $("#gal").addEventListener("change",e=>onFile(e,"gal"));$("#cam").addEventListener("change",e=>onFile(e,"cam"));
 $("#pvno").onclick=()=>{$("#pv").hidden=true;};
 $("#pvc").onclick=()=>{$("#pv").hidden=true;$("#cam").click();};
-$("#pvuse").onclick=()=>{$("#pv").hidden=true;if(PV){if(String(TARGET).indexOf("r_")===0)rcvPhoto(PV,TARGET);else ocr(PV.blob,TARGET);}};
+$("#pvuse").onclick=()=>{$("#pv").hidden=true;if(PV){if(String(TARGET).indexOf("L:")===0){const q=String(TARGET).split(":");lpPhoto(q[1],PV,q[2]);}else ocr(PV.blob,TARGET);}};
 const WK={};let OCRON=false;
-const getWorker=t=>(t=t==="lote"?"codigo":t,WK[t])||(WK[t]=(async()=>{const w=await Tesseract.createWorker(t==="desc"?"spa":"eng",1,{logger:m=>{if(!OCRON)return;if(m.status==="recognizing text")busy("Leyendo etiqueta… "+Math.round((m.progress||0)*100)+"%");else if(m.status)busy("Preparando lector…");}});
+function dropWorkers(){Object.keys(WK).forEach(k=>{const p=WK[k];delete WK[k];Promise.resolve(p).then(w=>w&&w.terminate&&w.terminate()).catch(()=>{});});}
+const withTimeout=(p,ms)=>new Promise((ok,no)=>{const t=setTimeout(()=>{dropWorkers();no(new Error("timeout"));},ms);p.then(v=>{clearTimeout(t);ok(v);},e=>{clearTimeout(t);no(e);});});
+const getWorker=t=>(t=t==="lote"?"codigo":t,WK[t])||(WK[t]=(async()=>{const w=await Tesseract.createWorker(t==="desc"?"spa":"eng",1,{logger:m=>{if(!OCRON)return;if(m.status==="recognizing text")busy("Leyendo etiqueta… "+Math.round((m.progress||0)*100)+"%",CANC);else if(m.status)busy("Preparando lector…",CANC);}});
  await w.setParameters({tessedit_pageseg_mode:t==="desc"?"3":"11"});return w;})());
-async function prep(blob){const bm=await createImageBitmap(blob),k=Math.min(1,1100/Math.max(bm.width,bm.height)),c=document.createElement("canvas");c.width=Math.round(bm.width*k);c.height=Math.round(bm.height*k);
- const x=c.getContext("2d");x.drawImage(bm,0,0,c.width,c.height);const im=x.getImageData(0,0,c.width,c.height),p=im.data,g=new Uint8Array(p.length/4);let lo=255,hi=0;
+let CANC=null;
+async function prep(blob,max,bin){const bm=await createImageBitmap(blob),k=Math.min(1,(max||1100)/Math.max(bm.width,bm.height)),c=document.createElement("canvas");c.width=Math.round(bm.width*k);c.height=Math.round(bm.height*k);
+ const x=c.getContext("2d");x.drawImage(bm,0,0,c.width,c.height);if(bm.close)bm.close();const im=x.getImageData(0,0,c.width,c.height),p=im.data,g=new Uint8Array(p.length/4);let lo=255,hi=0;
  for(let i=0,j=0;i<p.length;i+=4,j++){const v=(p[i]*.299+p[i+1]*.587+p[i+2]*.114)|0;g[j]=v;if(v<lo)lo=v;if(v>hi)hi=v;}
- const sc=hi>lo?255/(hi-lo):1;for(let i=0,j=0;i<p.length;i+=4,j++){const v=Math.max(0,Math.min(255,(g[j]-lo)*sc))|0;p[i]=p[i+1]=p[i+2]=v;}x.putImageData(im,0,0);return c;}
+ if(bin){const h=new Array(256).fill(0);for(let j=0;j<g.length;j++)h[g[j]]++;let sum=0;for(let t=0;t<256;t++)sum+=t*h[t];let sB=0,wB=0,mx=0,th=128;
+  for(let t=0;t<256;t++){wB+=h[t];if(!wB)continue;const wF=g.length-wB;if(!wF)break;sB+=t*h[t];const mB=sB/wB,mF=(sum-sB)/wF,vv=wB*wF*(mB-mF)*(mB-mF);if(vv>mx){mx=vv;th=t;}}
+  for(let i=0,j=0;i<p.length;i+=4,j++){const v=g[j]>th?255:0;p[i]=p[i+1]=p[i+2]=v;}}
+ else{const sc=hi>lo?255/(hi-lo):1;for(let i=0,j=0;i<p.length;i+=4,j++){const v=Math.max(0,Math.min(255,(g[j]-lo)*sc))|0;p[i]=p[i+1]=p[i+2]=v;}}
+ x.putImageData(im,0,0);return c;}
+/* Lee una foto con hasta dos intentos (normal y blanco/negro). Nunca se queda colgada: tiene tiempo límite y botón Cancelar. */
+async function ocrRaw(blob,o){o=o||{};let cancelled=false;OCRON=true;CANC=()=>{cancelled=true;dropWorkers();};
+ try{if(typeof Tesseract==="undefined")throw new Error("lib");
+  busy("Preparando lector…",CANC);await new Promise(r=>setTimeout(r,40));
+  const lang=o.lang||"codigo",psm=lang==="desc"?"3":"11";
+  const passes=[{wl:o.digits?"0123456789() ":"",max:1100,bin:false},{wl:"",max:1600,bin:true}];let out="";
+  for(const ps of passes){if(cancelled)throw new Error("cancel");
+   const img=await prep(blob,ps.max,ps.bin),w=await getWorker(lang);
+   await w.setParameters({tessedit_char_whitelist:ps.wl,tessedit_pageseg_mode:psm});
+   const r=await withTimeout(w.recognize(img),30000);out+="\n"+((r&&r.data&&r.data.text)||"");
+   if(o.stop&&o.stop(out))break;}
+  if(cancelled)throw new Error("cancel");return out;
+ }catch(e){if(cancelled)throw new Error("cancel");throw e;}
+ finally{OCRON=false;CANC=null;busy("");try{const w=WK[o.lang||"codigo"];if(w)Promise.resolve(w).then(x=>x.setParameters({tessedit_char_whitelist:"",tessedit_pageseg_mode:"11"})).catch(()=>{});}catch(e){}}}
 const toks=t=>String(t||"").toUpperCase().split(/[^A-Z0-9]+/).filter(Boolean);
 function readCod(t){for(const k of toks(t)){const u=k.replace(/O/g,"0").replace(/[IL]/g,"1");if(/^80\d{6}$/.test(u))return u;}const m=String(t||"").replace(/\s/g,"").toUpperCase().replace(/O/g,"0").match(/80\d{6}/);return m?m[0]:"";}
 function readLote(t){const a=toks(t);
@@ -711,19 +631,18 @@ function readDesc(t){const lines=String(t||"").split("\n").map(x=>x.trim()).filt
  const unitRe=/\d+(?:[.,]\d+)?\s*(?:ml|g|gr|kg|l|lt|oz|pzas?|pzs|piezas?|pack|toallas?|bolsas?|u|un|und)\b/i,prodRe=/toalla|jab[oó]n|shampoo|champ[uú]|acondicionador|pa[nñ]al|detergente|suavizante|crema|desodorante|pasta|enjuague|rastrillo|cepillo|bolsas|naturella/i,skip=/lote|lot\b|batch|c[oó]digo|sku|caduc|exp|fecha/i;
  const k=lines.filter(l=>!skip.test(l)&&!/80\d{6}/.test(l)&&(prodRe.test(l)||unitRe.test(l)));
  const r=k.length?k.join(" "):(lines.filter(l=>!skip.test(l)&&!/^[\d\W]+$/.test(l)).sort((a,b)=>b.length-a.length)[0]||"");return r.slice(0,140).trim();}
-function warmOcr(){if(typeof Tesseract==="undefined"||navigator.onLine===false)return;const go=()=>{getWorker("codigo").then(()=>getWorker("desc")).catch(()=>{delete WK.codigo;delete WK.desc;});};setTimeout(go,1500);}
+let WARMED=false;function warmOcr(){if(WARMED||typeof Tesseract==="undefined"||navigator.onLine===false)return;WARMED=true;setTimeout(()=>{getWorker("codigo").catch(()=>{delete WK.codigo;WARMED=false;});},1500);}
+addEventListener("pagehide",()=>{try{dropWorkers();WARMED=false;}catch(e){}});
 async function ocr(blob,target){
- const idx=S.act;OCRON=true;busy("Preparando lector…");
- try{if(typeof Tesseract==="undefined")throw new Error("lib");
-  const img=await prep(blob),w=await getWorker(target),r=await w.recognize(img),txt=(r&&r.data&&r.data.text)||"";let val="",sel="";
-  if(target==="codigo"){val=readCod(txt);if(val){S.codigo=val;sel='[data-k="codigo"]';}}
-  else if(target==="desc"){val=readDesc(txt);if(val){S.desc=val;sel='[data-k="desc"]';}}
-  else{val=readLote(txt);if(val){S.lots[idx].lote=val;sel=S.act===idx?'[data-l="lote"]':"";}}
-  if(!val){toast(target==="codigo"?"No encontré un código de 8 dígitos que inicie con 80.":target==="lote"?"No encontré un lote de 10 caracteres.":"No se detectó la descripción. Acércate y mejora la luz.");return;}
-  const inp=sel&&document.querySelector(sel);if(inp)inp.value=val;const c=$("#chips");if(c)c.innerHTML=chips();saveDraft();toast("Cargado: "+val+". Revísalo.");
- }catch(err){delete WK[target];toast("No se pudo leer la foto. La primera vez necesita internet para descargar el lector. También puedes capturar a mano.");}
- finally{busy("");}
-}
+ const idx=S.act,rd=target==="codigo"?readCod:target==="desc"?readDesc:readLote;let txt="";
+ try{txt=await ocrRaw(blob,{lang:target==="desc"?"desc":"codigo",stop:t=>!!rd(t)});}
+ catch(err){const x=err&&err.message;if(x==="cancel")return;delete WK[target];toast(x==="timeout"?"La lectura tardó demasiado. Acerca la cámara, mejora la luz o captura a mano.":"No se pudo leer la foto ("+String(x||"error").slice(0,40)+"). La primera vez necesita internet para descargar el lector. También puedes capturar a mano.");return;}
+ let val="",sel="";
+ if(target==="codigo"){val=readCod(txt);if(val){S.codigo=val;sel='[data-k="codigo"]';}}
+ else if(target==="desc"){val=readDesc(txt);if(val){S.desc=val;sel='[data-k="desc"]';}}
+ else{val=readLote(txt);if(val){S.lots[idx].lote=val;sel=S.act===idx?'[data-l="lote"]':"";}}
+ if(!val){toast(target==="codigo"?"No encontré un código de 8 dígitos que inicie con 80.":target==="lote"?"No encontré un lote de 10 caracteres.":"No se detectó la descripción. Acércate y mejora la luz.");return;}
+ const inp=sel&&document.querySelector(sel);if(inp)inp.value=val;const c=$("#chips");if(c)c.innerHTML=chips();saveDraft();toast("Cargado: "+val+". Revísalo.");}
 function makePdf(S){
  const {jsPDF}=window.jspdf;const d=new jsPDF({orientation:"landscape",unit:"mm",format:"a4"});
  const L=10,W=277;
@@ -778,5 +697,4 @@ function makePdf(S){
  const name=("Inspeccion_CRyD_"+(S.folio||S.codigo||"sin-folio")+"_"+S.fecha+".pdf").replace(/[^\w.-]/g,"_");
  saveBlob(name,d.output("blob"));
 }
-if("serviceWorker"in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
-boot();
+

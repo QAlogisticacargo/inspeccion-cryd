@@ -361,7 +361,7 @@ function viewPerfil(){const g=ME.guest,th=LS.get("cryd:theme","system");
  ${g?"":viewCloud()}
  ${g?"":viewAdminCard()}
  ${festPerfil()}
- <p class="mu" style="text-align:center;font-size:12px">Procesos CRyD · versión 3.0</p>`;}
+ <p class="mu" style="text-align:center;font-size:12px">Procesos CRyD · versión 3.5</p>`;}
 const BAR=["home","rcv","sur","val","insp","more"],MORE=["dash","pend","hist","perfil","admin"];
 function render(){
  if(!ME){renderAuth();return;}

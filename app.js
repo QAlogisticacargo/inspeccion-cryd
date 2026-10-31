@@ -576,12 +576,12 @@ async function openCam(){
 }
 function noCam(){if(STREAM){STREAM.getTracks().forEach(t=>t.stop());STREAM=null;}$("#vd").hidden=true;$("#fr").hidden=true;$("#shut").hidden=true;$("#cvm").hidden=false;}
 $("#cvx").onclick=stopCam;
-$("#shut").onclick=()=>{const v=$("#vd");if(!v.videoWidth)return;const k=Math.min(1,1400/Math.max(v.videoWidth,v.videoHeight)),c=document.createElement("canvas");c.width=Math.round(v.videoWidth*k);c.height=Math.round(v.videoHeight*k);c.getContext("2d").drawImage(v,0,0,c.width,c.height);c.toBlob(b=>{stopCam();ocr(b,TARGET);},"image/jpeg",.82);};
+$("#shut").onclick=()=>{const v=$("#vd");if(!v.videoWidth)return;const k=Math.min(1,2000/Math.max(v.videoWidth,v.videoHeight)),c=document.createElement("canvas");c.width=Math.round(v.videoWidth*k);c.height=Math.round(v.videoHeight*k);c.getContext("2d").drawImage(v,0,0,c.width,c.height);c.toBlob(b=>{stopCam();ocr(b,TARGET);},"image/jpeg",.82);};
 async function shrink(file){
  let bm=null;try{bm=await createImageBitmap(file);}catch(e){}
  if(!bm||!(bm.width>0)){bm=await new Promise((ok,no)=>{const fr=new FileReader();fr.onerror=no;fr.onload=()=>{const im=new Image();im.onload=()=>ok(im);im.onerror=no;im.src=fr.result;};fr.readAsDataURL(file);});}
  const w=bm.width||bm.naturalWidth,h=bm.height||bm.naturalHeight;if(!(w>0&&h>0))throw new Error("img");
- const k=Math.min(1,1400/Math.max(w,h)),c=document.createElement("canvas");c.width=Math.round(w*k);c.height=Math.round(h*k);
+ const k=Math.min(1,2000/Math.max(w,h)),c=document.createElement("canvas");c.width=Math.round(w*k);c.height=Math.round(h*k);
  const x=c.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,c.width,c.height);x.drawImage(bm,0,0,c.width,c.height);
  const url=c.toDataURL("image/jpeg",.85),bin=atob(url.split(",")[1]),u8=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u8[i]=bin.charCodeAt(i);
  return {blob:new Blob([u8],{type:"image/jpeg"}),url};}
@@ -612,7 +612,7 @@ async function ocrRaw(blob,o){o=o||{};let cancelled=false;OCRON=true;CANC=()=>{c
  try{if(typeof Tesseract==="undefined")throw new Error("lib");
   busy("Preparando lector…",CANC);await new Promise(r=>setTimeout(r,40));
   const lang=o.lang||"codigo",psm=lang==="desc"?"3":"11";
-  const passes=[{wl:o.digits?"0123456789() ":"",max:1100,bin:false},{wl:"",max:1600,bin:true}];let out="";
+  const passes=[{wl:o.digits?"0123456789() ":"",max:o.max||1100,bin:false},{wl:"",max:o.max2||1600,bin:true}];let out="";
   for(const ps of passes){if(cancelled)throw new Error("cancel");
    const img=await prep(blob,ps.max,ps.bin),w=await getWorker(lang);
    await w.setParameters({tessedit_char_whitelist:ps.wl,tessedit_pageseg_mode:psm});

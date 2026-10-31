@@ -58,7 +58,7 @@ function lpSave(m){const p=LP[m],k=p.c.keys;
  U.set(k[1],p.S);U.set(k[2],p.CUR?p.CUR.id:null);}
 function lpFlush(){Object.keys(LP).forEach(m=>{if(LP[m].CUR)lpSave(m);});}
 function lpIdx(m){const p=LP[m];if(p.IDX)return p.IDX;p.IDX=new Map();if(p.X)p.X.rows.forEach(r=>{let a=p.IDX.get(r[0]);if(!a)p.IDX.set(r[0],a=[]);a.push(r);});return p.IDX;}
-const lpDet=m=>LP[m].CUR.det||(LP[m].CUR.det={code:"",lote:"",cnt:"",th:[]});
+const lpDet=m=>LP[m].CUR.det||(LP[m].CUR.det={code:"",lote:"",cnt:"",th:[],man:0,tgt:-1,chk:null});
 /* unir sesiones que vienen del servidor */
 function lpMerge(m,arr){const p=LP[m];let n=0;(Array.isArray(arr)?arr:Object.values(arr||{})).forEach(r=>{if(!r||!r.id)return;if(!Array.isArray(r.items))r.items=[];if(!Array.isArray(r.extras))r.extras=[];r.items.forEach(i=>{if(!Array.isArray(i.ph))i.ph=[];});
  const i=p.S.findIndex(x=>x.id===r.id);if(i<0){p.S.push(r);n++;}else if((r.upd||0)>(p.S[i].upd||0)){p.S[i]=r;n++;}});
@@ -127,7 +127,7 @@ async function lpPhoto(m,pv,kind){
   if(bcv){const r0=lpFind(m,bcv);if(r0.exact){lpSetLpn(m,r0.exact,th);return;}txt=bcv;}}
  try{
   if(kind==="lpn")txt+="\n"+await ocrRaw(pv.blob,{digits:true,stop:t=>!!lpFind(m,t).exact}).catch(e=>{if(e&&e.message==="cancel")throw e;if(!txt)throw e;return "";});
-  else{const it=(P.CUR&&P.CUR.items)||[];txt=await ocrRaw(pv.blob,{stop:t=>{const r=rcvRead(t,it);return !!(r.code&&r.lote);}});}
+  else{const it=(P.CUR&&P.CUR.items)||[];txt=await ocrRaw(pv.blob,{max:1800,max2:2400,stop:t=>{const r=rcvRead(t,it);return !!(r.code&&r.lote);}});}
  }catch(e){const x=e&&e.message;if(x==="cancel")return;toast(x==="timeout"?"La lectura tardó demasiado. Acerca la cámara, mejora la luz o captura a mano.":"No se pudo leer la foto. Inténtalo otra vez o captura a mano.");return;}
  if(kind==="lpn"){
   if(!P.CUR)return;const r=lpFind(m,txt);
@@ -137,7 +137,7 @@ async function lpPhoto(m,pv,kind){
   dlg({title:"LPN no encontrada",body:P.UI.msg.x,buttons:[{t:"Escribir a mano"},{t:"Volver a tomar foto",cls:"pri",fn:()=>lpRetake(m,"lpn")}]});render();return;}
  if(!P.CUR||!P.CUR.lpn)return;
  const r=rcvRead(txt,P.CUR.items),d=lpDet(m);
- if(r.code)d.code=r.code;if(r.lote)d.lote=r.lote;if(th)d.th=(d.th||[]).concat(th).slice(-2);
+ if(r.code||r.lote)d.man=0;if(r.code)d.code=r.code;if(r.lote)d.lote=r.lote;if(th)d.th=(d.th||[]).concat(th).slice(-2);
  if(r.code&&r.lote)P.UI.msg={t:"ok",x:"Leí código "+r.code+" y lote "+r.lote+". Escribe la cantidad y valida."};
  else if(r.code)P.UI.msg={t:"no",x:"Leí el código "+r.code+". Falta el lote: toma otra foto donde se vea o escríbelo."};
  else if(r.lote)P.UI.msg={t:"no",x:"Leí el lote "+r.lote+". Falta el código: toma otra foto donde se vea o escríbelo."};
@@ -154,23 +154,31 @@ function lpManual(m){const P=LP[m],v=(P.UI.lpnTxt||"").replace(/\D/g,"");
  if(!k){P.UI.msg={t:"no",x:"La LPN "+lpFmt(v)+" no está en el Excel."};dlg({title:"LPN no encontrada",body:P.UI.msg.x+" Revisa los dígitos o carga un Excel más reciente.",buttons:[{t:"Entendido",cls:"pri"}]});render();return;}
  lpSetLpn(m,k,"");}
 function lpStart(m){const P=LP[m];P.CUR={id:uid(),lpn:"",at:Date.now(),status:"proceso",items:[],extras:[],lpnPh:"",det:null};P.UI.msg=null;P.UI.lpnTxt="";lpSave(m);render();window.scrollTo(0,0);}
+function lpAdv(m){const P=LP[m],d=lpDet(m),its=P.CUR.items,N=its.length;d.tgt=-1;if(!N)return;const s=d.tgtPrev>=0?d.tgtPrev:-1;for(let k=1;k<=N;k++){const j=(s+k+N)%N;if(its[j].st==="pend"){d.tgt=j;return;}}}
 function lpConfirm(m){
  const P=LP[m],d=lpDet(m),code=String(d.code||"").trim().toUpperCase(),lote=String(d.lote||"").trim().toUpperCase(),cnt=parseInt(d.cnt,10);
  if(!code||!lote){toast("Faltan el código y el lote.");return;}
  if(!/^\d+$/.test(String(d.cnt||"").trim())){toast("Escribe la cantidad de cajas.");return;}
- const its=P.CUR.items,same=its.filter(i=>vG(i.g)===vG(code)),ex=same.find(i=>nlot(i.l)===nlot(lote));
- const done=()=>{d.code="";d.lote="";d.cnt="";d.th=[];lpSave(m);render();};
- const th=(d.th||[]).slice(-1);
+ const its=P.CUR.items,same=its.filter(i=>vG(i.g)===vG(code)),ex=same.find(i=>nlot(i.l)===nlot(lote)),lots=new Set(its.map(i=>nlot(i.l)));
+ const via=((d.th||[]).length?"foto":"")+(d.man?((d.th||[]).length?" + manual":"manual"):"")||"manual";
+ const done=()=>{d.tgtPrev=d.tgt>=0?d.tgt:(ex?its.indexOf(ex):-1);d.code="";d.lote="";d.cnt="";d.th=[];d.man=0;d.chk=null;lpAdv(m);lpSave(m);render();};
+ const th=(d.th||[]).slice(-1),dcn=d.chk?" · Doble check ("+via+")":"";
  const rec=(kind,txt)=>dlg({title:kind,body:txt,buttons:[{t:"Corregir a mano"},{t:"Volver a tomar foto",fn:()=>lpRetake(m,"item")},{t:"Registrar diferencia",cls:"dg",fn:()=>{
-   if(kind==="Cantidad distinta"&&ex){ex.st="dif";ex.cnt=cnt;ex.ph=th;ex.note="Cantidad: Excel "+f2(ex.exp)+", contado "+cnt;}
-   else P.CUR.extras.push({g:code,l:lote,cnt,ph:th,note:kind==="Lote distinto"?"Lote distinto al Excel (Excel: "+same.map(i=>i.l).join(", ")+")":"Código que no está en la LPN"});
+   if(kind==="Cantidad distinta"&&ex){ex.st="dif";ex.cnt=cnt;ex.ph=th;ex.via=via;ex.note="Cantidad: Excel "+f2(ex.exp)+", contado "+cnt+dcn;}
+   else P.CUR.extras.push({g:code,l:lote,cnt,ph:th,via,note:(kind==="Lote distinto"?"Lote distinto al Excel (Excel: "+same.map(i=>i.l).join(", ")+")":"Código que no está en la LPN")+dcn});
    P.UI.msg={t:"no",x:"Diferencia registrada: "+kind+"."};done();}}]});
  if(ex){
   if(ex.st==="ok"){toast("Ese renglón ya estaba verificado.");return;}
-  if(Math.abs(cnt-ex.exp)<.0005){ex.st="ok";ex.cnt=cnt;ex.ph=th;ex.note="";P.UI.msg={t:"ok",x:"Coincide con el Excel: código "+ex.g+", lote "+ex.l+", "+cnt+" caja(s)."};done();toast("Coincide con el Excel.");}
+  if(Math.abs(cnt-ex.exp)<.0005){ex.st="ok";ex.cnt=cnt;ex.ph=th;ex.note="";ex.via=via;ex.dc=d.chk?1:0;P.UI.msg={t:"ok",x:"Coincide con el Excel: código "+ex.g+", lote "+ex.l+", "+cnt+" caja(s)."+(d.chk?" Doble check correcto.":"")};done();toast("Coincide con el Excel.");}
   else rec("Cantidad distinta","Código "+ex.g+", lote "+ex.l+". Excel: "+f2(ex.exp)+" · Tú contaste: "+cnt+". Vuelve a contar o registra la diferencia.");
- }else if(same.length)rec("Lote distinto","El código "+code+" sí está en la LPN, pero el lote "+lote+" no coincide. En el Excel: "+same.map(i=>i.l).join(", ")+". Vuelve a tomar la foto, corrígelo a mano o registra la diferencia.");
- else rec("Código fuera de la LPN","El código "+code+" no está en la LPN "+P.CUR.lpn+". Vuelve a tomar la foto, corrígelo a mano o registra la diferencia.");}
+  return;}
+ const kind=same.length?"Lote distinto":"Código fuera de la LPN",bad=[];
+ if(!same.length)bad.push("code");if(same.length||!lots.has(nlot(lote)))bad.push("lote");
+ const what=bad.length>1?"el código y el lote":bad[0]==="code"?"el código":"el lote";
+ const hint=same.length?" En el Excel, el código "+code+" lleva lote: "+same.map(i=>i.l).join(", ")+".":" El código "+code+" no está en la LPN.";
+ if(!d.chk){d.chk={n:1,bad,x:"⚠ Doble check: "+what+" no coincide con el Excel."+hint+" Toma otra foto o escríbelo a mano (si la caja está dañada o borrosa) y valida otra vez."};lpSave(m);render();toast("Doble check: verifica "+what+".");try{navigator.vibrate&&navigator.vibrate(120);}catch(e){}return;}
+ rec(kind,(same.length?"El código "+code+" sí está en la LPN, pero el lote "+lote+" no coincide. En el Excel: "+same.map(i=>i.l).join(", ")+".":"El código "+code+" no está en la LPN "+P.CUR.lpn+".")+" Ya se hizo el doble check ("+via+"). Si es correcto lo que ves, registra la diferencia.");}
+function lpExit(m){const P=LP[m];if(P.CUR&&!P.CUR.lpn){P.S=P.S.filter(x=>x.id!==P.CUR.id);}P.CUR=null;P.UI.msg=null;U.set(P.c.keys[1],P.S);U.set(P.c.keys[2],null);render();window.scrollTo(0,0);}
 function lpFinish(m){
  const P=LP[m],pend=P.CUR.items.filter(i=>i.st==="pend"),go=()=>{pend.forEach(i=>{i.st="dif";i.note="No se verificó (faltante en la tarima)";});
   P.CUR.status=(P.CUR.items.some(i=>i.st!=="ok")||P.CUR.extras.length)?"dif":"ok";P.CUR.done=Date.now();lpSave(m);gstInc(m);render();window.scrollTo(0,0);};
@@ -241,29 +249,33 @@ function lpView(m){
  if(!c.lpn)return msg+`<div class="card"><h2 class="sh"><i>1</i>Etiqueta de la LPN</h2><p class="mu" style="margin:6px 0 8px;font-size:14px">Toma foto de la etiqueta de la LPN o escríbela. Acepta los números con paréntesis y espacios, de 20 dígitos (o 18 sin el 00 del inicio). Se valida contra el Excel.</p>
   <label class="lb">LPN</label><div class="fld"><input data-rm="lpn" ${M} inputmode="numeric" maxlength="40" placeholder="(00) 1003 7000 3106 0950 58" value="${esc(P.UI.lpnTxt||"")}">${sb("L:"+m+":lpn")}</div>
   <div class="row3"><button type="button" class="btn pri" data-lr="lpnok" ${M}>Validar LPN</button><button type="button" class="btn" data-lr="exit" ${M}>Cancelar</button></div></div>`;
- const d=lpDet(m);
- return msg+`<div class="card"><div class="t" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><b style="font-size:17px">LPN ${esc(lpFmt(c.lpn))}</b><span class="tg" style="background:var(--okb);color:var(--ok)">En el Excel</span></div><p class="mu" style="margin:6px 0 0;font-size:13px">${ok} de ${c.items.length} verificados${c.extras.length?" · "+c.extras.length+" extra(s)":""}. Avance guardado automáticamente.</p></div>
- <div class="card"><h2 class="sh"><i>2</i>Código y lote</h2><p class="mu" style="margin:6px 0 4px;font-size:14px">Toma foto donde se vean el código y el lote, o por separado si están lejos. También puedes escribirlos.</p>
+const d=lpDet(m),its=c.items,N=its.length,ti=(d.tgt>=0&&its[d.tgt])?d.tgt:-1,T=ti>=0?its[ti]:null,np=its.filter(i=>i.st==="pend").length,ck=d.chk,bd=k=>ck&&ck.bad.indexOf(k)>=0?' style="border-color:var(--er);box-shadow:0 0 0 2px var(--erb)"':'';
+ const nb=dir=>`<button type="button" class="btn" style="padding:8px 16px;font-size:18px" data-lr="nv" data-dir="${dir}" ${M} aria-label="${dir<0?"Anterior":"Siguiente"}">${dir<0?"‹":"›"}</button>`;
+ return msg+`<div class="card"><div class="t" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><b style="font-size:17px">LPN ${esc(lpFmt(c.lpn))}</b><span class="tg" style="background:var(--okb);color:var(--ok)">En el Excel</span></div><p class="mu" style="margin:6px 0 0;font-size:13px">${ok} de ${N} verificados${c.extras.length?" · "+c.extras.length+" extra(s)":""}. Avance guardado automáticamente.</p>
+  <div class="row3" style="margin-top:8px"><button type="button" class="btn" data-lr="back" ${M}>‹ Cambiar LPN</button><button type="button" class="btn" data-lr="toend" ${M}>Ir a finalizar ›</button></div></div>
+ <div class="card" id="lpcard"><h2 class="sh"><i>2</i>Código y lote</h2>
+  <div style="display:flex;align-items:center;gap:8px;margin:6px 0 4px">${nb(-1)}<div style="flex:1;text-align:center;font-size:13px">${T?`<b>Renglón ${ti+1} de ${N}</b><br><span class="mu">Busca: ${esc(T.g)} · lote ${esc(T.l)}</span>`:`<b>${np} renglón(es) por verificar</b><br><span class="mu">Usa ‹ › para ir uno por uno</span>`}</div>${nb(1)}</div>
+  ${ck?`<div class="vbanner no" style="margin:8px 0;font-weight:600">${esc(ck.x)}</div>`:`<p class="mu" style="margin:6px 0 4px;font-size:14px">Toma foto donde se vean el código y el lote, o por separado si están lejos. También puedes escribirlos.</p>`}
   <div style="display:flex;align-items:center;gap:8px"><span style="font-weight:600">Foto</span>${sb("L:"+m+":item")}</div>
-  <label class="lb">Código</label><input data-rd="code" ${M} inputmode="numeric" maxlength="8" placeholder="80XXXXXX" value="${esc(d.code)}">
-  <label class="lb">Lote</label><input data-rd="lote" ${M} autocapitalize="characters" placeholder="10 caracteres" value="${esc(d.lote)}">
+  <label class="lb">Código</label><input data-rd="code" ${M} inputmode="numeric" maxlength="8" placeholder="80XXXXXX" value="${esc(d.code)}"${bd("code")}>
+  <label class="lb">Lote</label><input data-rd="lote" ${M} autocapitalize="characters" placeholder="10 caracteres" value="${esc(d.lote)}"${bd("lote")}>
   <label class="lb">Cantidad de cajas</label><input data-rd="cnt" ${M} inputmode="numeric" placeholder="0" value="${esc(d.cnt)}">
-  ${(d.th||[]).length?`<div style="display:flex;gap:8px;margin-top:10px">${d.th.map(t=>`<img src="${t}" alt="" style="height:64px;border-radius:8px;border:1px solid var(--bd)">`).join("")}</div>`:""}
-  <div class="row3"><button type="button" class="btn pri full" data-lr="conf" ${M}>Validar contra el Excel</button></div></div>
- <div class="card"><h2 class="sh"><i>≡</i>Renglones de la LPN</h2>${c.items.map(i=>`<div class="vx"><div class="t"><b>${esc(i.g)}</b>${rcvChip(i.st)}</div><p style="margin:4px 0 0;font-size:13px">${esc(i.desc||"")}</p><p style="margin:2px 0 0;font-size:12px;color:var(--mu)">Lote ${esc(i.l)}${i.st==="pend"?"":" · contado "+esc(i.cnt)+" de "+f2(i.exp)}</p>${i.note?`<p style="margin:2px 0 0;font-size:12px;color:var(--er)">${esc(i.note)}</p>`:""}${(i.ph||[]).length?`<img src="${i.ph[0]}" alt="" style="height:48px;margin-top:6px;border-radius:6px">`:""}</div>`).join("")}
+  ${(d.th||[]).length?`<div style="display:flex;gap:10px;margin-top:10px;align-items:flex-start;flex-wrap:wrap">${d.th.map((t,k)=>`<div style="position:relative"><img src="${t}" alt="" style="height:64px;border-radius:8px;border:1px solid var(--bd);display:block"><button type="button" data-lr="thx" data-i="${k}" ${M} aria-label="Quitar foto" style="position:absolute;top:-8px;right:-8px;width:26px;height:26px;border-radius:50%;border:0;background:var(--er);color:#fff;font-size:15px;line-height:1;cursor:pointer">✕</button></div>`).join("")}<button type="button" class="btn" style="padding:8px 12px;align-self:center" data-lr="rep" ${M}>Borrar y repetir</button></div>`:(d.code||d.lote?`<div style="margin-top:8px"><button type="button" class="btn" style="padding:8px 12px" data-lr="rep" ${M}>Borrar y repetir</button></div>`:"")}
+  <div class="row3"><button type="button" class="btn pri full" data-lr="conf" ${M}>${ck?"Validar de nuevo (doble check)":"Validar contra el Excel"}</button></div></div>
+ <div class="card"><h2 class="sh"><i>≡</i>Renglones de la LPN</h2>${its.map((i,k)=>`<div class="vx"${k===ti?' style="border-color:var(--ac)"':""}><div class="t"><b>${esc(i.g)}</b>${rcvChip(i.st)}</div><p style="margin:4px 0 0;font-size:13px">${esc(i.desc||"")}</p><p style="margin:2px 0 0;font-size:12px;color:var(--mu)">Lote ${esc(i.l)}${i.st==="pend"?"":" · contado "+esc(i.cnt)+" de "+f2(i.exp)}${i.via?" · "+esc(i.via)+(i.dc?" · doble check ✓":""):""}</p>${i.note?`<p style="margin:2px 0 0;font-size:12px;color:var(--er)">${esc(i.note)}</p>`:""}${(i.ph||[]).length?`<img src="${i.ph[0]}" alt="" style="height:48px;margin-top:6px;border-radius:6px">`:""}${i.st==="ok"?"":`<div class="row3" style="margin-top:6px"><button type="button" class="btn" style="padding:6px 12px" data-lr="pick" data-i="${k}" ${M}>Verificar este</button></div>`}</div>`).join("")}
   ${c.extras.map(i=>`<div class="vx"><div class="t"><b>${esc(i.g)}</b><span class="tg">Extra</span></div><p style="margin:4px 0 0;font-size:12px;color:var(--er)">Lote ${esc(i.l)} · ${esc(i.note)}</p></div>`).join("")}</div>
- <div class="row3"><button type="button" class="btn dk full" data-lr="fin" ${M}>Finalizar LPN</button><button type="button" class="btn full" data-lr="exit" ${M}>Guardar avance y salir</button></div>`;}
+ <div class="row3" id="lpend"><button type="button" class="btn dk full" data-lr="fin" ${M}>Finalizar LPN</button><button type="button" class="btn full" data-lr="exit" ${M}>Guardar avance y salir</button></div>`;}
 
 /* ---- eventos ---- */
 document.addEventListener("input",e=>{const t=e.target,d=t.dataset;if(!d||!d.m||!LP[d.m])return;const P=LP[d.m];
- if(d.rd&&P.CUR){let v=t.value;if(d.rd==="code"||d.rd==="cnt"){v=v.replace(/\D/g,"");if(v!==t.value)t.value=v;}lpDet(d.m)[d.rd]=v;clearTimeout(P.RT);P.RT=setTimeout(()=>lpSave(d.m),300);}
+ if(d.rd&&P.CUR){let v=t.value;if(d.rd==="code"||d.rd==="cnt"){v=v.replace(/\D/g,"");if(v!==t.value)t.value=v;}lpDet(d.m)[d.rd]=v;if(d.rd==="code"||d.rd==="lote")lpDet(d.m).man=1;clearTimeout(P.RT);P.RT=setTimeout(()=>lpSave(d.m),300);}
  if(d.rm==="lpn"){const v=t.value.replace(/\D/g,"");if(v!==t.value)t.value=v;P.UI.lpnTxt=v;}});
 document.addEventListener("change",e=>{const t=e.target,d=t.dataset;
  if(d.lm){const p=d.lm.split(":"),P=LP[p[0]];if(P&&P.MAP){P.MAP.map[p[1]]=t.value===""?undefined:+t.value;}}
  else if(d.lmh){const P=LP[d.lmh];if(P&&P.MAP){P.MAP.hdr=Math.max(0,Math.min(P.MAP.rows.length-1,(+t.value||1)-1));P.MAP.map=lpMap(P.MAP.rows[P.MAP.hdr]||[]);render();}}});
 document.addEventListener("click",e=>{const b=e.target.closest("[data-lr]");if(!b)return;const a=b.dataset.lr,m=b.dataset.m,id=b.dataset.id,P=LP[m];if(!P)return;
  if(a==="new")attGate(m,()=>lpStart(m));
- else if(a==="exit"){if(P.CUR&&!P.CUR.lpn){P.S=P.S.filter(x=>x.id!==P.CUR.id);}P.CUR=null;P.UI.msg=null;U.set(P.c.keys[1],P.S);U.set(P.c.keys[2],null);render();window.scrollTo(0,0);}
+ else if(a==="exit")lpExit(m);
  else if(a==="open"){P.CUR=P.S.find(x=>x.id===id)||null;P.UI.msg=null;U.set(P.c.keys[2],P.CUR?P.CUR.id:null);render();window.scrollTo(0,0);}
  else if(a==="del")dlg({title:"Eliminar LPN",body:"Se borra este registro de la lista.",buttons:[{t:"Cancelar"},{t:"Eliminar",cls:"dg",fn:()=>{P.S=P.S.filter(x=>x.id!==id);U.set(P.c.keys[1],P.S);render();}}]});
  else if(a==="lpnok")lpManual(m);
@@ -275,5 +287,12 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-lr]");if(!
  else if(a==="pdf1"){const s=P.S.find(x=>x.id===id)||P.CUR;if(s)lpPdf(m,[s]);}
  else if(a==="pdfall")lpPdf(m,P.S.filter(s=>s.lpn));
  else if(a==="mapok"){const mp=P.MAP.map,miss=LREQ.filter(x=>mp[x[0]]==null);if(miss.length){toast("Falta asignar: "+miss.map(x=>x[1]).join(", ")+".");return;}lpBuild(m);}
- else if(a==="mapno"){P.MAP=null;render();}});
+ else if(a==="mapno"){P.MAP=null;render();}
+ else if(a==="nv"&&P.CUR){const d=lpDet(m),N=P.CUR.items.length,dir=+b.dataset.dir;if(!N)return;d.tgt=d.tgt<0?(dir>0?0:N-1):(d.tgt+dir+N)%N;d.chk=null;render();}
+ else if(a==="pick"&&P.CUR){const d=lpDet(m);d.tgt=+b.dataset.i;render();const e=document.getElementById("lpcard");if(e)window.scrollTo({top:Math.max(0,e.getBoundingClientRect().top+scrollY-70),behavior:"smooth"});}
+ else if(a==="toend"){const e=document.getElementById("lpend");if(e)window.scrollTo({top:Math.max(0,e.getBoundingClientRect().top+scrollY-120),behavior:"smooth"});}
+ else if(a==="thx"&&P.CUR){const d=lpDet(m);d.th.splice(+b.dataset.i,1);lpSave(m);render();}
+ else if(a==="rep"&&P.CUR){const d=lpDet(m);d.th=[];d.code="";d.lote="";d.man=0;lpSave(m);render();toast("Listo: repite la foto o escribe los datos.");}
+ else if(a==="back"&&P.CUR){const c=P.CUR;if(c.items.every(i=>i.st==="pend")&&!c.extras.length){c.lpn="";c.items=[];c.det=null;c.lpnPh="";P.UI.lpnTxt="";P.UI.msg=null;lpSave(m);render();window.scrollTo(0,0);}
+  else dlg({title:"Salir de esta LPN",body:"Ya verificaste renglones. Tu avance queda guardado y puedes retomarlo desde Pendientes.",buttons:[{t:"Seguir aquí"},{t:"Guardar y salir",cls:"pri",fn:()=>lpExit(m)}]});}});
 $("#frcv").addEventListener("change",e=>lpPick("rcv",e));$("#fsur").addEventListener("change",e=>lpPick("sur",e));

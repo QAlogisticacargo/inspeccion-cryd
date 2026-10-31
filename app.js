@@ -352,7 +352,7 @@ function viewPerfil(){const g=ME.guest,th=LS.get("cryd:theme","system");
  <div class="card"><h2 class="sh">Cuenta</h2>${g?`<p class="mu" style="margin:6px 0 12px;font-size:14px">En modo invitado puedes capturar, generar PDF y validar inventarios, pero nada queda guardado al salir.</p><button type="button" class="btn pri" style="width:100%" data-ua="signupg">Crear una cuenta</button><button type="button" class="btn txt" style="width:100%;margin-top:8px" data-ua="logout">Salir del modo invitado</button>`:`<p class="mu" style="margin:6px 0 12px;font-size:14px">Tu cuenta y tus folios viven solo en este dispositivo. No se comparten con otros dispositivos ni compañeros. Exporta respaldos desde Historial.</p><button type="button" class="btn" style="width:100%" data-ua="logout">Cerrar sesión</button><button type="button" class="btn dg" style="width:100%;margin-top:10px" data-ua="delacc">Eliminar mi cuenta y datos</button>`}</div>
  ${g?"":viewCloud()}
  ${viewAdminCard()}
- <p class="mu" style="text-align:center;font-size:12px">Procesos CRyD · versión 2.4</p>`;}
+ <p class="mu" style="text-align:center;font-size:12px">Procesos CRyD · versión 2.5</p>`;}
 function render(){
  if(!ME){renderAuth();return;}
  document.body.classList.remove("noauth");
@@ -381,7 +381,7 @@ document.addEventListener("click",e=>{
  else if(a==="delacc")dlg({title:"Eliminar cuenta",body:"Se borrarán tu cuenta y todos tus folios guardados en este dispositivo. No se puede deshacer.",buttons:[{t:"Cancelar"},{t:"Eliminar",cls:"dg",fn:()=>{const e2=ME.emp;["rec","warn","draft","stmap"].forEach(k=>{try{localStorage.removeItem("cryd:u"+e2+":"+k);}catch(x){}});USERS=USERS.filter(u=>u.emp!==e2);saveUsers();logout();toast("Cuenta eliminada.");}}]});});
 
 /* ---------- respaldo en servidor (Firebase Realtime Database, vía REST) ---------- */
-const CLOUD_DEFAULT="";/* opcional: pon aquí la dirección del servidor para que todos tus compañeros la usen sin configurar */
+const CLOUD_DEFAULT="https://procesos-cryd-default-rtdb.firebaseio.com";/* opcional: pon aquí la dirección del servidor para que todos tus compañeros la usen sin configurar */
 const CL={st:"",ing:false};let CT=0;
 const normUrl=s=>{s=(s||"").trim().replace(/\/+$/,"");if(s&&!/^https?:\/\//i.test(s))s="https://"+s;return s;};
 function cloudCfg(){const c=LS.get("cryd:cloud",null);return normUrl(c&&c.url?c.url:CLOUD_DEFAULT);}

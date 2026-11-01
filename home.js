@@ -65,7 +65,7 @@ function resumeItem(){
  lpProc().slice(0,1).forEach(x=>a.push({t:LCFG[x.m].name+" · LPN "+lpFmt(x.s.lpn),s:x.s.items.filter(i=>i.st==="ok").length+" de "+x.s.items.length+" verificados",go:x.m,m:x.m,id:x.s.id}));
  if(hasDraft)a.push({t:"Maquila · folio "+(S.folio||"sin folio"),s:(S.codigo||"Sin código")+" · borrador",go:"insp"});
  return a[0]||null;}
-const TILES=[["rcv","Recibo","Valida LPN, códigos y lotes contra el Excel"],["sur","Surtido","Valida lo surtido contra el Excel"],["val","Validación","Compara SAP contra PrIME"],["insp","Maquila","Formato de inspección con PDF"],["dash","Dashboards","Extrae información de tus archivos"],["pend","Pendientes","Lo que dejaste a medias"],["hist","Historial","Todos tus procesos"],["perfil","Perfil","Tema, sesión y respaldo"]];
+const TILES=[["rcv","Recibo","Valida LPN, códigos y lotes contra el Excel"],["sur","Surtido","Valida lo surtido contra el Excel"],["val","Validación","Compara SAP contra PrIME"],["insp","Maquila","Formato de inspección con PDF"],["l3d","Layout 3D","Recorre el área de maquila"],["dash","Dashboards","Extrae información de tus archivos"],["pend","Pendientes","Lo que dejaste a medias"],["hist","Historial","Todos tus procesos"],["perfil","Perfil","Tema, sesión y respaldo"]];
 function tileSub(k){
  if(k==="rcv"||k==="sur"){const p=LP[k],n=p.S.filter(s=>s.lpn&&s.status==="proceso").length,t=p.S.filter(s=>s.lpn).length;return t?t+" LPN"+(n?" · "+n+" en proceso":""):(p.X?"Excel cargado":"Sube tu Excel y empieza");}
  if(k==="val")return VAL.res?(VAL.res.D.length?VAL.res.D.length+" diferencias":"Todo OK"):"Compara SAP contra PrIME";
@@ -73,7 +73,7 @@ function tileSub(k){
  if(k==="dash")return DSH.length?DSH.length+" guardado"+(DSH.length===1?"":"s"):"Extrae información de tus archivos";
  if(k==="pend"){const n=pendCount();return n?n+" por terminar":"Nada pendiente";}
  if(k==="hist"){const n=REC.length+HLOG.length+Object.keys(LP).reduce((a,m)=>a+LP[m].S.filter(s=>s.lpn).length,0);return n?n+" registro"+(n===1?"":"s"):"Todos tus procesos";}
- return TILES.find(x=>x[0]===k)[2];}
+ return (TILES.find(x=>x[0]===k)||[0,0,""])[2];}
 function viewHome(){
  const g=ME.guest,nm=g?(ME.nombre==="Invitado"?"":ME.nombre):ME.nombre,hr=new Date().getHours(),sal=hr<12?"Buenos días":hr<19?"Buenas tardes":"Buenas noches",r=resumeItem();
  let fd=new Date().toLocaleDateString("es-MX",{weekday:"long",day:"numeric",month:"long"});fd=fd.charAt(0).toUpperCase()+fd.slice(1);
@@ -81,7 +81,7 @@ function viewHome(){
  ${r?`<button type="button" class="resume" ${r.m?`data-pgo="${r.m}:${r.id}"`:`data-tab="${r.go}"`}><span><small>Continuar donde ibas</small><b>${esc(r.t)}</b><em>${esc(r.s)}</em></span><i>›</i></button>`:""}
  <div class="tiles">${TILES.map((t,i)=>`<button type="button" class="tile" data-tab="${t[0]}"><span class="ti c${(i%2)+1}"><svg viewBox="0 0 24 24">${IC[t[0]]||IC.perfil}</svg></span><b>${t[1]}</b><small>${esc(tileSub(t[0]))}</small>${festOn()?`<span class="fi">${FA[["pump","mari","bat","pan","skull"][i%5]]}</span>`:""}${t[0]==="pend"&&pendCount()?`<span class="pb" style="top:12px;right:12px;left:auto">${pendCount()}</span>`:""}</button>`).join("")}</div>`;}
 function viewMore(){
- const rows=[["dash","Dashboards",tileSub("dash")],["pend","Pendientes",tileSub("pend")],["hist","Historial",tileSub("hist")],["perfil","Perfil",tileSub("perfil")]];if(admOn())rows.push(["admin","Administrador","Cuentas e invitados"]);
+ const rows=[["l3d","Layout 3D",tileSub("l3d")],["dash","Dashboards",tileSub("dash")],["pend","Pendientes",tileSub("pend")],["hist","Historial",tileSub("hist")],["perfil","Perfil",tileSub("perfil")]];if(admOn())rows.push(["admin","Administrador","Cuentas e invitados"]);
  return `<div class="mrows">${rows.map(x=>`<button type="button" class="mrow" data-tab="${x[0]}"><span class="ti c${x[0]==="dash"||x[0]==="hist"?1:2}" style="width:38px;height:38px"><svg viewBox="0 0 24 24">${IC[x[0]]||IC.perfil}</svg></span><span style="flex:1"><b>${x[1]}</b><small>${esc(x[2])}</small></span><i>›</i></button>`).join("")}</div>`;}
 const lpCard=(m,s,ac)=>{const ok=s.items.filter(i=>i.st==="ok").length,bd=s.status==="dup"?'<span class="bd" style="background:var(--erb);color:var(--er)">para borrar</span>':s.status==="proceso"?'<span class="bd pend">en proceso</span>'+attBadge(s.id):s.status==="ok"?'<span class="bd ok">correcta</span>':'<span class="bd" style="background:var(--erb);color:var(--er)">diferencias</span>';
  return `<div class="item"><div class="h"><b>${esc(lpFmt(s.lpn))}</b>${bd}<span style="margin-left:auto;color:var(--mu);font-size:13px">${esc(fdate(s.upd||s.at))}</span></div><p>${LCFG[m].name} · ${ok} de ${s.items.length} renglones OK${s.extras.length?" · "+s.extras.length+" extra(s)":""}</p>
@@ -142,3 +142,30 @@ function festPerfil(){const p=festPref()||"auto",o=[["auto","Automático"],["on"
  return `<div class="card"><h2 class="sh"><i>🎃</i>Tema de temporada</h2><p class="mu" style="margin:6px 0 10px;font-size:14px">Calabazas, murciélagos, telarañas, cempasúchil y pan de muerto. En automático se activa del 20 de octubre al 3 de noviembre.</p><div class="vc" style="margin-top:0">${o.map(x=>`<button type="button" class="${p===x[0]?"on":""}" data-fest="${x[0]}">${x[1]}</button>`).join("")}</div></div>`;}
 document.addEventListener("click",e=>{const b=e.target.closest("[data-fest]");if(!b)return;LS.set("cryd:fest",b.dataset.fest==="auto"?"":b.dataset.fest);festApply();render();});
 {const _r=render;render=function(){_r.apply(this,arguments);try{festApply();}catch(e){}};}
+
+/* ===== Layout 3D (sección + presentación al entrar, una vez al día por usuario) ===== */
+IC.l3d='<path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M12 12l8-4.5M12 12v9M12 12L4 7.5"/>';
+const l3dTheme=()=>{const t=LS.get("cryd:theme","system");return t==="light"||t==="dark"?"&t="+t:"";};
+function viewL3d(){return `<div class="l3dw"><iframe id="l3df" title="Layout 3D de la maquila CRyD" src="layout3d.html#emb${l3dTheme()}" loading="lazy" style="height:1100px"></iframe></div><p class="mu" style="font-size:12px;margin:8px 0 0">Arrastra para girar, pellizca para acercar. Medidas estimadas.</p>`;}
+const l3dSpOn=()=>LS.get("cryd:l3dsp","on")!=="off";
+function l3dPerfil(){return `<div class="card"><h2 class="sh">Presentación del layout</h2><p class="mu" style="margin:6px 0 12px;font-size:14px">Al abrir la app por primera vez en el día se muestra unos segundos el layout 3D. Puedes saltarla con un toque.</p><button type="button" class="btn" style="width:100%" data-l3d="tog">${l3dSpOn()?"Activada · tocar para desactivar":"Desactivada · tocar para activar"}</button></div>`;}
+let L3DSHOWN=false,L3DTM=0;
+function l3dClose(){const o=document.getElementById("l3dsp");clearTimeout(L3DTM);if(!o)return;const f=o.querySelector("iframe");if(f)f.src="about:blank";o.classList.add("out");setTimeout(()=>{try{o.remove();}catch(e){}},260);}
+function l3dMaybe(){
+ if(L3DSHOWN||!ME||!l3dSpOn())return;
+ const day=new Date().toLocaleDateString("sv-SE"),key="cryd:l3dday:"+ME.emp;
+ if(LS.get(key,"")===day){L3DSHOWN=true;return;}
+ L3DSHOWN=true;
+ try{if(matchMedia("(prefers-reduced-motion:reduce)").matches||(navigator.deviceMemory&&navigator.deviceMemory<=2)||(navigator.hardwareConcurrency&&navigator.hardwareConcurrency<=2))return;}catch(e){}
+ LS.set(key,day);
+ setTimeout(()=>{if(document.getElementById("l3dsp")||!ME)return;
+  const o=document.createElement("div");o.id="l3dsp";
+  o.innerHTML=`<iframe title="Layout 3D" src="layout3d.html#splash${l3dTheme()}"></iframe><div class="l3t"><b>Procesos CRyD</b><span>Maquila CRyD · Layout 3D</span></div><button type="button" class="btn pri l3b" data-l3d="skip">Entrar</button><i class="l3p"></i>`;
+  document.body.appendChild(o);L3DTM=setTimeout(l3dClose,5500);},700);}
+document.addEventListener("click",e=>{const b=e.target.closest("[data-l3d]");if(!b)return;
+ if(b.dataset.l3d==="skip")l3dClose();
+ else if(b.dataset.l3d==="tog"){LS.set("cryd:l3dsp",l3dSpOn()?"off":"on");render();}});
+window.addEventListener("message",e=>{if(e.origin!==location.origin||!e.data)return;
+ if(e.data.l3d==="nogl")l3dClose();
+ if(e.data.l3dh){const f=document.getElementById("l3df");if(f&&e.source===f.contentWindow)f.style.height=Math.min(3000,e.data.l3dh)+"px";}});
+{const _r3=render;render=function(){_r3.apply(this,arguments);try{l3dMaybe();}catch(e){}};}

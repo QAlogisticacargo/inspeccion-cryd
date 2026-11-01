@@ -312,7 +312,7 @@ const saveUsers=()=>LS.set("cryd:users",USERS);
 const U={get(k,d){return ME&&!ME.guest?LS.get("cryd:u"+ME.emp+":"+k,d):LS.get("cryd:ug:"+k,d);},set(k,v){if(ME&&!ME.guest){const r=LS.set("cryd:u"+ME.emp+":"+k,v);cloudSoon();return r;}return LS.set("cryd:ug:"+k,v);}};
 const GLYPH='<svg viewBox="0 0 24 24"><path d="M9 4h6l1 2h3v14H5V6h3z"/><path d="M9 13l2 2 4-4"/></svg>';
 const IC={insp:'<path d="M9 4h6l1 2h3v14H5V6h3z"/><path d="M9 13l2 2 4-4"/>',pend:'<circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3 2"/>',hist:'<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/>',val:'<path d="M4 8h14l-3-3M20 16H6l3 3"/>',rcv:'<path d="M4 8l8-4 8 4v8l-8 4-8-4z"/><path d="M4 8l8 4 8-4M12 12v8"/>',perfil:'<circle cx="12" cy="8.5" r="3.6"/><path d="M5 20c.8-3.6 3.6-5.4 7-5.4s6.2 1.8 7 5.4"/>',home:'<path d="M4 11l8-7 8 7v9H5z"/><path d="M10 20v-6h4v6"/>',sur:'<path d="M3 7h11v9H3zM14 10h4l3 3v3h-7"/><circle cx="7" cy="18" r="1.6"/><circle cx="17" cy="18" r="1.6"/>',dash:'<rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="4" rx="1.5"/><rect x="13" y="10" width="7" height="10" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/>',more:'<circle cx="6" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="18" cy="12" r="1.4"/>'};
-const TNAME={home:"Inicio",rcv:"Recibo",sur:"Surtido",val:"Validación",insp:"Maquila",dash:"Dashboards",pend:"Pendientes",hist:"Historial",more:"Más",perfil:"Perfil",admin:"Administrador"};
+const TNAME={home:"Inicio",rcv:"Recibo",sur:"Surtido",val:"Validación",insp:"Maquila",dash:"Dashboards",pend:"Pendientes",hist:"Historial",more:"Más",perfil:"Perfil",admin:"Administrador",l3d:"Layout 3D"};
 const initials=u=>((u.nombre||"?")[0]+((u.apellido||"")[0]||"")).toUpperCase();
 const titleCase=s=>s.trim().replace(/\s+/g," ").toLowerCase().replace(/(^|[\s'-])([a-záéíóúüñ])/g,(m,a,b)=>a+b.toUpperCase());
 const NAME_RE=/^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ' .-]{2,40}$/;
@@ -360,9 +360,9 @@ function viewPerfil(){const g=ME.guest,th=LS.get("cryd:theme","system");
  <div class="card"><h2 class="sh">Sesión</h2>${g?`<p class="mu" style="margin:6px 0 12px;font-size:14px">Tu avance de Recibo, Surtido, Validación, Maquila y Dashboards queda guardado aquí. Si la app se cierra, al volver a entrar continúas donde ibas.</p><button type="button" class="btn" style="width:100%" data-ua="logout">Salir</button><button type="button" class="btn dg" style="width:100%;margin-top:10px" data-ua="gwipe">Borrar mis datos de este dispositivo</button>`:`<p class="mu" style="margin:6px 0 12px;font-size:14px">Tu cuenta y tus avances se respaldan en el servidor. Si cambias de teléfono, entra con tu número de empleado y se recuperan.</p><button type="button" class="btn" style="width:100%" data-ua="logout">Cerrar sesión</button><button type="button" class="btn dg" style="width:100%;margin-top:10px" data-ua="delacc">Eliminar mi cuenta y datos</button>`}</div>
  ${g?"":viewCloud()}
  ${g?"":viewAdminCard()}
- ${festPerfil()}
- <p class="mu" style="text-align:center;font-size:12px">Procesos CRyD · versión 3.5</p>`;}
-const BAR=["home","rcv","sur","val","insp","more"],MORE=["dash","pend","hist","perfil","admin"];
+ ${festPerfil()}${l3dPerfil()}
+ <p class="mu" style="text-align:center;font-size:12px">Procesos CRyD · versión 3.6</p>`;}
+const BAR=["home","rcv","sur","val","insp","more"],MORE=["dash","pend","hist","l3d","perfil","admin"];
 function render(){
  if(!ME){renderAuth();return;}
  document.body.classList.remove("noauth");
@@ -371,7 +371,7 @@ function render(){
  try{LS.set("cryd:ui",{emp:ME.emp,tab:TAB,ts:Date.now()});}catch(e){}
  $("#tabs").innerHTML=BAR.map(t=>`<button type="button" class="tab ${t===act?"on":""}" data-tab="${t}"><svg viewBox="0 0 24 24">${IC[t]}</svg>${TNAME[t]}${t==="more"&&np?`<span class="pb">${np}</span>`:""}</button>`).join("");
  $("#who").textContent=initials(ME);
- const V={home:viewHome,rcv:()=>lpView("rcv"),sur:()=>lpView("sur"),val:viewVal,insp:viewInsp,dash:viewDash,pend:viewPend,hist:viewHist,more:viewMore,perfil:viewPerfil,admin:viewAdmin};
+ const V={home:viewHome,rcv:()=>lpView("rcv"),sur:()=>lpView("sur"),val:viewVal,insp:viewInsp,dash:viewDash,pend:viewPend,hist:viewHist,more:viewMore,perfil:viewPerfil,admin:viewAdmin,l3d:viewL3d};
  const back=MORE.includes(TAB)?`<button type="button" class="back" data-tab="more">‹ Más</button>`:"";
  $("#app").innerHTML=(TAB==="home"?"":back+`<h1 class="lt">${TNAME[TAB]}</h1>`)+V[TAB]()+FOOT;
  if(TAB==="rcv"||TAB==="sur"||TAB==="insp")warmOcr();if(typeof firstHelp==="function")setTimeout(firstHelp,250);}

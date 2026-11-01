@@ -398,8 +398,8 @@ function buildRoof(){
   for(let z=3;z<HD;z+=4.2)for(let x=0;x<HX1;x+=4.2){box(x,HH-1.0,z,.9,.08,.3,hex("#ffffff"));}
 }
 /* ===== WebGL ===== */
-const SPL=document.body.className==="sp",EMB=document.body.className==="emb";let LOW=SPL;
-const cv=document.getElementById("gl"),gl=cv.getContext("webgl",{antialias:!SPL,alpha:false,powerPreference:"high-performance"});
+const SPL=document.body.className==="sp",EMB=document.body.className==="emb";let LOW=false;
+const cv=document.getElementById("gl"),gl=cv.getContext("webgl",{antialias:true,alpha:false,powerPreference:"high-performance"});
 if(!gl){document.getElementById("stage").innerHTML='<p style="padding:20px">Tu navegador no pudo iniciar la vista 3D (WebGL).</p>';try{parent.postMessage({l3d:"nogl"},location.origin);}catch(e){}return;}
 const VS="attribute vec3 p;attribute vec3 n;attribute vec4 c;attribute vec2 t;uniform mat4 m;uniform vec3 e;varying vec4 vc;varying vec2 vt;varying float vl;varying float vf;\nvoid main(){vec3 L=normalize(vec3(-.45,.85,-.35));float d=max(dot(n,L),0.);float h=.5+.5*n.y;vl=.42+.30*h+.46*d;vc=c;vt=t;vf=clamp((length(p-e)-85.)/130.,0.,.85);gl_Position=m*vec4(p,1.);}";
 const FS="precision mediump float;varying vec4 vc;varying vec2 vt;varying float vl;varying float vf;uniform sampler2D s;uniform vec3 bg;\nvoid main(){vec4 col=vc;float lit=vl;if(vt.x>=0.){col=texture2D(s,vt);if(col.a<.35)discard;lit=.55+.45*vl;}vec3 r=col.rgb*lit;r=mix(r,bg,vf);gl_FragColor=vec4(r,col.a*vc.a);}";
@@ -496,7 +496,7 @@ function frame(t){requestAnimationFrame(frame);if(document.hidden){tprev=t;retur
 }
 Object.assign(cam,wide(VIEWS[3].g));
 window.__cam=cam;window.__setView=g=>Object.assign(cam,g);window.__focus=focusZone;
-if(SPL){st.labels=false;st.spin=true;Object.assign(cam,{tx:27,ty:.6,td:12,yaw:.5,pit:.55,dist:(innerWidth<innerHeight?112:76)});}
+if(SPL){st.labels=false;st.spin=true;Object.assign(cam,{tx:27,ty:.6,td:12,yaw:.5,pit:.55,dist:(innerWidth<innerHeight?92:70)});}
 if(EMB){const post=()=>{try{parent.postMessage({l3dh:Math.ceil(document.documentElement.scrollHeight)},location.origin);}catch(e){}};addEventListener("load",post);addEventListener("resize",post);setTimeout(post,300);setTimeout(post,1200);}
 requestAnimationFrame(frame);
 })();

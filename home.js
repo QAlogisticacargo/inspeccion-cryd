@@ -160,7 +160,7 @@ function l3dMaybe(){
  LS.set(key,day);
  setTimeout(()=>{if(document.getElementById("l3dsp")||!ME)return;
   const o=document.createElement("div");o.id="l3dsp";
-  o.innerHTML=`<iframe title="Layout 3D" src="layout3d.html#splash${l3dTheme()}"></iframe><div class="l3t"><b>Procesos CRyD</b><span>Maquila CRyD · Layout 3D</span></div><button type="button" class="btn pri l3b" data-l3d="skip">Entrar</button><i class="l3p"></i>`;
+  o.innerHTML=`<iframe title="Layout 3D" src="layout3d.html#splash${l3dTheme()}" onload="this.classList.add('on')"></iframe><div class="l3t"><b>Procesos CRyD</b><span>Maquila CRyD · Layout 3D</span></div><button type="button" class="btn pri l3b" data-l3d="skip">Entrar</button><i class="l3p"></i>`;
   document.body.appendChild(o);L3DTM=setTimeout(l3dClose,5500);},700);}
 document.addEventListener("click",e=>{const b=e.target.closest("[data-l3d]");if(!b)return;
  if(b.dataset.l3d==="skip")l3dClose();

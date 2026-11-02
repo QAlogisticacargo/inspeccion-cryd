@@ -17,6 +17,8 @@ Sube TODOS al repositorio (reemplaza los existentes).
 
 ## Novedades 3.7 (iconos y ajustes finales)
 
+- Layout 3D 3.7.10: filas B70–B75 rotuladas, rack pegado al muro este dividido por salida de emergencia, jaula CRyD tras la reja del fondo, franja sanitaria, puertas corredizas de montacargas.
+
 - Layout 3D: mesa de inspección en el rectángulo amarillo, pasillos entre cubículos, zona de producto sobre tarimas y todas las tarimas CHEP azules.
 - Icono "SMO CRyD" con versión de temporada (calavera y cempasúchil, gorro navideño, calabaza y un emblema por mes). Iconos: ati-*.png
 - Layout 3D: se muestra las primeras 7 veces que se abre la app cada día.

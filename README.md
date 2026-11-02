@@ -15,6 +15,9 @@ Sube TODOS al repositorio (reemplaza los existentes).
 - Invitado: botón "Entrar" (nombre opcional).
 - Administrador: "Acceso administrador".
 
+## Novedades 3.7 (eliminar con doble confirmación)
+- Historial y Pendientes: botón Eliminar en LPN, registros del historial y dashboards, con doble confirmación. Perfil: botón "Buscar actualización" y línea de versión de archivos.
+
 ## Novedades 3.7 (icono de temporada)
 - El icono del encabezado (y la pestaña del navegador) cambia solo según la fecha en México: Año Nuevo, Reyes, Amor y Amistad, Bandera, Primavera, Día del Niño, Batalla de Puebla, Madres, Padre, verano, regreso a clases, Fiestas Patrias, Octubre Rosa, Halloween, Día de Muertos, Revolución, Guadalupe y Navidad. Archivo: temporada.js
 

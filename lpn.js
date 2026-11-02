@@ -278,7 +278,7 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-lr]");if(!
  if(a==="new")attGate(m,()=>lpStart(m));
  else if(a==="exit")lpExit(m);
  else if(a==="open"){P.CUR=P.S.find(x=>x.id===id)||null;P.UI.msg=null;U.set(P.c.keys[2],P.CUR?P.CUR.id:null);render();window.scrollTo(0,0);}
- else if(a==="del")dlg({title:"Eliminar LPN",body:"Se borra este registro de la lista.",buttons:[{t:"Cancelar"},{t:"Eliminar",cls:"dg",fn:()=>{P.S=P.S.filter(x=>x.id!==id);U.set(P.c.keys[1],P.S);render();}}]});
+ else if(a==="del")dlgDel("LPN","este registro de la lista",()=>{P.S=P.S.filter(x=>x.id!==id);U.set(P.c.keys[1],P.S);render();});
  else if(a==="lpnok")lpManual(m);
  else if(a==="conf")lpConfirm(m);
  else if(a==="fin")lpFinish(m);

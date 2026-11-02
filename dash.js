@@ -291,7 +291,7 @@ document.addEventListener("click",e=>{
   else if(a==="gfv"){const f=DS.gf[+v],x=d.v,i=f.vals.indexOf(x);if(i>=0)f.vals.splice(i,1);else f.vals.push(x);render();}
   else if(a==="save"){const nm=(DS.name||"").trim();if(!nm){toast("Escribe un nombre para el dashboard.");return;}const o={id:DS.id||uid(),name:nm,upd:Date.now(),w:clone(DS.w),gf:clone(DS.gf)};const i=DSH.findIndex(x=>x.id===o.id);if(i>=0)DSH[i]=o;else DSH.push(o);DS.id=o.id;dshSave();toast("Dashboard guardado.");render();}
   else if(a==="open"){const o=DSH.find(x=>x.id===d.id);if(!o)return;DS.w=clone(o.w);DS.gf=clone(o.gf||[]);DS.name=o.name;DS.id=o.id;DS.v="dash";DS.pend=!DS.wb;if(DS.wb)dsCheck();TAB="dash";render();window.scrollTo(0,0);}
-  else if(a==="rm")dlg({title:"Eliminar dashboard",body:"Se borra el diseño guardado.",buttons:[{t:"Cancelar"},{t:"Eliminar",cls:"dg",fn:()=>{DSH=DSH.filter(x=>x.id!==d.id);dshSave();render();}}]});
+  else if(a==="rm")dlgDel("dashboard",'"'+d.name+'"',()=>{DSH=DSH.filter(x=>x.id!==d.id);dshSave();render();});
   else if(a==="pdf")dsPdf();
   else if(a==="xlall")dsXl(DS.w,(DS.name||"Dashboard").replace(/[^\w.-]+/g,"_"));
   return;}

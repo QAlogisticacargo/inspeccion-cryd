@@ -171,3 +171,6 @@ body.fest .tile .ti.c2{background:#e9791a;color:#fff}
 #l3dsp .l3b{position:absolute;right:16px;bottom:max(26px,env(safe-area-inset-bottom,0px));min-width:110px}
 #l3dsp .l3p{position:absolute;left:0;bottom:0;height:4px;width:100%;background:var(--ac,#204f5f);transform-origin:left;animation:l3p 5.5s linear forwards}
 @keyframes l3p{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+
+.brand .bt{font-size:13.5px;line-height:1.15;font-weight:700;min-width:0}
+#l3dsp .l3t b{text-align:center;padding:0 14px;font-size:19px}

@@ -65,9 +65,9 @@ function lpMerge(m,arr){const p=LP[m];let n=0;(Array.isArray(arr)?arr:Object.val
  if(p.CUR)p.CUR=p.S.find(x=>x.id===p.CUR.id)||p.CUR;U.set(p.c.keys[1],p.S);return n;}
 
 /* ---- lectura del Excel y asignación de columnas ---- */
-const RPAT={lpn:/load number|lpn|license|placa|carga|pallet|tarima|sscc/,gcas:/item number|gcas|material|codigo|sku|articulo/,desc:/descri/,lote:/lot number|lote|batch/,estatus:/status|estatus|estado/,cant:/unit quantity|unit qty|cantidad|qty|quantity|cajas|piezas/,sloc:/storage|sloc|almacen|ubicacion/,planta:/client|planta|plant/};
+const RPAT={lpn:/load number|lpn|license|placa|carga|pallet|tarima|sscc/,gcas:/item number|gcas|material|codigo|sku|articulo/,desc:/descri/,lote:/lot number|lote|batch/,estatus:/status|estatus|estado/,cant:/unit quantity|unit qty|cantidad|qty|quantity|cajas|piezas/,sloc:/storage|sloc|almacen|ubicacion/,planta:/client|planta|plant/,um:/\buom\b|unit of measure|unidad de medida|unidad med|\bu\.?m\.?\b|medida|\bunit$/};
 const LREQ=[["lpn","LPN / Load Number"],["gcas","Código / Item Number"],["lote","Lote / Lot Number"],["cant","Cantidad / Unit Quantity"]];
-const LOPT=[["desc","Descripción"],["estatus","Estatus"],["sloc","Sloc"],["planta","Planta"]];
+const LOPT=[["desc","Descripción"],["estatus","Estatus"],["sloc","Sloc"],["planta","Planta"],["um","Unidad de medida (CS / IT)"]];
 function lpMap(row){const m={},used=new Set();Object.keys(RPAT).forEach(f=>{for(let c=0;c<row.length;c++){if(used.has(c))continue;const h=nz(row[c]);if(!h||/display|date|fecha|time/.test(h))continue;if(RPAT[f].test(h)){m[f]=c;used.add(c);break;}}});return m;}
 async function lpPick(m,e){const f=e.target.files[0];e.target.value="";if(!f)return;
  if(typeof XLSX==="undefined"){toast("No se pudo cargar el lector de Excel. Revisa tu conexión.");return;}
@@ -76,6 +76,7 @@ async function lpPick(m,e){const f=e.target.files[0];e.target.value="";if(!f)ret
   const wb=XLSX.read(await f.arrayBuffer(),{type:"array"}),ws=wb.Sheets[wb.SheetNames[0]],rg=ws["!ref"]?XLSX.utils.decode_range(ws["!ref"]):{s:{r:0,c:0}};
   const rows=XLSX.utils.sheet_to_json(ws,{header:1,raw:true,defval:"",blankrows:true});
   let best={n:-1,r:0,m:{}};for(let r=0;r<Math.min(rows.length,30);r++){const mp=lpMap(rows[r]),n=Object.keys(mp).length;if(n>best.n)best={n,r,m:mp};}
+  if(best.m.um==null){const used=new Set(Object.values(best.m));for(let c=0;c<30;c++){if(used.has(c))continue;let n=0,ok=0;for(let r=best.r+1;r<Math.min(rows.length,best.r+250);r++){const v=String(rows[r][c]==null?"":rows[r][c]).trim();if(!v)continue;n++;if(/^(IT|CS|CJ|CAS|EA|PC|PZ|UN|CAJA)$/i.test(v))ok++;}if(n>=3&&ok/n>=.95){best.m.um=c;break;}}}
   const P=LP[m];P.MAP={name:f.name,rows,ws,rg,hdr:best.r,map:best.m};
   busy("");
   const miss=LREQ.filter(x=>P.MAP.map[x[0]]==null);
@@ -89,7 +90,7 @@ function lpBuild(m){
   s=s.replace(/\D/g,"");if(s.length>=15&&s.length<20)s=s.padStart(20,"0");
   const g=String(r[mp.gcas]==null?"":r[mp.gcas]).trim();if(!s||!g)continue;
   const g2=k=>mp[k]==null?"":String(r[mp[k]]==null?"":r[mp[k]]).trim();
-  out.push([s,g,g2("desc"),g2("lote"),g2("estatus"),vN(r[mp.cant]),g2("sloc"),g2("planta")]);}
+  out.push([s,g,g2("desc"),g2("lote"),g2("estatus"),vN(r[mp.cant]),g2("sloc"),g2("planta"),g2("um")]);}
  if(!out.length){toast("El archivo no tiene filas con LPN y código. Revisa las columnas asignadas.");render();return;}
  P.X={name:M.name,at:Date.now(),rows:out};P.IDX=null;P.MAP=null;P.UI.msg=null;const ok=U.set(P.c.keys[0],P.X);
  toast(ok===false?"Archivo cargado, pero no cupo guardarlo en el teléfono: no lo cierres o tendrás que subirlo otra vez.":"Inventario cargado: "+lpIdx(m).size+" LPN.");render();}
@@ -110,7 +111,7 @@ function lpFind(m,txt){
  let near="",bd=4,raw="";
  if(d.length>=16)for(const L of [20,18])for(let i=0;i+L<=d.length;i++){const w=d.substr(i,L),q=L===18?"00"+w:w;if(!raw)raw=q;for(const k of idx.keys()){let n=0;for(let j=0;j<20&&n<bd;j++)if(k[j]!==q[j])n++;if(n<bd){bd=n;near=k;raw=q;}}}
  return {exact:"",near,raw};}
-function lpItems(m,lpn){const mp=new Map();(lpIdx(m).get(lpn)||[]).forEach(r=>{const k=vG(r[1])+"|"+nlot(r[3]);let e=mp.get(k);if(!e){e={g:r[1],l:r[3],desc:r[2],est:r[4],exp:0,st:"pend",cnt:null,ph:[],note:""};mp.set(k,e);}e.exp+=r[5];});return [...mp.values()];}
+function lpItems(m,lpn){const mp=new Map();(lpIdx(m).get(lpn)||[]).forEach(r=>{const k=vG(r[1])+"|"+nlot(r[3]);let e=mp.get(k);if(!e){e={g:r[1],l:r[3],desc:r[2],est:r[4],um:r[8]||"",exp:0,st:"pend",cnt:null,ph:[],note:""};mp.set(k,e);}e.exp+=r[5];});return [...mp.values()];}
 function rcvRead(txt,items){
  const eg=new Set(items.map(i=>vG(i.g))),el=new Set(items.map(i=>nlot(i.l))),cands=[],lots=[],gen=[];
  String(txt||"").toUpperCase().split(/[^A-Z0-9]+/).filter(Boolean).forEach(t=>{const f=rcvFix(t);if(/^\d{8}$/.test(f))cands.push(f);
@@ -195,8 +196,8 @@ function lpPdf(m,list){
  try{if(!window.jspdf){toast("No se pudo cargar el generador de PDF. Revisa tu conexión.");return;}
  const P=LP[m],{jsPDF}=window.jspdf,d=new jsPDF({unit:"mm",format:"a4"}),W=210,H=297,L=14,R=196,T=[32,79,95],B=[124,63,42],title="Reporte de "+P.c.name;
  let y=0,pg=1;
- const head=()=>{d.setFillColor(...T);d.rect(0,0,W,22,"F");d.setFillColor(...B);d.rect(0,22,W,1.6,"F");d.setTextColor(255,255,255);d.setFont("helvetica","bold");d.setFontSize(16);d.text(title,L,14);d.setFont("helvetica","normal");d.setFontSize(8.5);d.text("Soluciones en Logística Cargo",R,14,{align:"right"});y=32;};
- const foot=()=>{d.setFont("helvetica","normal");d.setFontSize(7);d.setTextColor(120,120,120);d.text("Soluciones en Logística Cargo · Desarrollado por Manuel ChD · Todos los derechos reservados",L,H-8);d.text("Página "+pg,R,H-8,{align:"right"});};
+ const head=()=>{d.setFillColor(...T);d.rect(0,0,W,22,"F");d.setFillColor(...B);d.rect(0,22,W,1.6,"F");d.setTextColor(255,255,255);d.setFont("helvetica","bold");d.setFontSize(16);d.text(title,L,14);d.setFont("helvetica","normal");d.setFontSize(8.5);d.text("Logística-Cargo",R,14,{align:"right"});y=32;};
+ const foot=()=>{d.setFont("helvetica","normal");d.setFontSize(7);d.setTextColor(120,120,120);d.text("Logística-Cargo | Desarrollado por D-Umbral",L,H-8);d.text("Página "+pg,R,H-8,{align:"right"});};
  const need=h=>{if(y+h>H-16){foot();d.addPage();pg++;head();}};
  const txt=(t,x,yy,o={})=>{d.setFont("helvetica",o.b?"bold":"normal");d.setFontSize(o.sz||9);d.setTextColor(...(o.c||[30,30,30]));d.text(String(t),x,yy,o.al?{align:o.al}:undefined);};
  head();
@@ -209,7 +210,7 @@ function lpPdf(m,list){
   const items=s.items||[],ex=s.extras||[];need(26+items.length*8);
   const stt=s.status==="ok"?"CORRECTA":s.status==="dif"?"CON DIFERENCIAS":"EN PROCESO",sc=s.status==="ok"?[47,143,107]:s.status==="dif"?[201,81,78]:[183,121,31];
   d.setFillColor(...T);d.rect(L,y,R-L,8,"F");txt("LPN "+lpFmt(s.lpn),L+3,y+5.5,{b:1,sz:10,c:[255,255,255]});txt(stt,R-3,y+5.5,{b:1,sz:8.5,c:[255,255,255],al:"right"});y+=8;
-  txt(new Date(s.done||s.upd||s.at).toLocaleString("es-MX")+" · "+items.filter(i=>i.st==="ok").length+" de "+items.length+" renglones OK"+(ex.length?" · "+ex.length+" extra(s)":""),L,y+5,{sz:8,c:[90,90,90]});y+=8;
+  txt(new Date(s.done||s.upd||s.at).toLocaleString("es-MX")+" · "+items.filter(i=>i.st==="ok").length+" de "+items.length+" renglones OK"+(ex.length?" · "+ex.length+" extra(s)":"")+(s.aq?" · "+(s.aq.mode==="tot"?"Inspección total":"AQL General II"):"")+(s.sign?" · Inspeccionó: "+s.sign.name:""),L,y+5,{sz:8,c:[90,90,90]});y+=8;
   const cx=[L,L+24,L+54,L+110,L+128,L+146],cl=["Código","Lote","Descripción","Excel","Contado","Resultado"];
   d.setFillColor(232,236,238);d.rect(L,y,R-L,6,"F");cl.forEach((c,i)=>txt(c,cx[i]+1.5,y+4.2,{b:1,sz:7.5,c:[60,60,60]}));y+=6;
   const rowsAll=items.map(i=>({g:i.g,l:i.l,desc:i.desc||"",e:f2(i.exp),c:i.cnt==null?"—":i.cnt,r:i.st==="ok"?"OK":i.st==="dif"?"Diferencia":"Pendiente",note:i.note||"",st:i.st})).concat(ex.map(i=>({g:i.g,l:i.l,desc:"(no está en la LPN)",e:0,c:i.cnt,r:"Extra",note:i.note||"",st:"dif"})));

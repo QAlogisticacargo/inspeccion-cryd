@@ -343,11 +343,11 @@ async function doSignup(){const f=AUTH.f,nombre=titleCase(f.nombre||""),apellido
   if(first)["rec","warn","draft","stmap"].forEach(k=>{const v=LS.get("cryd:"+k,null);if(v!=null)LS.set("cryd:u"+emp+":"+k,v);});
   enterUser(u);};
  if(emp.length!==5)dlg({title:"Número de empleado",body:"Normalmente tiene 5 dígitos. ¿Confirmas que "+emp+" es correcto?",buttons:[{t:"Corregir"},{t:"Confirmar",cls:"pri",fn:make}]});else make();}
-const FOOT='<footer class="foot">Soluciones en Logística Cargo<br>Desarrollado por Manuel ChD · Todos los derechos reservados</footer>';
+const FOOT='<footer class="foot">Logística-Cargo | Desarrollado por D-Umbral</footer>';
 function renderAuth(){
  document.body.classList.add("noauth");$("#tabs").innerHTML="";
  const A=AUTH,f=A.f,v=k=>esc(f[k]||""),er=A.err?`<div class="aerr">${esc(A.err)}</div>`:"";
- let h=`<div class="aw"><div class="aicon">${GLYPH}</div><h1>Procesos CRyD</h1><p class="asub">Soluciones en Logística Cargo</p>`;
+ let h=`<div class="aw"><div class="aicon">${GLYPH}</div><h1 style="font-size:26px;line-height:1.15">Portal de Logística | Site SMO CRyD</h1><p class="asub">Logística-Cargo</p>`;
  if(A.mode==="menu")h+=`<div class="card"><label class="lb">¿Cómo te llamas? (opcional)</label><input data-au="gname" autocomplete="given-name" maxlength="30" placeholder="Tu nombre" value="${esc(f.gname!==undefined?f.gname:LS.get("cryd:gname",""))}"></div><div class="abtns"><button type="button" class="btn pri" data-ua="guest">Entrar</button><button type="button" class="btn txt" data-ua="mode:login">Acceso administrador</button></div><p class="anote">Recibo, Surtido, Validación, Maquila y Dashboards en un solo lugar. Tu avance se guarda en este dispositivo aunque la app se cierre.</p>`;
  else h+=`<h2 style="margin:0 0 10px;font-size:20px">Acceso administrador</h2>`+(USERS.length?`<div class="lst">${USERS.map(u=>`<button type="button" class="lr ${f.emp===u.emp?"on":""}" data-ua="pick:${esc(u.emp)}"><span class="av">${esc(initials(u))}</span><span><b>${esc(u.nombre+" "+u.apellido)}</b><small>No. ${esc(u.emp)}${u.pin?" · con PIN":""}</small></span></button>`).join("")}</div>`:"")+er
   +`<div class="card"><label class="lb">Número de empleado</label><input data-au="emp" inputmode="numeric" maxlength="8" autocomplete="off" value="${v("emp")}" placeholder="12345"><label class="lb">PIN (si lo configuraste)</label><input data-au="pin" type="password" inputmode="numeric" maxlength="4" autocomplete="off" value="${v("pin")}" placeholder="••••"></div><div class="abtns"><button type="button" class="btn pri" data-ua="doLogin">Entrar</button><button type="button" class="btn txt" data-ua="mode:menu">Volver</button></div>`;
@@ -361,7 +361,7 @@ function viewPerfil(){const g=ME.guest,th=LS.get("cryd:theme","system");
  ${g?"":viewCloud()}
  ${g?"":viewAdminCard()}
  ${festPerfil()}${l3dPerfil()}
- <p class="mu" style="text-align:center;font-size:12px">Procesos CRyD · versión 3.6</p>`;}
+ <p class="mu" style="text-align:center;font-size:12px">Portal de Logística | Site SMO CRyD · versión 3.7</p>`;}
 const BAR=["home","rcv","sur","val","insp","more"],MORE=["dash","pend","hist","l3d","perfil","admin"];
 function render(){
  if(!ME){renderAuth();return;}

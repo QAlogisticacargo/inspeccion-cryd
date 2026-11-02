@@ -17,6 +17,12 @@ Sube TODOS al repositorio (reemplaza los existentes).
 
 ## Novedades 3.7 (iconos y ajustes finales)
 
+- Layout 3D 3.7.13: STCRyDA sin reja al oeste/norte, rejas nuevas al este y sur, jaula extendida al oeste, control de acceso solo escritorio.
+
+- Layout 3D 3.7.12: filas B70–B75 repartidas (B75 = rack pegado al muro este), jaula a espalda de B70, botes junto a B70, STCRyDA sin encierro, paso peatonal conectado, DOOR079 y salida de emergencia intercambiadas.
+
+- Layout 3D 3.7.11: solo 6 filas de racks (B70–B75), zona STCRyDA con tarimas y 2 pilares, jaula hasta el muro oeste, garita de acceso, DOOR079, salida de emergencia y caminos peatonales.
+
 - Layout 3D 3.7.10: filas B70–B75 rotuladas, rack pegado al muro este dividido por salida de emergencia, jaula CRyD tras la reja del fondo, franja sanitaria, puertas corredizas de montacargas.
 
 - Layout 3D: mesa de inspección en el rectángulo amarillo, pasillos entre cubículos, zona de producto sobre tarimas y todas las tarimas CHEP azules.

@@ -138,6 +138,9 @@ function buildAtlas(){
   ["B70","B71","B72","B73","B74","B75"].forEach(n=>atl("r"+n,160,64,(c,w,h)=>{c.fillStyle="#f4f4f2";c.fillRect(0,0,w,h);c.strokeStyle="#16376d";c.lineWidth=6;c.strokeRect(3,3,w-6,h-6);textFit(c,n,w*.8,h*.72,"","#111");}));
   atl("sal",200,64,(c,w,h)=>{c.fillStyle="#1d8f4e";c.fillRect(0,0,w,h);c.strokeStyle="#fff";c.lineWidth=4;c.strokeRect(3,3,w-6,h-6);textFit(c,"SALIDA DE EMERGENCIA",w*.92,h*.4,"","#fff");});
   atl("jaula",420,64,(c,w,h)=>{c.fillStyle="#f4f4f2";c.fillRect(0,0,w,h);c.strokeStyle="#6a2fa0";c.lineWidth=5;c.strokeRect(3,3,w-6,h-6);textFit(c,"CRyD · ÁREA ENJAULADA",w*.92,h*.62,"","#1f272b");});
+  atl("stc",400,64,(c,w,h)=>{textFit(c,"STCRyDA",w*.9,h*.8,"","#f6e08a","rgba(30,30,30,.75)");});
+  atl("door079",128,64,(c,w,h)=>{c.fillStyle="#f4f4f2";c.fillRect(0,0,w,h);c.strokeStyle="#2b3338";c.lineWidth=5;c.strokeRect(3,3,w-6,h-6);textFit(c,"079",w*.8,h*.7,"","#1f272b");});
+  atl("gar",300,64,(c,w,h)=>{c.fillStyle="#f4f4f2";c.fillRect(0,0,w,h);c.strokeStyle="#2b3338";c.lineWidth=4;c.strokeRect(3,3,w-6,h-6);textFit(c,"CONTROL DE ACCESO",w*.92,h*.55,"","#1f272b");});
   atl("desc",320,64,(c,w,h)=>{c.fillStyle="rgba(240,164,25,.0)";c.clearRect(0,0,w,h);textFit(c,"ESPACIO DE DESCARGA",w*.95,h*.7,"","#f6e08a","rgba(30,30,30,.7)");});
   atl("hz",256,64,(c,w,h)=>{c.fillStyle="#f6c40f";c.fillRect(0,0,w,h);c.fillStyle="#1b1b1b";for(let i=-h;i<w;i+=32){c.beginPath();c.moveTo(i,h);c.lineTo(i+16,h);c.lineTo(i+16+h,0);c.lineTo(i+h,0);c.closePath();c.fill();}});
 }
@@ -289,7 +292,7 @@ function rackBay(x,z,bw,bd,levels,row){
       const kk=CG;CG=grp("racks");box(x0-.02,y+.04,z0-.02,w+.04,.12+ph*.34,d+.04,[1,1,1,.17],true);CG=kk;}}}
 function buildRacks(){
   const levels=[0,1.55,3.1,4.65,6.2];
-  for(let i=-1;i<13;i++){const x=5.2+i*3.9;for(let b=(i<0?1:0);b<4;b++){TR={r:1,ox:x,oz:29.2-b*3.1};rackBay(0,0,3.0,1.1,levels,i);}}
+  [13.0,21.2,29.4,37.6,45.8].forEach((x,i)=>{for(let b=0;b<4;b++){TR={r:1,ox:x,oz:29.2-b*3.1};rackBay(0,0,3.0,1.1,levels,i);}});
   /* fila extra al fondo (junto a la 85): mismo largo que las demás, 4 módulos */
   for(let b=0;b<4;b++){TR={r:1,ox:54.4,oz:13.3-b*3.1};rackBay(0,0,3.0,1.1,levels,0);}
   /* fila pegada al muro este (rectángulo rojo): dividida a la mitad por la salida de emergencia */
@@ -326,7 +329,7 @@ function buildExtras(){
   [[36.9,1.0],[13.0,5.2]].forEach((p,k)=>{if(p[0]>HX1-1)return;const x=p[0],z=p[1];cyl(x,0,z,.2,.06,hex("#333"),10);cyl(x,0,z,.03,1.5,hex("#8a8d8f"),6);
     for(let i=0;i<5;i++)cyl(x,.15+i*.27,z,.16,.22,hex("#eef2f4"),12);box(x-.2,1.5,z-.02,.4,.03,.04,hex("#8a8d8f"));});
   /* 6 montacargas retráctiles: 3 rojos y 3 grises */
-  [[7.5,9.4,"#c3281e",0],[19.5,11.4,"#8a9096",2],[30.5,9.8,"#c3281e",0],[7.3,21.0,"#8a9096",1],[22.8,23.0,"#c3281e",3],[51.0,19.0,"#8a9096",2]].forEach(f=>forklift(f[0],f[1],hex(f[2]),f[3]));
+  [[7.5,9.4,"#c3281e",0],[19.5,11.4,"#8a9096",2],[30.5,9.8,"#c3281e",0],[5.2,18.2,"#8a9096",1],[22.8,23.0,"#c3281e",3],[51.0,19.0,"#8a9096",2]].forEach(f=>forklift(f[0],f[1],hex(f[2]),f[3]));
   /* personal: sentados en la oficina y caminando por el paso peatonal */
   const sh=["#e9eef2","#7aa6c8","#c9ced2","#b9d0c4","#e9eef2","#9bb4cc","#d8c9bd","#7aa6c8"];
   [[0,0],[0,2],[1,3],[1,1],[2,4],[2,0],[3,2],[3,4]].forEach((q,k)=>seated(38.0+.25+q[1]*1.55+(q[1]>1?.9:0),1.0+.25+q[0]*1.7+(q[0]>0?.9:0)+(q[0]>2?.0:0),hex(sh[k]),k));
@@ -361,8 +364,8 @@ function buildExtras(){
      box(x0+.75,.44,z0+1.05,.46,.06,.46,chc);box(x0+.75,.5,z0+1.5,.46,.5,.05,chc);box(x0+.95,.06,z0+1.25,.06,.38,.06,blk);box(x0+.8,.02,z0+1.1,.36,.04,.36,blk);}}
   /* contenedores de basura en la esquina junto a la reja */
   {const gc=[hex("#2f6b3b"),hex("#3a3f43"),hex("#2f6b3b"),hex("#3a3f43")],lid=hex("#1b1f22");
-   [[.2,26.4],[.2,27.8],[1.9,26.4],[1.9,27.8]].forEach((p,k)=>{const x=p[0],z=p[1];box(x,.12,z,1.2,.85,1.0,gc[k]);box(x-.03,.97,z-.03,1.26,.1,1.06,lid);box(x+.05,0,z+.05,.1,.12,.1,lid);box(x+1.05,0,z+.05,.1,.12,.1,lid);box(x+.05,0,z+.85,.1,.12,.1,lid);box(x+1.05,0,z+.85,.1,.12,.1,lid);});
-   const kk=CG;CG=grp("base");[[-.1,26.2,3.5,26.28],[-.1,29.2,3.5,29.28]].forEach(a=>quad([a[0],.016,a[1]],[a[2],.016,a[1]],[a[2],.016,a[3]],[a[0],.016,a[3]],[0,1,0],hex("#f0a419"),true));CG=kk;}
+   [[14.6,26.4],[14.6,27.8],[16.3,26.4],[16.3,27.8]].forEach((p,k)=>{const x=p[0],z=p[1];box(x,.12,z,1.2,.85,1.0,gc[k]);box(x-.03,.97,z-.03,1.26,.1,1.06,lid);box(x+.05,0,z+.05,.1,.12,.1,lid);box(x+1.05,0,z+.05,.1,.12,.1,lid);box(x+.05,0,z+.85,.1,.12,.1,lid);box(x+1.05,0,z+.85,.1,.12,.1,lid);});
+   const kk=CG;CG=grp("base");[[14.3,26.2,17.9,26.28],[14.3,29.2,17.9,29.28]].forEach(a=>quad([a[0],.016,a[1]],[a[2],.016,a[1]],[a[2],.016,a[3]],[a[0],.016,a[3]],[0,1,0],hex("#f0a419"),true));CG=kk;}
   /* acceso a baños (entre la 85 y la oficina) */
   box(48.5,0,.0,1.6,2.1,.14,hex("#8a6a4a"));signWall("bano",49.3,2.2,1.5,.38,.17,1);
   /* mesa de inspección larga frente a la 85 (perpendicular al muro), dejando libre el espacio de descarga */
@@ -385,12 +388,12 @@ function buildExtras(){
        if(sx)box(Math.min(x0,x1),y,z0-.02,Math.abs(dx),.06,.04,bl);else box(x0-.02,y,Math.min(z0,z1),.04,.06,Math.abs(dz),bl);});};
    const post=(x,z)=>box(x-.05,0,z-.05,.1,H,.1,bl);
    /* muro D=HD: reja completa */
-   for(let x=HX0;x<HX1+.01;x+=2.5)post(x,HD-.1);mesh(HX0,HD-.1,HX1,HD-.1,0,-1);
+   for(let x=13;x<HX1+.01;x+=2.5)if(!(x>36.6&&x<42.9))post(x,HD-.1);post(36.6,HD-.1);post(42.9,HD-.1);mesh(13,HD-.1,36.6,HD-.1,0,-1);mesh(42.9,HD-.1,HX1,HD-.1,0,-1);
    /* muro x=HX0: reja con entrada de montacargas (D 8.6–13.2) y entrada peatonal (D 13.9–15.7) */
    const X=HX0+.1,gF=[8.6,13.2],gP=[13.9,15.7];
-   for(let z=0;z<HD-.01;z+=2.5)if(!(z>gF[0]-1&&z<gP[1]+1))post(X,z);
-   [gF[0],gF[1],gP[0],gP[1]].forEach(z=>post(X,z));post(X,HD-.1);
-   mesh(X,0,X,gF[0],1,0);mesh(X,gF[1],X,gP[0],1,0);mesh(X,gP[1],X,HD-.1,1,0);
+   for(let z=0;z<gP[1]+.5;z+=2.5)if(!(z>gF[0]-1&&z<gP[1]+1))post(X,z);
+   [gF[0],gF[1],gP[0],gP[1]].forEach(z=>post(X,z));
+   mesh(X,0,X,gF[0],1,0);mesh(X,gF[1],X,gP[0],1,0);
    /* reja que separa el paso peatonal del paso de montacargas */
    mesh(HX0+.1,13.55,15,13.55,0,-1);post(15,13.55);post(7,13.55);
    setG("base");
@@ -408,7 +411,7 @@ function buildExtras(){
    quad([HX0,.011,13.2],[37,.011,13.2],[37,.011,13.3],[HX0,.011,13.3],[0,1,0],hex("#d9a400"));
    signWallX("sfk",gF[0]+(gF[1]-gF[0])/2,H+.1,2.8,.7,HX0+.15);signWallX("spe",(gP[0]+gP[1])/2,H+.1,2.4,.6,HX0+.15);
    /* nombres de las 6 filas B70–B75 (la 1ª es la de los botes de basura), en el frente de cada fila */
-   setG("base");["B70","B71","B72","B73","B74","B75"].forEach((n,k)=>{const x=5.2+(k-1)*3.9;signWall("r"+n,x+.55,2.5,.95,.38,16.75,-1);});
+   setG("base");["B70","B71","B72","B73","B74","B75"].forEach((n,k)=>{const x=k<5?[13.0,21.2,29.4,37.6,45.8][k]:54.4;signWall("r"+n,x+.55,2.5,.95,.38,k<5?16.75:15.55,-1);});
    /* franja sanitaria / paso peatonal al fondo (sin línea peatonal) */
    {const kq=CG;CG=grp("base");quad([HX0,.013,29.38],[56,.013,29.38],[56,.013,29.85],[HX0,.013,29.85],[0,1,0],hex("#a3a69f"));
     quad([HX0,.014,29.3],[56,.014,29.3],[56,.014,29.37],[HX0,.014,29.37],[0,1,0],hex("#d9a400"));CG=kq;}
@@ -424,15 +427,51 @@ function buildExtras(){
    /* puertas corredizas de la entrada de montacargas (lado maquila): abiertas, hojas recorridas */
    {const pg=hex("#7b8790"),rl=hex("#4a5359");const xx=X+.1;box(xx,0,gF[0],.06,2.9,1.3,pg);box(xx,0,gF[1]-1.3,.06,2.9,1.3,jit(pg,.05));box(xx-.03,2.95,gF[0]-.3,.1,.1,gF[1]-gF[0]+.6,rl);}
    /* jaula CRyD (rectángulo morado) fuera de la nave, tras la reja del fondo */
-   {const cx0=17,cx1=45,cz1=37.5,kq=CG;CG=grp("base");quad([cx0,.003,HD-.1],[cx1,.003,HD-.1],[cx1,.003,cz1],[cx0,.003,cz1],[0,1,0],hex("#85887f"));CG=kq;
-    for(let x=cx0;x<cx1+.01;x+=2.5)post(x,cz1);for(let z=HD+2.4;z<cz1;z+=2.5){post(cx0,z);post(cx1,z);}post(cx0,HD-.1);post(cx1,HD-.1);
-    mesh(cx0,cz1,cx1,cz1,0,-1);mesh(cx0,HD-.1,cx0,cz1,1,0);mesh(cx1,HD-.1,cx1,cz1,-1,0);
+   {const cx0=1.0,cx1=45,cz1=37.5,kq=CG;CG=grp("base");quad([cx0,.003,HD-.1],[cx1,.003,HD-.1],[cx1,.003,cz1],[cx0,.003,cz1],[0,1,0],hex("#85887f"));CG=kq;
+    for(let x=cx0;x<cx1+.01;x+=2.5)post(x,cz1);for(let z=HD+2.4;z<cz1;z+=2.5){post(cx1,z);}post(cx1,HD-.1);
+    mesh(cx0,cz1,cx1,cz1,0,-1);mesh(cx1,HD-.1,cx1,cz1,-1,0);
     setG("base");const or=hex("#e8631a"),wh=hex("#f1f1ee"),wd=hex("#c9a06a");
-    for(let i=0;i<14;i++){const bx=cx0+1+i*1.95;cyl(bx,0,cz1-.7,.27,.95,or,10);cyl(bx,.4,cz1-.7,.28,.16,wh,10);}
-    for(let r=0;r<3;r++)for(let i=0;i<9;i++){const px=cx0+1.0+i*2.9+(r%2)*.3,pz=HD+.9+r*1.9,n=2+((i*5+r*3)%6);for(let k=0;k<n;k++)box(px,k*.15,pz,1.2,.14,1.0,jit(wd,.12));
+    for(let i=0;i<22;i++){const bx=cx0+1+i*1.95;cyl(bx,0,cz1-.7,.27,.95,or,10);cyl(bx,.4,cz1-.7,.28,.16,wh,10);}
+    for(let r=0;r<3;r++)for(let i=0;i<15;i++){const px=cx0+1.0+i*2.9+(r%2)*.3,pz=HD+.9+r*1.9,n=2+((i*5+r*3)%6);for(let k=0;k<n;k++)box(px,k*.15,pz,1.2,.14,1.0,jit(wd,.12));
       if(i%3===0)for(let q=0;q<2;q++)box(px+.02,n*.15+q*.4,pz+.02,1.16,.39,.96,jit(CARD,.15));}
-    for(let i=0;i<3;i++)pallet(cx0+1.2+i*8.5,HD+6.1,1.2,1.0,{nx:2,nz:2,ny:3,bh:.42});
-    signWall("jaula",31,2.9,3.0,.45,cz1-.04,-1);}
+    for(let i=0;i<5;i++)pallet(cx0+1.2+i*9,HD+6.1,1.2,1.0,{nx:2,nz:2,ny:3,bh:.42});
+    signWall("jaula",23,2.9,3.0,.45,cz1-.04,-1);}
+   /* rejas nuevas: lado este de STCRyDA y lado sur (con entrada de montacargas en el carril) */
+   for(let z=17;z<29.9;z+=2.5)post(11.9,z);post(11.9,29.8);mesh(11.9,17,11.9,29.8,1,0);
+   [1.0,3.9,7.1,11.9].forEach(x=>post(x,17));mesh(1.0,17,3.9,17,0,-1);mesh(7.1,17,11.9,17,0,-1);
+   /* STCRyDA: zona de tarimas en piso, alineada con el ancho de la maquila; dos pilares con protector */
+   {const yl=hex("#e0b400"),kq=CG;CG=grp("base");
+    const ln=(x0,z0,x1,z1)=>quad([x0,.016,z0],[x1,.016,z0],[x1,.016,z1],[x0,.016,z1],[0,1,0],yl);
+    ln(3.95,17.0,4.05,29.2);ln(6.95,17.0,7.05,29.2);ln(HX0+.1,16.88,11.4,16.96);ln(11.32,16.88,11.4,29.2);
+    CG=kq;floorText("stc",1.5,9.5,15.6,16.8);
+    const cols=[CARD,CARD2,hex("#6d7fa6"),hex("#d9d3c7")];let n=0;
+    [.2,1.7,7.4,8.9].forEach((px,ci)=>{for(let r=0;r<9;r++){const pz=17.2+r*1.38;n++;
+      if((r*3+ci)%7===0)continue;
+      pallet(px,pz,1.2,1.0,{nx:2,nz:2,ny:2+(n%3),bh:.42,wrap:true,col:cols[n%4],label:n%2?"#f4f4f2":null});}});
+    setG("base");
+    [[3.55,21.2],[3.55,25.4]].forEach(p=>{const cx=p[0],cz=p[1],yc=hex("#e8b800"),yp=hex("#f2c200");
+      box(cx-.25,0,cz-.25,.5,HH-.5,.5,yc);box(cx-.55,0,cz-.55,1.1,.85,1.1,yp);box(cx-.5,.85,cz-.5,1.0,.07,1.0,hex("#f7d23a"));box(cx-.56,.42,cz-.56,1.12,.07,1.12,hex("#2a2a2a"));
+      cyl(cx,1.0,cz-.36,.1,.5,hex("#b3201a"),10);box(cx-.05,1.5,cz-.4,.1,.06,.06,hex("#222"));});}
+   /* fuera de la nave, lado oeste: garita de control de acceso, DOOR079, salida de emergencia y caminos peatonales */
+   {const kq=CG;CG=grp("base");const conc=hex("#a2a59f"),gr2=hex("#1d8f4e");
+    const sl=(x0,z0,x1,z1)=>quad([x0,.003,z0],[x1,.003,z0],[x1,.003,z1],[x0,.003,z1],[0,1,0],conc);
+    sl(-8.6,-.2,HX0,8.6);sl(-3.4,8.6,HX0,15.9);sl(-8.2,8.6,-6.0,43.6);sl(-8.2,13.8,-3.4,15.8);
+    const ds=(x,z)=>quad([x,.012,z-.7],[x+.8,.012,z-.7],[x+.8,.012,z],[x,.012,z],[0,1,0],gr2);
+    for(let z=43.4;z>8.4;z-=1.1)ds(-7.4,z);for(let x=-7.4;x<-4.0;x+=1.1)quad([x,.012,7.2],[x+.7,.012,7.2],[x+.7,.012,7.8],[x,.012,7.8],[0,1,0],gr2);
+    for(let z=15.6;z>1.5;z-=1.1)ds(-2.9,z);for(let x=-3.2;x>-6.2;x-=.4)quad([x,.012,1.0],[x+.3,.012,1.0],[x+.3,.012,1.5],[x,.012,1.5],[0,1,0],gr2);for(let x=-6.6;x<-1.6;x+=1.1)quad([x,.012,14.2],[x+.7,.012,14.2],[x+.7,.012,15.4],[x,.012,15.4],[0,1,0],gr2);
+    CG=kq;setG("base");
+    box(-8.6,0,-.3,7.1,4.2,.3,hex("#b4b1a7"));
+    const pg=hex("#7b8790"),ylw=hex("#f0a419");
+    box(-4.8,0,0,2.4,2.6,.08,pg);for(let k=1;k<8;k++)box(-4.8,k*.32,.08,2.4,.02,.01,hex("#555d63"));
+    [-5.0,-2.2].forEach(x=>cyl(x,0,.7,.09,1.2,ylw,10));
+    signWall("door079",-3.6,2.75,.9,.45,.02,1);
+    box(-6.9,0,0,.95,2.1,.08,hex("#1d7a3d"));box(-6.95,0,-.02,1.05,2.15,.02,hex("#3a4247"));signWall("sal",-6.42,2.25,1.5,.48,.02,1);
+    /* control de acceso: solo un escritorio con silla y el oficial */
+    {const dx=-5.4,dz=5.0,ch=hex("#7d858b"),lg=hex("#6d767b");
+     box(dx,.72,dz,1.2,.05,.55,hex("#cfd3d5"));[[dx+.05,dz+.05],[dx+1.08,dz+.05],[dx+.05,dz+.45],[dx+1.08,dz+.45]].forEach(p=>box(p[0],0,p[1],.06,.72,.06,lg));
+     box(dx+.2,.44,dz-.6,.44,.05,.44,ch);box(dx+.2,.5,dz-.66,.44,.45,.05,ch);box(dx+.4,.05,dz-.42,.05,.4,.05,hex("#1e2326"));
+     box(dx-.1,0,dz+.62,.05,1.9,.05,lg);box(dx+1.25,0,dz+.62,.05,1.9,.05,lg);signWall("gar",dx+.6,1.55,1.4,.3,dz+.64,1);}
+    person(-4.3,4.4,0,"#e4f000",4,0);}
   }
 
 }
@@ -474,6 +513,8 @@ const VIEWS=[
  {id:"jaula",name:"Jaula CRyD",g:{tx:31,ty:.8,td:34,yaw:Math.PI+.35,pit:.55,dist:34}},
  {id:"fil70",name:"Filas B70–B75",g:{tx:12,ty:1.5,td:20,yaw:.5,pit:.5,dist:24}},
  {id:"sal",name:"Salida emergencia",g:{tx:55,ty:1.2,td:22,yaw:-Math.PI/2+.5,pit:.95,dist:14}},
+ {id:"stc",name:"STCRyDA",g:{tx:5,ty:.8,td:23,yaw:.3,pit:.7,dist:22}},
+ {id:"gar",name:"Garita y DOOR079",g:{tx:-5,ty:1,td:5,yaw:-.5,pit:.5,dist:14}},
  {id:"insp",name:"Mesa de inspección",g:{tx:51.5,ty:.9,td:10,yaw:Math.PI-.5,pit:.45,dist:12}},
  {id:"reja",name:"Entrada de montacargas",g:{tx:0,ty:1.6,td:12,yaw:Math.PI/2,pit:.12,dist:20}},
  {id:"pasillo",name:"Pasillo de racks",g:{tx:7.7,ty:1.9,td:21,yaw:0,pit:.07,dist:11}}

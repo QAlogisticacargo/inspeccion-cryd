@@ -17,6 +17,8 @@ Sube TODOS al repositorio (reemplaza los existentes).
 
 ## Novedades 3.7 (iconos y ajustes finales)
 
+- 3.8.2: banderas en el Layout 3D (Ir a Recibo, Surtido, Maquila, Pendientes, Historial) y colores por proceso en el menú.
+
 - 3.8.1: el icono de temporada se fija desde el <head> (antes de que cargue la app) y Perfil muestra "Icono de hoy". Para ver el icono nuevo en la pantalla de inicio hay que borrar el acceso directo y volver a agregarlo.
 
 - 3.8.0: la inspección AQL cuenta CAJAS (suma de las cajas de todas las LPN/tarimas; LPN repetida = misma tarima). Letra y muestra salen de ese total.

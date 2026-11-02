@@ -174,3 +174,10 @@ body.fest .tile .ti.c2{background:#e9791a;color:#fff}
 
 .brand .bt{font-size:13.5px;line-height:1.15;font-weight:700;min-width:0}
 #l3dsp .l3t b{text-align:center;padding:0 14px;font-size:19px}
+
+/* colores por proceso: Recibo azul, Surtido verde, Maquila turquesa, Pendientes ámbar, Historial morado */
+[data-tab="rcv"]{--k:#2f7fd1}[data-tab="sur"]{--k:#2e9e5b}[data-tab="insp"]{--k:#1f9aa8}[data-tab="pend"]{--k:#d9971a}[data-tab="hist"]{--k:#8a5cc2}
+:is(.tile,.mrow):is([data-tab="rcv"],[data-tab="sur"],[data-tab="insp"],[data-tab="pend"],[data-tab="hist"]) .ti{background:color-mix(in srgb,var(--k) 20%,transparent)!important;color:var(--k)!important}
+.tile:is([data-tab="rcv"],[data-tab="sur"],[data-tab="insp"],[data-tab="pend"],[data-tab="hist"]){box-shadow:inset 0 -3px 0 color-mix(in srgb,var(--k) 55%,transparent)}
+.tab:is([data-tab="rcv"],[data-tab="sur"],[data-tab="insp"]) svg{color:var(--k)}
+.tab:is([data-tab="rcv"],[data-tab="sur"],[data-tab="insp"]).on{color:var(--k)}

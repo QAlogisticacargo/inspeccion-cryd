@@ -172,5 +172,6 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-l3d]");if(
  else if(b.dataset.l3d==="tog"){LS.set("cryd:l3dsp",l3dSpOn()?"off":"on");render();}});
 window.addEventListener("message",e=>{if(e.origin!==location.origin||!e.data)return;
  if(e.data.l3d==="nogl")l3dClose();
+ if(e.data.l3dgo){const f=document.getElementById("l3df");if(f&&e.source===f.contentWindow&&["rcv","sur","insp","pend","hist"].includes(e.data.l3dgo)){TAB=e.data.l3dgo;render();window.scrollTo(0,0);}}
  if(e.data.l3dh){const f=document.getElementById("l3df");if(f&&e.source===f.contentWindow)f.style.height=Math.min(3000,e.data.l3dh)+"px";}});
 {const _r3=render;render=function(){_r3.apply(this,arguments);try{l3dMaybe();}catch(e){}};}

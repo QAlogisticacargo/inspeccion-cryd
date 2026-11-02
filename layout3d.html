@@ -162,11 +162,11 @@ ZONES.forEach(z=>{z.cx=(z.x0+z.x1)/2;z.cz=(z.z0+z.z1)/2;z.w=z.x1-z.x0;z.d=z.z1-z
 
 /* ===== construcción de la escena ===== */
 const HX0=-1.5,HX1=56,HD=30,HH=12;
-const WOOD=hex("#b98a52"),CARD=hex("#c9a06a"),CARD2=hex("#d9b685"),STEEL=hex("#b7c0c6"),DARK=hex("#2a3236");
+const WOOD=hex("#0f57b3"),CHEPD=hex("#0a3f86"),CARD=hex("#c9a06a"),CARD2=hex("#d9b685"),STEEL=hex("#b7c0c6"),DARK=hex("#2a3236");
 function pallet(x,z,w,d,load){
   setG("base");const ph=0.14;
-  box(x,0,z,w,0.06,d,WOOD);for(let i=0;i<3;i++)box(x+i*(w-0.1)/2,0.06,z,0.1,0.08,d,jit(WOOD,.15));
-  box(x,0.14,z,w,0.03,d,jit(WOOD,.1));
+  box(x,0,z,w,0.06,d,CHEPD);for(let i=0;i<3;i++)box(x+i*(w-0.1)/2,0.06,z,0.1,0.08,d,jit(CHEPD,.1));
+  box(x,0.14,z,w,0.03,d,jit(WOOD,.06));
   const nx=load.nx||2,nz=load.nz||2,ny=load.ny||3,bw=w/nx,bd=d/nz,bh=load.bh||0.4;
   for(let k=0;k<ny;k++)for(let i=0;i<nx;i++)for(let j=0;j<nz;j++){
     const c=jit(load.col||CARD,.18);box(x+i*bw+.01,0.17+k*bh,z+j*bd+.01,bw-.02,bh-.015,bd-.02,c);
@@ -281,7 +281,7 @@ function rackBay(x,z,bw,bd,levels,row){
   for(let k=0;k<levels.length;k++){const y=levels[k]+(levels[k]>0?.16:0.02);
     for(let p=0;p<2;p++)if(rnd()<.82){const w=1.25,pxx=x+.1+p*(bw-.2)/2+(bw/2-.1-w)/2,ph=rnd()<.5?2:3;
       setG("racks");const x0=pxx,z0=z+.08,d=bd-.16;
-      box(x0,y,z0,w,.1,d,WOOD);
+      box(x0,y,z0,w,.1,d,WOOD);box(x0,y,z0,w,.03,d,CHEPD);
       for(let q=0;q<ph;q++)for(let i=0;i<2;i++)box(x0+i*w/2+.01,y+.1+q*.34,z0+.01,w/2-.02,.33,d-.02,jit(rnd()<.2?hex("#9a8e86"):CARD,.2));
       const kk=CG;CG=grp("racks");box(x0-.02,y+.04,z0-.02,w+.04,.12+ph*.34,d+.04,[1,1,1,.17],true);CG=kk;}}}
 function buildRacks(){
@@ -324,13 +324,15 @@ function buildExtras(){
   [[7.5,9.4,"#c3281e",0],[19.5,11.4,"#8a9096",2],[30.5,9.8,"#c3281e",0],[7.3,21.0,"#8a9096",1],[22.8,23.0,"#c3281e",3],[51.0,19.0,"#8a9096",2]].forEach(f=>forklift(f[0],f[1],hex(f[2]),f[3]));
   /* personal: sentados en la oficina y caminando por el paso peatonal */
   const sh=["#e9eef2","#7aa6c8","#c9ced2","#b9d0c4","#e9eef2","#9bb4cc","#d8c9bd","#7aa6c8"];
-  [[0,0],[0,2],[1,3],[1,1],[2,4],[2,0],[3,2],[3,4]].forEach((q,k)=>seated(38.0+.25+q[1]*1.84,1.0+.3+q[0]*2.1,hex(sh[k]),k));
+  [[0,0],[0,2],[1,3],[1,1],[2,4],[2,0],[3,2],[3,4]].forEach((q,k)=>seated(38.0+.25+q[1]*1.55+(q[1]>1?.9:0),1.0+.25+q[0]*1.7+(q[0]>0?.9:0)+(q[0]>2?.0:0),hex(sh[k]),k));
   [[18,14.8,1,"#e4f000",1],[33,14.6,3,"#e07a1a",2],[42,14.9,1,"#e4f000",3],[48.4,10.5,2,"#e4f000",0],[13.0,11.5,0,"#e4f000",2]].forEach(w=>person(w[0],w[1],w[2],w[3],w[4],.04));
   [[26,15.1,3,"#dfe6ea",1],[48.6,6.0,2,"#6f93b5",3]].forEach(w=>person(w[0],w[1],w[2],w[3],w[4],.04,true));
   /* oficina: cubículos tipo "open space", con la entrada por el costado hacia la 85 */
   {const ox=38.0,oz=1.0,ow=9.6,od=9.0,cr=hex("#e6e3dc"),gl_=[.62,.78,.84,.3],fr=hex("#8e969a");
    const pan=hex("#d6d9d9"),pfr=hex("#5f666b"),dsk=hex("#d9d0c0"),ped=hex("#8c8f91"),chc=hex("#7d858b"),blk=hex("#1e2326");
    box(ox,0,oz,ow,.04,od,hex("#b9b3a6"));
+   {const kw=CG;CG=grp("base");const aw=hex("#d9d4c6");[[ox+.1,oz+.25+1.7,ox+ow-.1,oz+.25+1.7+.9],[ox+.1,oz+.25+3.4+.9,ox+ow-.1,oz+.25+3.4+.9+.0]].slice(0,1).forEach(a=>quad([a[0],.05,a[1]],[a[2],.05,a[1]],[a[2],.05,a[3]],[a[0],.05,a[3]],[0,1,0],aw,true));
+    quad([ox+.1,.05,oz+.2],[ox+ow-.1,.05,oz+.2],[ox+ow-.1,.05,oz+od-.1],[ox+.1,.05,oz+od-.1],[0,1,0],[1,1,1,0],true);CG=kw;}
    const g0=3.0,g1=4.4;/* hueco de la puerta en el costado (D) */
    box(ox,0,oz+od-.1,ow,1.1,.1,cr);box(ox,0,oz,.1,1.1,od,cr);
    box(ox+ow-.1,0,oz,.1,1.1,g0-oz,cr);box(ox+ow-.1,0,g1,.1,1.1,oz+od-g1,cr);
@@ -344,7 +346,7 @@ function buildExtras(){
    box(ox+ow-.08,2.1,g0,.08,.5,g1-g0,fr);
    signWallX("ofic",(g0+g1)/2,2.75,1.6,.4,ox+ow+.02);
    /* 20 cubículos: mamparas bajas, escritorio en L, monitor y silla de malla */
-   for(let r=0;r<4;r++)for(let c=0;c<5;c++){const x0=ox+.25+c*1.84,z0=oz+.3+r*2.1,w=1.7,d=1.8;
+   for(let r=0;r<4;r++)for(let c=0;c<5;c++){const x0=ox+.25+c*1.55+(c>1?.9:0),z0=oz+.25+r*1.7+(r>0?.9:0),w=1.5,d=1.7;
      box(x0,0,z0,.05,1.4,d,pan);box(x0,1.4,z0,.05,.05,d,pfr);
      if(c===4){box(x0+w,0,z0,.05,1.4,d,pan);box(x0+w,1.4,z0,.05,.05,d,pfr);}
      box(x0,0,z0,w,1.4,.05,pan);box(x0,1.4,z0,w,.05,.05,pfr);
@@ -359,13 +361,16 @@ function buildExtras(){
   /* acceso a baños (entre la 85 y la oficina) */
   box(48.5,0,.0,1.6,2.1,.14,hex("#8a6a4a"));signWall("bano",49.3,2.2,1.5,.38,.17,1);
   /* mesa de inspección larga frente a la 85 (perpendicular al muro), dejando libre el espacio de descarga */
-  {const mx=52.3,mz=7.0,mw=.95,md=6.0;box(mx,.72,mz,mw,.06,md,hex("#cfd3d5"));
+  {const mx=51.0,mz=7.0,mw=.95,md=6.0;box(mx,.72,mz,mw,.06,md,hex("#cfd3d5"));
    [[mx+.08,mz+.1],[mx+mw-.16,mz+.1],[mx+.08,mz+md-.18],[mx+mw-.16,mz+md-.18]].forEach(p=>box(p[0],0,p[1],.08,.72,.08,hex("#6d767b")));
    box(mx+.1,.3,mz+.12,mw-.2,.04,md-.24,hex("#6d767b"));
    signWallX("tins",mz+md/2,1.0,1.5,.3,mx+mw+.03);
    const kk=CG;CG=grp("base");const ye=hex("#f0a419");
-   [[51.1,2.5,54.5,2.58],[51.1,6.4,54.5,6.48],[51.1,2.5,51.18,6.48],[54.42,2.5,54.5,6.48]].forEach(a=>quad([a[0],.016,a[1]],[a[2],.016,a[1]],[a[2],.016,a[3]],[a[0],.016,a[3]],[0,1,0],ye,true));
-   CG=kk;floorText("desc",54.3,51.3,4.6,4.0);}
+   [[50.4,6.6,53.6,6.68],[50.4,13.3,53.6,13.38],[50.4,6.6,50.48,13.38],[53.52,6.6,53.6,13.38]].forEach(a=>quad([a[0],.016,a[1]],[a[2],.016,a[1]],[a[2],.016,a[3]],[a[0],.016,a[3]],[0,1,0],ye,true));
+   CG=kk;floorText("desc",53.4,52.1,11.4,8.4);}
+  /* zona de producto sobre tarimas CHEP (entre la oficina y la mesa) */
+  {for(let r=0;r<2;r++)for(let i=0;i<7;i++){const ny=(i+r)%3===0?2:3;pallet(38.6+i*1.3,10.7+r*1.45,1.2,1.0,{nx:2,nz:2,ny:ny,bh:.42});}
+   const kz=CG;CG=grp("base");quad([38.4,.016,10.55],[47.7,.016,10.55],[47.7,.016,13.85],[38.4,.016,13.85],[0,1,0],[.2,.4,.75,.18],true);CG=kz;}
   /* reja azul: al fondo (muro del lado de la maquila) y al costado de la nave */
   {const bl=hex("#1f3d8c"),H=3.8,kk=CG;
    const mesh=(x0,z0,x1,z1,nx,nz)=>{CG=grp("base");quad([x0,0,z0],[x1,0,z1],[x1,H,z1],[x0,H,z0],[nx,0,nz],[.12,.24,.55,.26],true);
@@ -434,7 +439,7 @@ const VIEWS=[
  {id:"anden",name:"Cortinas 80–84",g:{tx:26,ty:1.3,td:3.0,yaw:Math.PI,pit:.16,dist:10}},
  {id:"mesa",name:"Mesa de trabajo",g:{tx:8.7,ty:.9,td:1.7,yaw:Math.PI-.55,pit:.5,dist:6.6}},
  {id:"ofi",name:"Oficinas",g:{tx:44,ty:1,td:5,yaw:Math.PI-.6,pit:.5,dist:15}},
- {id:"insp",name:"Mesa de inspección",g:{tx:52.5,ty:.9,td:6,yaw:Math.PI-.5,pit:.45,dist:12}},
+ {id:"insp",name:"Mesa de inspección",g:{tx:51.5,ty:.9,td:10,yaw:Math.PI-.5,pit:.45,dist:12}},
  {id:"reja",name:"Entrada de montacargas",g:{tx:0,ty:1.6,td:12,yaw:Math.PI/2,pit:.12,dist:20}},
  {id:"pasillo",name:"Pasillo de racks",g:{tx:7.7,ty:1.9,td:21,yaw:0,pit:.07,dist:11}}
 ];

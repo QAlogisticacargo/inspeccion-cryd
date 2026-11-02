@@ -16,6 +16,8 @@ Sube TODOS al repositorio (reemplaza los existentes).
 - Administrador: "Acceso administrador".
 
 ## Novedades 3.7 (iconos y ajustes finales)
+
+- Layout 3D: mesa de inspección en el rectángulo amarillo, pasillos entre cubículos, zona de producto sobre tarimas y todas las tarimas CHEP azules.
 - Icono "SMO CRyD" con versión de temporada (calavera y cempasúchil, gorro navideño, calabaza y un emblema por mes). Iconos: ati-*.png
 - Layout 3D: se muestra las primeras 7 veces que se abre la app cada día.
 - Conteo ciego: cantidades ocultas hasta el final de cada LPN. La foto lee código y lote y se ve más grande.

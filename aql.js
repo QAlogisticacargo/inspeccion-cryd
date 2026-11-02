@@ -1,8 +1,8 @@
 /* ===== Inspección por LPN (Recibo y Surtido): Total o AQL General II ===== */
-/* Tabla AQL, nivel de inspección general II (ISO 2859-1 / ANSI Z1.4): tamaño de lote en piezas -> letra y muestra */
+/* Tabla AQL, nivel de inspección general II (ISO 2859-1 / ANSI Z1.4): tamaño de lote en cajas -> letra y muestra */
 const AQL_T=[[8,2,"A"],[15,3,"B"],[25,5,"C"],[50,8,"D"],[90,13,"E"],[150,20,"F"],[280,32,"G"],[500,50,"H"],[1200,80,"J"],[3200,125,"K"],[10000,200,"L"],[35000,315,"M"],[150000,500,"N"],[500000,800,"P"],[Infinity,1250,"Q"]];
 function aqSize(N){if(!(N>0))return {n:0,L:""};for(const r of AQL_T)if(N<=r[0])return {n:Math.min(r[1],N),L:r[2]};return {n:1250,L:"Q"};}
-const AQ_V="3.7.8";
+const AQ_V="3.8.0";
 const AQ={};Object.keys(LCFG).forEach(m=>{AQ[m]={open:false,an:false,pick:"",txt:"",ed:-1,tm:0};});
 const aqSet=m=>{const s=U.get("aqs:"+m,null)||{};if(!s.mode)s.mode="aql";if(!s.ov)s.ov={};return s;};
 const aqSetSave=(m,s)=>U.set("aqs:"+m,s);
@@ -38,7 +38,7 @@ function aqCalc(m){
  codes.forEach(c=>{if(!c.pz){c.pz=est;c.est=true;c.pzSrc="estimado";}});
  let N=0,cajas=0;
  P.X.rows.forEach(r=>{const c=codes.get(vG(r[1])),q=r[5]||0;let e=lp.get(r[0]);if(!e)lp.set(r[0],e={lpn:r[0],pcs:0,qty:0,codes:new Set(),miss:0});
-  if(!c.pz)e.miss++;const pc=c.pz?q*c.pz:0;e.pcs+=pc;e.qty+=q;e.codes.add(vG(c.g));N+=pc;cajas+=q;});
+  if(!c.pz)e.miss++;const pc=q;e.pcs+=pc;e.qty+=q;e.codes.add(vG(c.g));N+=pc;cajas+=q;});
  return {codes,lp,plants,N,cajas,miss:[...codes.values()].filter(c=>c.est)};}
 
 /* sorteo: LPN al azar hasta cubrir la muestra, cada LPN se inspecciona al 100% */
@@ -47,7 +47,7 @@ function aqDraw(m){
  const all=[...C.lp.values()].filter(e=>e.pcs>0);let sel=[];
  if(tot)sel=all;
  else{const sh=x=>{x=x.slice();for(let i=x.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));const t=x[i];x[i]=x[j];x[j]=t;}return x;};
-  /* repartir la muestra en varias tarimas: tope de piezas por LPN para que salgan al menos ~8 LPN */
+  /* repartir la muestra en varias tarimas: tope de cajas por LPN para que salgan al menos ~8 LPN */
   const k=Math.min(all.length,8),cap=Math.max(1,Math.ceil(z.n/k));
   let pool=all.filter(e=>e.pcs<=cap);if(pool.reduce((x,y)=>x+y.pcs,0)<z.n)pool=all;
   let s=0;for(const e of sh(pool)){if(s>=z.n)break;sel.push(e);s+=e.pcs;}
@@ -69,13 +69,13 @@ function aqLotChk(a){if(!/^\d{4}$/.test(a))return "";const y=+a[0],j=+a.slice(1)
 function aqSess(m,lpn,plan){return LP[m].S.find(s=>s.lpn===lpn&&s.aq&&s.aq.plan===plan.id);}
 function aqProg(m,plan){let d=0,p=0;plan.sel.forEach(e=>{const s=aqSess(m,e.lpn,plan);if(s&&s.status!=="proceso")d++;else if(s)p++;});return {d,p,n:plan.sel.length};}
 function aqCard(m){const plan=aqPlan(m),pr=plan&&aqProg(m,plan);
- return `<div class="card"><h2 class="sh"><i>★</i>Inspección por LPN</h2><p class="mu" style="margin:6px 0 8px;font-size:14px">${plan?esc(aqMode(plan.mode))+" · "+pr.n+" LPN sorteadas · "+pr.d+" terminadas":"Elige Total o AQL General II. La app calcula las piezas a inspeccionar y sortea las LPN."}</p><button type="button" class="btn pri" style="width:100%" data-aq="open" data-m="${m}">${plan?"Continuar inspección":"Preparar inspección"}</button>${aqSessAll(m).length?`<button type="button" class="btn" style="width:100%;margin-top:8px" data-aq="an" data-m="${m}">Análisis de diferencias</button>`:""}</div>`;}
+ return `<div class="card"><h2 class="sh"><i>★</i>Inspección por LPN</h2><p class="mu" style="margin:6px 0 8px;font-size:14px">${plan?esc(aqMode(plan.mode))+" · "+pr.n+" LPN sorteadas · "+pr.d+" terminadas":"Elige Total o AQL General II. La app suma las cajas de las LPN (tarimas), calcula la muestra en cajas y sortea las LPN."}</p><button type="button" class="btn pri" style="width:100%" data-aq="open" data-m="${m}">${plan?"Continuar inspección":"Preparar inspección"}</button>${aqSessAll(m).length?`<button type="button" class="btn" style="width:100%;margin-top:8px" data-aq="an" data-m="${m}">Análisis de diferencias</button>`:""}</div>`;}
 
 /* ---- vistas ---- */
 const aqUnit=it=>it.um==="IT"?"pzas":"cajas";
 function aqStats(m){const C=aqCalc(m),S=aqSet(m),z=S.mode==="tot"?{n:C.N,L:""}:aqSize(C.N);
  return `<p style="margin:6px 0 2px;font-size:14px"><b>${C.lp.size}</b> LPN en el archivo. Las cantidades se mantienen ocultas hasta el final de cada LPN.</p>
- <p style="margin:2px 0 0;font-size:14px">${S.mode==="tot"?"Se inspecciona el <b>100%</b> de las LPN del archivo.":"AQL General II · letra <b>"+z.L+"</b> · muestra de <b>"+z.n+"</b> piezas."}</p>
+ <p style="margin:2px 0 0;font-size:14px">${S.mode==="tot"?"Se inspecciona el <b>100%</b> de las LPN del archivo.":"AQL General II · letra <b>"+z.L+"</b> · muestra de <b>"+z.n+"</b> cajas."}</p>
  ${C.miss.length?`<div class="vbanner" style="margin-top:8px">${C.miss.length} código(s) sin dato de piezas por caja: se estiman y la app te las pregunta al capturar cada uno.</div>`:""}`;}
 function aqSetupView(m){const S=aqSet(m),C=aqCalc(m),tot=S.mode==="tot";
  const rows=[...C.codes.values()].sort((a,b)=>(a.pz?1:0)-(b.pz?1:0)||String(a.g).localeCompare(String(b.g)));
@@ -90,7 +90,7 @@ function aqSetupView(m){const S=aqSet(m),C=aqCalc(m),tot=S.mode==="tot";
  <div class="row3" style="margin-top:10px"><button type="button" class="btn full" data-aq="valall" data-m="${m}">Guardar piezas por caja como validadas</button><button type="button" class="btn pri full" data-aq="draw" data-m="${m}">Sortear LPN</button><button type="button" class="btn full" data-aq="close" data-m="${m}">Volver</button></div></div>`;}
 function aqPlanView(m,plan){const P=LP[m],pr=aqProg(m,plan),started=pr.d+pr.p>0;
  return `<div class="card"><h2 class="sh"><i>★</i>${esc(aqMode(plan.mode))}${plan.esc?" (ampliada)":""}</h2>
- <p style="margin:6px 0 2px;font-size:14px">${plan.mode==="aql"?"Letra <b>"+plan.L+"</b> · muestra <b>"+plan.n+"</b> pzas":"Inspección total (100%)"}</p>
+ <p style="margin:6px 0 2px;font-size:14px">${plan.mode==="aql"?"Letra <b>"+plan.L+"</b> · muestra <b>"+plan.n+"</b> cajas":"Inspección total (100%)"}</p>
  <p style="margin:2px 0 0;font-size:14px">LPN a inspeccionar: <b>${pr.n}</b></p>
  <p class="mu" style="margin:4px 0 0;font-size:13px">Cubre ${plan.cov||"?"} de ${plan.ncod||"?"} códigos del archivo.</p><p class="mu" style="margin:4px 0 0;font-size:13px">${pr.d} terminadas · ${pr.p} en proceso · ${pr.n-pr.d-pr.p} sin iniciar</p></div>
  <div class="card"><h2 class="sh"><i>≡</i>LPN a inspeccionar<em>${pr.n}</em></h2>
@@ -238,7 +238,7 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-aq]");if(!
  if(a==="open"){A.open=true;A.pick="";render();window.scrollTo(0,0);}
  else if(a==="close"){A.open=false;A.pick="";render();window.scrollTo(0,0);}
  else if(a==="mode"){const S=aqSet(m);S.mode=b.dataset.v;aqSetSave(m,S);render();}
- else if(a==="draw"||a==="redraw"){const C=aqCalc(m);  if(!C.N){toast("No hay piezas que inspeccionar en el archivo.");return;}
+ else if(a==="draw"||a==="redraw"){const C=aqCalc(m);  if(!C.N){toast("No hay cajas que inspeccionar en el archivo.");return;}
   const go=()=>{aqPlanSave(m,aqDraw(m));A.pick="";render();window.scrollTo(0,0);};
   if(a==="redraw")dlg({title:"Volver a sortear",body:"Se descarta la selección actual y se sortean otras LPN.",buttons:[{t:"Cancelar"},{t:"Sortear otra vez",cls:"pri",fn:go}]});else go();}
  else if(a==="valall"){const C=aqCalc(m);let n=0;C.codes.forEach((c,g)=>{if(c.pz>0){aqMasSet(g,{um:c.um,pz:c.pz});n++;}});render();toast(n+" código(s) guardados como validados.");}

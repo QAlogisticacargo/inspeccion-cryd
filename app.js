@@ -361,7 +361,7 @@ function viewPerfil(){const g=ME.guest,th=LS.get("cryd:theme","system");
  ${g?"":viewCloud()}
  ${g?"":viewAdminCard()}
  ${festPerfil()}${l3dPerfil()}
- <p class="mu" style="text-align:center;font-size:12px">Portal de Logística | Site SMO CRyD · versión 3.7<br>Archivos: aql ${typeof AQ_V!=="undefined"?AQ_V:"✗ antiguo"} · temporada ${typeof seaFor==="function"?"✓":"✗ falta"}</p>
+ <p class="mu" style="text-align:center;font-size:12px">Portal de Logística | Site SMO CRyD · versión 3.7<br>Archivos: aql ${typeof AQ_V!=="undefined"?AQ_V:"✗ antiguo"} · temporada ${typeof seaFor==="function"?"✓":"✗ falta"}<br>Icono de hoy: ${typeof seaFor==="function"&&seaFor()?seaFor()[3]+" ("+seaFor()[4]+")":"base"}</p>
  <button type="button" class="btn" style="width:100%" data-upd="1">Buscar actualización (borrar caché)</button>`;}
 const BAR=["home","rcv","sur","val","insp","more"],MORE=["dash","pend","hist","l3d","perfil","admin"];
 function render(){

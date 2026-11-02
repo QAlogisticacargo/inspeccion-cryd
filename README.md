@@ -17,6 +17,10 @@ Sube TODOS al repositorio (reemplaza los existentes).
 
 ## Novedades 3.7 (iconos y ajustes finales)
 
+- 3.8.1: el icono de temporada se fija desde el <head> (antes de que cargue la app) y Perfil muestra "Icono de hoy". Para ver el icono nuevo en la pantalla de inicio hay que borrar el acceso directo y volver a agregarlo.
+
+- 3.8.0: la inspección AQL cuenta CAJAS (suma de las cajas de todas las LPN/tarimas; LPN repetida = misma tarima). Letra y muestra salen de ese total.
+
 - Layout 3D 3.7.13: STCRyDA sin reja al oeste/norte, rejas nuevas al este y sur, jaula extendida al oeste, control de acceso solo escritorio.
 
 - Layout 3D 3.7.12: filas B70–B75 repartidas (B75 = rack pegado al muro este), jaula a espalda de B70, botes junto a B70, STCRyDA sin encierro, paso peatonal conectado, DOOR079 y salida de emergencia intercambiadas.

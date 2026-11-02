@@ -287,7 +287,15 @@ function rackBay(x,z,bw,bd,levels,row){
 function buildRacks(){
   const levels=[0,1.55,3.1,4.65,6.2];
   for(let i=-1;i<13;i++){const x=5.2+i*3.9;for(let b=(i<0?1:0);b<4;b++){TR={r:1,ox:x,oz:29.2-b*3.1};rackBay(0,0,3.0,1.1,levels,i);}}
+  /* fila extra al fondo (junto a la 85): mismo largo que las demás, 4 módulos */
+  for(let b=0;b<4;b++){TR={r:1,ox:54.4,oz:13.3-b*3.1};rackBay(0,0,3.0,1.1,levels,0);}
   TR=null;
+  /* báscula para tarimas, a un lado de la fila */
+  setG("base");
+  {const sx=53.75,sz=14.1,sw=1.5,sd=1.5,gy=hex("#7c858a"),pl=hex("#a9b0b4"),ye=hex("#f0a419"),bk=hex("#1e2326");
+   box(sx,0,sz,sw,.09,sd,gy);box(sx+.05,.09,sz+.05,sw-.1,.02,sd-.1,pl);
+   box(sx-.03,0,sz-.03,sw+.06,.05,.05,ye);box(sx-.03,0,sz+sd-.02,sw+.06,.05,.05,ye);box(sx-.03,0,sz-.03,.05,.05,sd+.06,ye);box(sx+sw-.02,0,sz-.03,.05,.05,sd+.06,ye);
+   box(sx+sw+.12,0,sz+sd-.1,.08,1.15,.08,gy);box(sx+sw+.02,1.15,sz+sd-.2,.28,.2,.12,bk);box(sx+sw+.05,1.2,sz+sd-.09,.22,.1,.01,hex("#7fd1a0"));}
 }
 function forklift(ox,oz,col,r){
   setG("base");TR={r:r,ox:ox,oz:oz};const dk=hex("#2a2f33");

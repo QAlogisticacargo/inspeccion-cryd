@@ -361,7 +361,8 @@ function viewPerfil(){const g=ME.guest,th=LS.get("cryd:theme","system");
  ${g?"":viewCloud()}
  ${g?"":viewAdminCard()}
  ${festPerfil()}${l3dPerfil()}
- <p class="mu" style="text-align:center;font-size:12px">Portal de Logística | Site SMO CRyD · versión 3.7</p>`;}
+ <p class="mu" style="text-align:center;font-size:12px">Portal de Logística | Site SMO CRyD · versión 3.7<br>Archivos: aql ${typeof AQ_V!=="undefined"?AQ_V:"✗ antiguo"} · temporada ${typeof seaFor==="function"?"✓":"✗ falta"}</p>
+ <button type="button" class="btn" style="width:100%" data-upd="1">Buscar actualización (borrar caché)</button>`;}
 const BAR=["home","rcv","sur","val","insp","more"],MORE=["dash","pend","hist","l3d","perfil","admin"];
 function render(){
  if(!ME){renderAuth();return;}
@@ -698,3 +699,8 @@ function makePdf(S){
  saveBlob(name,d.output("blob"));
 }
 
+
+document.addEventListener("click",e=>{if(!e.target.closest("[data-upd]"))return;toast("Actualizando…");
+ (async()=>{try{const k=await caches.keys();await Promise.all(k.map(x=>caches.delete(x)));}catch(x){}
+  try{const r=await navigator.serviceWorker.getRegistrations();await Promise.all(r.map(x=>x.unregister()));}catch(x){}
+  setTimeout(()=>location.reload(),400);})();});

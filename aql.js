@@ -2,7 +2,7 @@
 /* Tabla AQL, nivel de inspección general II (ISO 2859-1 / ANSI Z1.4): tamaño de lote en cajas -> letra y muestra */
 const AQL_T=[[8,2,"A"],[15,3,"B"],[25,5,"C"],[50,8,"D"],[90,13,"E"],[150,20,"F"],[280,32,"G"],[500,50,"H"],[1200,80,"J"],[3200,125,"K"],[10000,200,"L"],[35000,315,"M"],[150000,500,"N"],[500000,800,"P"],[Infinity,1250,"Q"]];
 function aqSize(N){if(!(N>0))return {n:0,L:""};for(const r of AQL_T)if(N<=r[0])return {n:Math.min(r[1],N),L:r[2]};return {n:1250,L:"Q"};}
-const AQ_V="3.8.0";
+const AQ_V="3.8.3";
 const AQ={};Object.keys(LCFG).forEach(m=>{AQ[m]={open:false,an:false,pick:"",txt:"",ed:-1,tm:0};});
 const aqSet=m=>{const s=U.get("aqs:"+m,null)||{};if(!s.mode)s.mode="aql";if(!s.ov)s.ov={};return s;};
 const aqSetSave=(m,s)=>U.set("aqs:"+m,s);
@@ -37,24 +37,28 @@ function aqCalc(m){
  const kn=[...codes.values()].filter(c=>c.pz>0&&c.um!=="IT").map(c=>c.pz).sort((a,b)=>a-b),est=kn.length?kn[Math.floor(kn.length/2)]:1;
  codes.forEach(c=>{if(!c.pz){c.pz=est;c.est=true;c.pzSrc="estimado";}});
  let N=0,cajas=0;
- P.X.rows.forEach(r=>{const c=codes.get(vG(r[1])),q=r[5]||0;let e=lp.get(r[0]);if(!e)lp.set(r[0],e={lpn:r[0],pcs:0,qty:0,codes:new Set(),miss:0});
+ P.X.rows.forEach(r=>{const c=codes.get(vG(r[1])),q=r[5]||0;let e=lp.get(r[0]);if(!e)lp.set(r[0],e={lpn:r[0],pcs:0,qty:0,codes:new Set(),miss:0,rens:new Map()});{const rk=vG(r[1])+"|"+nlot(r[3]);e.rens.set(rk,(e.rens.get(rk)||0)+q);}
   if(!c.pz)e.miss++;const pc=q;e.pcs+=pc;e.qty+=q;e.codes.add(vG(c.g));N+=pc;cajas+=q;});
  return {codes,lp,plants,N,cajas,miss:[...codes.values()].filter(c=>c.est)};}
 
 /* sorteo: LPN al azar hasta cubrir la muestra, cada LPN se inspecciona al 100% */
 function aqDraw(m){
  const P=LP[m],C=aqCalc(m),S=aqSet(m),tot=S.mode==="tot",z=tot?{n:C.N,L:""}:aqSize(C.N);
- const all=[...C.lp.values()].filter(e=>e.pcs>0);let sel=[];
- if(tot)sel=all;
- else{const sh=x=>{x=x.slice();for(let i=x.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));const t=x[i];x[i]=x[j];x[j]=t;}return x;};
-  /* repartir la muestra en varias tarimas: tope de cajas por LPN para que salgan al menos ~8 LPN */
-  const k=Math.min(all.length,8),cap=Math.max(1,Math.ceil(z.n/k));
-  let pool=all.filter(e=>e.pcs<=cap);if(pool.reduce((x,y)=>x+y.pcs,0)<z.n)pool=all;
-  let s=0;for(const e of sh(pool)){if(s>=z.n)break;sel.push(e);s+=e.pcs;}
-  if(s<z.n)for(const e of sh(all.filter(x=>sel.indexOf(x)<0))){if(s>=z.n)break;sel.push(e);s+=e.pcs;}}
- const cv=new Set();sel.forEach(e=>e.codes.forEach(c=>cv.add(c)));
- return {id:uid(),th:aqTh(m),mode:S.mode,at:Date.now(),file:P.X.name+"|"+P.X.at,N:C.N,n:z.n,L:z.L,pcs:sel.reduce((x,y)=>x+y.pcs,0),cov:cv.size,ncod:C.codes.size,
-  sel:sel.map(e=>({lpn:e.lpn,pcs:e.pcs,qty:e.qty,nc:e.codes.size}))};}
+ const all=[...C.lp.values()].filter(e=>e.qty>0);let sel=[];
+ const sh=x=>{x=x.slice();for(let i=x.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));const t=x[i];x[i]=x[j];x[j]=t;}return x;};
+ if(tot)sel=all.map(e=>({lpn:e.lpn,pcs:e.qty,qty:e.qty,nc:e.rens.size,e}));
+ else{
+  /* muestra en cajas: se sortean LPN y, dentro de cada una, solo los renglones necesarios para completar la muestra */
+  const k=Math.min(all.length,8),cap=Math.max(1,Math.ceil(z.n/k)),by=new Map();let s0=0;
+  const take=(e,lim)=>{let d=by.get(e.lpn);if(!d){d={lpn:e.lpn,keys:[],qty:0,e};by.set(e.lpn,d);}
+   for(const [rk,q] of sh([...e.rens.entries()])){if(s0>=z.n||d.qty>=lim)break;if(d.keys.indexOf(rk)>=0)continue;d.keys.push(rk);d.qty+=q;s0+=q;}};
+  const order=sh(all);
+  for(const e of order){if(s0>=z.n)break;take(e,cap);}
+  for(const e of order){if(s0>=z.n)break;take(e,Infinity);}
+  sel=[...by.values()].filter(d=>d.keys.length).map(d=>({lpn:d.lpn,pcs:d.qty,qty:d.qty,nc:d.keys.length,rk:d.keys,e:d.e}));}
+ const cv=new Set();sel.forEach(d=>d.e.codes.forEach(c=>cv.add(c)));
+ return {id:uid(),th:aqTh(m),mode:S.mode,at:Date.now(),file:P.X.name+"|"+P.X.at,N:C.N,n:z.n,L:z.L,pcs:sel.reduce((x,y)=>x+y.qty,0),cov:cv.size,ncod:C.codes.size,
+  sel:sel.map(d=>{const o={lpn:d.lpn,pcs:d.qty,qty:d.qty,nc:d.nc,tl:d.e.rens.size};if(d.rk)o.rk=d.rk;return o;})};}
 
 /* ---- fecha del lote: 1er dígito = año, 3 siguientes = día juliano ---- */
 const aqYr=()=>new Date().getFullYear()%10;
@@ -74,14 +78,14 @@ function aqCard(m){const plan=aqPlan(m),pr=plan&&aqProg(m,plan);
 /* ---- vistas ---- */
 const aqUnit=it=>it.um==="IT"?"pzas":"cajas";
 function aqStats(m){const C=aqCalc(m),S=aqSet(m),z=S.mode==="tot"?{n:C.N,L:""}:aqSize(C.N);
- return `<p style="margin:6px 0 2px;font-size:14px"><b>${C.lp.size}</b> LPN en el archivo. Las cantidades se mantienen ocultas hasta el final de cada LPN.</p>
+ return `<p style="margin:6px 0 2px;font-size:14px"><b>${C.lp.size}</b> LPN y <b>${C.N}</b> cajas en el archivo. Las cantidades se mantienen ocultas hasta el final de cada LPN.</p>
  <p style="margin:2px 0 0;font-size:14px">${S.mode==="tot"?"Se inspecciona el <b>100%</b> de las LPN del archivo.":"AQL General II · letra <b>"+z.L+"</b> · muestra de <b>"+z.n+"</b> cajas."}</p>
  ${C.miss.length?`<div class="vbanner" style="margin-top:8px">${C.miss.length} código(s) sin dato de piezas por caja: se estiman y la app te las pregunta al capturar cada uno.</div>`:""}`;}
 function aqSetupView(m){const S=aqSet(m),C=aqCalc(m),tot=S.mode==="tot";
  const rows=[...C.codes.values()].sort((a,b)=>(a.pz?1:0)-(b.pz?1:0)||String(a.g).localeCompare(String(b.g)));
  return `<div class="card"><h2 class="sh"><i>1</i>Tipo de inspección</h2><div class="row3"><button type="button" class="btn ${tot?"pri":""}" data-aq="mode" data-v="tot" data-m="${m}">Total (100%)</button><button type="button" class="btn ${tot?"":"pri"}" data-aq="mode" data-v="aql" data-m="${m}">AQL General II</button></div>
- ${tot?"":`<label class="lb">Pasar a 100% si se encuentran (renglones con diferencia)</label><input data-aqin="th" data-m="${m}" inputmode="numeric" maxlength="2" value="${aqTh(m)}" style="width:80px">`}<p class="mu" style="margin:8px 0 0;font-size:13px">${tot?"Se inspeccionan todas las LPN del archivo.":"Se calcula la muestra en piezas según el tamaño del lote y se sortean LPN completas hasta cubrirla; esas LPN se inspeccionan al 100%."}</p></div>
- <div class="card"><h2 class="sh"><i>2</i>Piezas a inspeccionar</h2><div id="aqst">${aqStats(m)}</div>
+ ${tot?"":`<label class="lb">Pasar a 100% si se encuentran (renglones con diferencia)</label><input data-aqin="th" data-m="${m}" inputmode="numeric" maxlength="2" value="${aqTh(m)}" style="width:80px">`}<p class="mu" style="margin:8px 0 0;font-size:13px">${tot?"Se inspeccionan todos los renglones de todas las LPN del archivo.":"1) La app suma las cajas de todas las LPN del archivo (cada LPN es una tarima; si una LPN se repite, esos renglones están en la misma tarima). 2) Con ese total, la tabla AQL General II da la muestra en cajas. 3) Se sortean LPN y, dentro de cada una, solo los renglones necesarios para completar la muestra. Si todo el producto está en una sola LPN, solo revisas los renglones sorteados; si tú o tu coordinador prefieren revisar todo, elige Total (100%) o usa Pasar a 100% más adelante."}</p></div>
+ <div class="card"><h2 class="sh"><i>2</i>Cajas a inspeccionar</h2><div id="aqst">${aqStats(m)}</div>
  <details style="margin-top:10px"><summary style="cursor:pointer;font-weight:600">Revisar piezas por caja (${rows.length} códigos)</summary>
  <p class="mu" style="margin:6px 0;font-size:12px">La app lee las piezas de la descripción. Si el archivo trae IT (rastrillos y cepillos), la cantidad ya viene en piezas. Corrige lo que haga falta.</p>
  ${rows.map(c=>{const g=vG(c.g);return `<div class="vx"><div class="t"><b>${esc(c.g)}</b><span class="tg">${c.um==="IT"?"IT · piezas":"CS · cajas"}</span></div><p style="margin:4px 0 0;font-size:13px">${esc(c.desc||"")}</p>
@@ -91,15 +95,15 @@ function aqSetupView(m){const S=aqSet(m),C=aqCalc(m),tot=S.mode==="tot";
 function aqPlanView(m,plan){const P=LP[m],pr=aqProg(m,plan),started=pr.d+pr.p>0;
  return `<div class="card"><h2 class="sh"><i>★</i>${esc(aqMode(plan.mode))}${plan.esc?" (ampliada)":""}</h2>
  <p style="margin:6px 0 2px;font-size:14px">${plan.mode==="aql"?"Letra <b>"+plan.L+"</b> · muestra <b>"+plan.n+"</b> cajas":"Inspección total (100%)"}</p>
- <p style="margin:2px 0 0;font-size:14px">LPN a inspeccionar: <b>${pr.n}</b></p>
+ <p style="margin:2px 0 0;font-size:14px">LPN a inspeccionar: <b>${pr.n}</b> · renglones a revisar: <b>${plan.sel.reduce((x,y)=>x+(y.nc||0),0)}</b></p>
  <p class="mu" style="margin:4px 0 0;font-size:13px">Cubre ${plan.cov||"?"} de ${plan.ncod||"?"} códigos del archivo.</p><p class="mu" style="margin:4px 0 0;font-size:13px">${pr.d} terminadas · ${pr.p} en proceso · ${pr.n-pr.d-pr.p} sin iniciar</p></div>
  <div class="card"><h2 class="sh"><i>≡</i>LPN a inspeccionar<em>${pr.n}</em></h2>
  ${plan.sel.map(e=>{const s=aqSess(m,e.lpn,plan),st=!s?'<span class="tg">Sin iniciar</span>':s.status==="proceso"?'<span class="tg">En proceso</span>':rcvChip(s.status);
-  return `<div class="vx"><div class="t"><b>${esc(lpFmt(e.lpn))}</b>${st}</div><p style="margin:4px 0 0;font-size:12px;color:var(--mu)">${e.nc} código(s) · cantidades ocultas</p>
+  return `<div class="vx"><div class="t"><b>${esc(lpFmt(e.lpn))}</b>${st}</div><p style="margin:4px 0 0;font-size:12px;color:var(--mu)">${e.rk?e.nc+" de "+(e.tl||e.nc)+" renglón(es) a revisar":(e.tl||e.nc)+" renglón(es) · inspección completa"} · cantidades ocultas</p>
   <div class="row3" style="margin-top:8px">${!s?`<button type="button" class="btn pri" data-aq="start" data-lpn="${e.lpn}" data-m="${m}">Iniciar</button>`:`<button type="button" class="btn ${s.status==="proceso"?"pri":""}" data-lr="open" data-id="${s.id}" data-m="${m}">${s.status==="proceso"?"Continuar":"Ver"}</button>`}</div></div>`;}).join("")}
- <div class="row3" style="margin-top:10px">${pr.d?`<button type="button" class="btn" data-aq="an" data-m="${m}">Análisis</button><button type="button" class="btn" data-aq="pdf" data-m="${m}">Reporte PDF</button>`:""}${started?"":`<button type="button" class="btn" data-aq="redraw" data-m="${m}">Volver a sortear</button>`}<button type="button" class="btn" data-aq="close" data-m="${m}">Volver</button><button type="button" class="btn dg" data-aq="end" data-m="${m}">Cerrar inspección</button></div></div>`;}
+ <div class="row3" style="margin-top:10px">${pr.d?`<button type="button" class="btn" data-aq="an" data-m="${m}">Análisis</button><button type="button" class="btn" data-aq="pdf" data-m="${m}">Reporte PDF</button>`:""}${started?"":`<button type="button" class="btn" data-aq="redraw" data-m="${m}">Volver a sortear</button>`}${plan.mode==="aql"?`<button type="button" class="btn" data-aq="to100" data-m="${m}">Pasar a 100%</button>`:""}<button type="button" class="btn" data-aq="close" data-m="${m}">Volver</button><button type="button" class="btn dg" data-aq="end" data-m="${m}">Cerrar inspección</button></div></div>`;}
 function aqPickView(m,plan){const A=AQ[m],e=plan.sel.find(x=>x.lpn===A.pick)||{pcs:0,qty:0};
- return `<div class="card"><h2 class="sh"><i>1</i>Confirma la LPN</h2><p class="mu" style="margin:6px 0 4px;font-size:14px">Busca la tarima con esta LPN y confírmala con foto o escribiéndola.</p>
+ return `<div class="card"><h2 class="sh"><i>1</i>Confirma la LPN</h2><p class="mu" style="margin:6px 0 4px;font-size:14px">Busca la tarima con esta LPN y confírmala con foto o escribiéndola. ${e.rk?"Solo se revisan "+e.nc+" de "+(e.tl||e.nc)+" renglón(es) de esta tarima, los que salieron sorteados.":"Se revisan todos los renglones de esta tarima."}</p>
  <p style="margin:6px 0;font-size:20px;font-weight:800;letter-spacing:.02em;color:var(--ac)">${esc(lpFmt(A.pick))}</p>
  <label class="lb">LPN</label><div class="fld"><input data-aqin="lpn" data-m="${m}" inputmode="numeric" maxlength="40" placeholder="(00) 1003 7000 3106 0950 58" value="${esc(A.txt||"")}">${sb("L:"+m+":aqlpn")}</div>
  <div class="row3"><button type="button" class="btn pri" data-aq="lpnok" data-m="${m}">Confirmar LPN</button><button type="button" class="btn" data-aq="plan" data-m="${m}">Cancelar</button></div></div>`;}
@@ -137,7 +141,7 @@ function aqLpnView(m){const P=LP[m],c=P.CUR,A=AQ[m],N=c.items.length,ok=c.items.
  return `<div class="card"><div class="t" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><b style="font-size:17px">LPN ${esc(lpFmt(c.lpn))}</b><span class="tg" style="background:var(--okb);color:var(--ok)">${esc(aqMode(c.aq.mode))}</span></div>
   <p class="mu" style="margin:6px 0 0;font-size:13px">${ok} de ${N} renglones OK${tried?" · "+tried+" pendiente(s) por revisar":""}${left?" · "+left+" sin capturar":""}. Avance guardado automáticamente.</p>
   <div class="row3" style="margin-top:8px"><button type="button" class="btn" data-aq="plan" data-m="${m}">‹ Guardar y volver</button><button type="button" class="btn" data-aq="toend" data-m="${m}">Ir a firmar ›</button></div></div>
- <div class="card"><h2 class="sh"><i>≡</i>Productos de la LPN</h2><p class="mu" style="margin:6px 0 4px;font-size:13px">Toca un renglón, lee el código, escribe los dígitos del lote que faltan (la planta ya está) y la cantidad. Lo que no coincida queda pendiente hasta que termines la LPN.</p>
+ <div class="card"><h2 class="sh"><i>≡</i>Productos de la LPN</h2><p class="mu" style="margin:6px 0 4px;font-size:13px">Toca un renglón, lee el código, escribe los dígitos del lote que faltan (la planta ya está) y la cantidad. Lo que no coincida queda pendiente hasta que termines la LPN.${(()=>{const pl=aqPlan(m),en=pl&&pl.sel.find(x=>x.lpn===c.lpn);return en&&en.rk?" Aquí solo aparecen los "+en.nc+" renglón(es) sorteados para tu muestra; el resto de la tarima no se revisa.":"";})()}</p>
  ${c.items.map((it,k)=>{const chip=it.st==="ok"?rcvChip("ok"):it.tried?'<span class="tg" style="background:var(--erb);color:var(--er)">Pendiente</span>':'<span class="tg">Por capturar</span>',open=A.ed===k;
   return `<div class="vx" id="aqr${k}"${open?' style="border-color:var(--ac)"':""}><div class="t"><b>${esc(it.g)}</b>${chip}</div><p style="margin:4px 0 0;font-size:13px">${esc(it.desc||"")}</p>
   <p style="margin:2px 0 0;font-size:12px;color:var(--mu)">Lote ${aqMask(it)} · cuenta en ${aqUnit(it)}</p>
@@ -167,9 +171,11 @@ function aqAnView(m){const S=aqSessAll(m),by={rs:new Map(),g:new Map(),op:new Ma
  <div class="row3" style="margin-top:10px"><button type="button" class="btn pri full" data-aq="anx" data-m="${m}">Volver</button></div></div>`;}
 
 /* ---- acciones ---- */
+const aqRk=i=>vG(i.g)+"|"+nlot(i.l);
+function aqMkItems(m,lpn,keys){const C=aqCalc(m);return lpItems(m,lpn).filter(i=>!keys||keys.indexOf(aqRk(i))>=0).map(i=>{const c=C.codes.get(vG(i.g))||{};i.um=c.um||"CS";i.pz=c.pz||0;i.est=!!c.est;i.d={};i.tried=0;i.why="";return i;});}
 function aqOpenLpn(m,lpn,th){const P=LP[m],plan=aqPlan(m),A=AQ[m];if(!plan)return;
  let s=aqSess(m,lpn,plan);
- if(!s){const C=aqCalc(m);s={id:uid(),lpn,at:Date.now(),status:"proceso",items:lpItems(m,lpn).map(i=>{const c=C.codes.get(vG(i.g))||{};i.um=c.um||"CS";i.pz=c.pz||0;i.est=!!c.est;i.d={};i.tried=0;i.why="";return i;}),extras:[],lpnPh:th||"",det:null,aq:{plan:plan.id,mode:plan.mode},sign:null};P.S.push(s);}
+ if(!s){const ent=plan.sel.find(x=>x.lpn===lpn)||{};s={id:uid(),lpn,at:Date.now(),status:"proceso",items:aqMkItems(m,lpn,ent.rk),extras:[],lpnPh:th||"",det:null,aq:{plan:plan.id,mode:plan.mode},sign:null};P.S.push(s);}
  P.CUR=s;A.pick="";A.txt="";A.ed=aqNext(s,-1);P.UI.msg=null;lpSave(m);render();window.scrollTo(0,0);}
 function aqConfirmLpn(m,lpn,th){const A=AQ[m],plan=aqPlan(m);if(!plan)return;
  if(lpn===A.pick){aqOpenLpn(m,lpn,th);return;}
@@ -220,8 +226,10 @@ function aqValidate(m,k){
  const e=document.getElementById(nx>=0?"aqr"+nx:"aqend");if(e)window.scrollTo({top:Math.max(0,e.getBoundingClientRect().top+scrollY-80),behavior:"smooth"});}
 function aqDiffs(m,plan){let n=0;LP[m].S.forEach(s=>{if(s.aq&&s.aq.plan===plan.id&&s.status!=="proceso")n+=s.items.filter(i=>i.st!=="ok").length;});return n;}
 function aqEscalate(m){const plan=aqPlan(m);if(!plan)return;const C=aqCalc(m);
- const all=[...C.lp.values()].filter(e=>e.pcs>0);
- plan.mode="tot";plan.esc=true;plan.sel=all.map(e=>({lpn:e.lpn,pcs:e.pcs,qty:e.qty,nc:e.codes.size}));plan.pcs=C.N;plan.n=C.N;plan.L="";aqPlanSave(m,plan);render();window.scrollTo(0,0);toast("Inspección ampliada al 100%: "+all.length+" LPN.");}
+ const all=[...C.lp.values()].filter(e=>e.qty>0);let reab=0;
+ LP[m].S.forEach(s=>{if(!(s.aq&&s.aq.plan===plan.id))return;const have=new Set(s.items.map(aqRk)),add=aqMkItems(m,s.lpn,null).filter(i=>!have.has(aqRk(i)));
+  if(add.length){add.forEach(i=>s.items.push(i));if(s.status!=="proceso"){s.status="proceso";s.sign=null;reab++;}}});
+ plan.mode="tot";plan.esc=true;plan.sel=all.map(e=>({lpn:e.lpn,pcs:e.qty,qty:e.qty,nc:e.rens.size,tl:e.rens.size}));plan.pcs=C.N;plan.n=C.N;plan.L="";aqPlanSave(m,plan);lpSave(m);render();window.scrollTo(0,0);toast("Inspección ampliada al 100%: "+all.length+" LPN."+(reab?" Se reabrieron "+reab+" LPN con renglones faltantes.":""));}
 function aqCheckEsc(m){const plan=aqPlan(m);if(!plan||plan.mode!=="aql")return;const n=aqDiffs(m,plan),th=plan.th||2,last=plan.escAsk||0;
  if(n>=th&&n>=last+th){plan.escAsk=n;aqPlanSave(m,plan);
   dlg({title:"Muchas diferencias en la muestra",body:"Van "+n+" renglones con diferencia (límite "+th+"). Lo recomendado es pasar a inspección total (100%) de todas las LPN del archivo.",buttons:[{t:"Seguir con AQL"},{t:"Pasar a 100%",cls:"dg",fn:()=>aqEscalate(m)}]});}}
@@ -241,6 +249,7 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-aq]");if(!
  else if(a==="draw"||a==="redraw"){const C=aqCalc(m);  if(!C.N){toast("No hay cajas que inspeccionar en el archivo.");return;}
   const go=()=>{aqPlanSave(m,aqDraw(m));A.pick="";render();window.scrollTo(0,0);};
   if(a==="redraw")dlg({title:"Volver a sortear",body:"Se descarta la selección actual y se sortean otras LPN.",buttons:[{t:"Cancelar"},{t:"Sortear otra vez",cls:"pri",fn:go}]});else go();}
+ else if(a==="to100")dlg({title:"Pasar a inspección total (100%)",body:"Se revisarán todos los renglones de todas las LPN del archivo. Las LPN ya firmadas con renglones sin revisar se reabren. Normalmente lo decide el inspector o su coordinador, por ejemplo cuando todo el producto está en una sola LPN.",buttons:[{t:"Cancelar"},{t:"Pasar a 100%",cls:"dg",fn:()=>aqEscalate(m)}]});
  else if(a==="valall"){const C=aqCalc(m);let n=0;C.codes.forEach((c,g)=>{if(c.pz>0){aqMasSet(g,{um:c.um,pz:c.pz});n++;}});render();toast(n+" código(s) guardados como validados.");}
  else if(a==="an"){A.an=true;A.open=true;render();window.scrollTo(0,0);}
  else if(a==="anx"){A.an=false;render();window.scrollTo(0,0);}

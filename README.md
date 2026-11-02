@@ -17,6 +17,8 @@ Sube TODOS al repositorio (reemplaza los existentes).
 
 ## Novedades 3.7 (iconos y ajustes finales)
 
+- 3.8.3: la muestra AQL se revisa por renglones: se sortean LPN y, dentro de cada una, solo los renglones necesarios para completar las cajas de la muestra. Botón "Pasar a 100%" y textos aclarados.
+
 - 3.8.2: banderas en el Layout 3D (Ir a Recibo, Surtido, Maquila, Pendientes, Historial) y colores por proceso en el menú.
 
 - 3.8.1: el icono de temporada se fija desde el <head> (antes de que cargue la app) y Perfil muestra "Icono de hoy". Para ver el icono nuevo en la pantalla de inicio hay que borrar el acceso directo y volver a agregarlo.

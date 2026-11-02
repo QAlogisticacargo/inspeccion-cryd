@@ -152,16 +152,17 @@ IC.l3d='<path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M12 12l8-4.5M12 12v9M
 const l3dTheme=()=>{const t=LS.get("cryd:theme","system");return t==="light"||t==="dark"?"&t="+t:"";};
 function viewL3d(){return `<div class="l3dw"><iframe id="l3df" title="Layout 3D de la maquila CRyD" src="layout3d.html#emb${l3dTheme()}" loading="lazy" style="height:1100px"></iframe></div><p class="mu" style="font-size:12px;margin:8px 0 0">Arrastra para girar, pellizca para acercar. Medidas estimadas.</p>`;}
 const l3dSpOn=()=>LS.get("cryd:l3dsp","on")!=="off";
-function l3dPerfil(){return `<div class="card"><h2 class="sh">Presentación del layout</h2><p class="mu" style="margin:6px 0 12px;font-size:14px">Al abrir la app por primera vez en el día se muestra unos segundos el layout 3D. Puedes saltarla con un toque.</p><button type="button" class="btn" style="width:100%" data-l3d="tog">${l3dSpOn()?"Activada · tocar para desactivar":"Desactivada · tocar para activar"}</button></div>`;}
+function l3dPerfil(){return `<div class="card"><h2 class="sh">Presentación del layout</h2><p class="mu" style="margin:6px 0 12px;font-size:14px">Las primeras 7 veces que abres la app cada día se muestra unos segundos el layout 3D. Puedes saltarla con un toque.</p><button type="button" class="btn" style="width:100%" data-l3d="tog">${l3dSpOn()?"Activada · tocar para desactivar":"Desactivada · tocar para activar"}</button></div>`;}
 let L3DSHOWN=false,L3DTM=0;
 function l3dClose(){const o=document.getElementById("l3dsp");clearTimeout(L3DTM);if(!o)return;const f=o.querySelector("iframe");if(f)f.src="about:blank";o.classList.add("out");setTimeout(()=>{try{o.remove();}catch(e){}},260);}
 function l3dMaybe(){
  if(L3DSHOWN||!ME||!l3dSpOn())return;
  const day=new Date().toLocaleDateString("sv-SE"),key="cryd:l3dday:"+ME.emp;
- if(LS.get(key,"")===day){L3DSHOWN=true;return;}
+ const raw=String(LS.get(key,"")),pr=raw.split("|"),cnt=pr[0]===day?(+pr[1]||1):0;
+ if(cnt>=7){L3DSHOWN=true;return;}
  L3DSHOWN=true;
  try{if(matchMedia("(prefers-reduced-motion:reduce)").matches||(navigator.deviceMemory&&navigator.deviceMemory<=2)||(navigator.hardwareConcurrency&&navigator.hardwareConcurrency<=2))return;}catch(e){}
- LS.set(key,day);
+ LS.set(key,day+"|"+(cnt+1));
  setTimeout(()=>{if(document.getElementById("l3dsp")||!ME)return;
   const o=document.createElement("div");o.id="l3dsp";
   o.innerHTML=`<iframe title="Layout 3D" src="layout3d.html#splash${l3dTheme()}" onload="this.classList.add('on')"></iframe><div class="l3t"><b>Portal de Logística | Site SMO CRyD</b><span>Maquila CRyD · Layout 3D</span></div><button type="button" class="btn pri l3b" data-l3d="skip">Entrar</button><i class="l3p"></i>`;

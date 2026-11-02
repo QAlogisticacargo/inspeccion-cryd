@@ -24,6 +24,7 @@ function seaFor(d){d=d||new Date();const m=d.getMonth()+1,n=d.getDate();return S
 function seaApply(d){const t=seaFor(d),bi=document.querySelector(".bi");if(!t||!bi)return;const c=SEA_CO[t[3]];
  bi.innerHTML='<svg viewBox="0 0 24 24">'+SEA_IC[t[3]]+'</svg>';bi.style.background="linear-gradient(145deg,"+c[0]+" 0%,"+c[1]+" 100%)";bi.title=t[4];bi.setAttribute("aria-label",t[4]);
  try{const svg='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="'+c[0]+'"/><stop offset="1" stop-color="'+c[1]+'"/></linearGradient></defs><rect width="32" height="32" rx="8" fill="url(#g)"/><g transform="translate(4 4)" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+SEA_IC[t[3]]+'</g></svg>';
+  const ap=document.querySelector('link[rel="apple-touch-icon"]');if(ap)ap.setAttribute("href","ati-"+t[3]+".png");
   let l=document.querySelector('link[rel="icon"]');if(l)l.setAttribute("href","data:image/svg+xml,"+encodeURIComponent(svg));}catch(e){}}
 seaApply();
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")seaApply();});

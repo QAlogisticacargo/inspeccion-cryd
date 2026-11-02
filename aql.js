@@ -2,7 +2,7 @@
 /* Tabla AQL, nivel de inspección general II (ISO 2859-1 / ANSI Z1.4): tamaño de lote en piezas -> letra y muestra */
 const AQL_T=[[8,2,"A"],[15,3,"B"],[25,5,"C"],[50,8,"D"],[90,13,"E"],[150,20,"F"],[280,32,"G"],[500,50,"H"],[1200,80,"J"],[3200,125,"K"],[10000,200,"L"],[35000,315,"M"],[150000,500,"N"],[500000,800,"P"],[Infinity,1250,"Q"]];
 function aqSize(N){if(!(N>0))return {n:0,L:""};for(const r of AQL_T)if(N<=r[0])return {n:Math.min(r[1],N),L:r[2]};return {n:1250,L:"Q"};}
-const AQ_V="3.7.6";
+const AQ_V="3.7.8";
 const AQ={};Object.keys(LCFG).forEach(m=>{AQ[m]={open:false,an:false,pick:"",txt:"",ed:-1,tm:0};});
 const aqSet=m=>{const s=U.get("aqs:"+m,null)||{};if(!s.mode)s.mode="aql";if(!s.ov)s.ov={};return s;};
 const aqSetSave=(m,s)=>U.set("aqs:"+m,s);
@@ -74,8 +74,8 @@ function aqCard(m){const plan=aqPlan(m),pr=plan&&aqProg(m,plan);
 /* ---- vistas ---- */
 const aqUnit=it=>it.um==="IT"?"pzas":"cajas";
 function aqStats(m){const C=aqCalc(m),S=aqSet(m),z=S.mode==="tot"?{n:C.N,L:""}:aqSize(C.N);
- return `<p style="margin:6px 0 2px;font-size:14px"><b>${C.lp.size}</b> LPN · <b>${f2(C.cajas)}</b> cajas/piezas capturadas · <b>${C.N.toLocaleString("es-MX")}</b> piezas en total</p>
- <p style="margin:2px 0 0;font-size:14px">${S.mode==="tot"?"Se inspecciona el <b>100%</b>: "+C.N.toLocaleString("es-MX")+" piezas, todas las LPN.":"AQL General II · letra <b>"+z.L+"</b> · muestra de <b>"+z.n+"</b> piezas ("+(C.N?Math.round(z.n/C.N*1000)/10:0)+"%)."}</p>
+ return `<p style="margin:6px 0 2px;font-size:14px"><b>${C.lp.size}</b> LPN en el archivo. Las cantidades se mantienen ocultas hasta el final de cada LPN.</p>
+ <p style="margin:2px 0 0;font-size:14px">${S.mode==="tot"?"Se inspecciona el <b>100%</b> de las LPN del archivo.":"AQL General II · letra <b>"+z.L+"</b> · muestra de <b>"+z.n+"</b> piezas."}</p>
  ${C.miss.length?`<div class="vbanner" style="margin-top:8px">${C.miss.length} código(s) sin dato de piezas por caja: se estiman y la app te las pregunta al capturar cada uno.</div>`:""}`;}
 function aqSetupView(m){const S=aqSet(m),C=aqCalc(m),tot=S.mode==="tot";
  const rows=[...C.codes.values()].sort((a,b)=>(a.pz?1:0)-(b.pz?1:0)||String(a.g).localeCompare(String(b.g)));
@@ -90,17 +90,17 @@ function aqSetupView(m){const S=aqSet(m),C=aqCalc(m),tot=S.mode==="tot";
  <div class="row3" style="margin-top:10px"><button type="button" class="btn full" data-aq="valall" data-m="${m}">Guardar piezas por caja como validadas</button><button type="button" class="btn pri full" data-aq="draw" data-m="${m}">Sortear LPN</button><button type="button" class="btn full" data-aq="close" data-m="${m}">Volver</button></div></div>`;}
 function aqPlanView(m,plan){const P=LP[m],pr=aqProg(m,plan),started=pr.d+pr.p>0;
  return `<div class="card"><h2 class="sh"><i>★</i>${esc(aqMode(plan.mode))}${plan.esc?" (ampliada)":""}</h2>
- <p style="margin:6px 0 2px;font-size:14px">Archivo: ${plan.N.toLocaleString("es-MX")} piezas${plan.mode==="aql"?" · letra <b>"+plan.L+"</b> · muestra <b>"+plan.n+"</b> pzas":""}</p>
- <p style="margin:2px 0 0;font-size:14px">LPN sorteadas: <b>${pr.n}</b> · <b>${f2(plan.sel.reduce((x,e)=>x+e.qty,0))}</b> cajas · <b>${plan.pcs.toLocaleString("es-MX")}</b> piezas a inspeccionar${plan.N?" ("+Math.round(plan.pcs/plan.N*1000)/10+"%)":""}</p>
+ <p style="margin:6px 0 2px;font-size:14px">${plan.mode==="aql"?"Letra <b>"+plan.L+"</b> · muestra <b>"+plan.n+"</b> pzas":"Inspección total (100%)"}</p>
+ <p style="margin:2px 0 0;font-size:14px">LPN a inspeccionar: <b>${pr.n}</b></p>
  <p class="mu" style="margin:4px 0 0;font-size:13px">Cubre ${plan.cov||"?"} de ${plan.ncod||"?"} códigos del archivo.</p><p class="mu" style="margin:4px 0 0;font-size:13px">${pr.d} terminadas · ${pr.p} en proceso · ${pr.n-pr.d-pr.p} sin iniciar</p></div>
  <div class="card"><h2 class="sh"><i>≡</i>LPN a inspeccionar<em>${pr.n}</em></h2>
  ${plan.sel.map(e=>{const s=aqSess(m,e.lpn,plan),st=!s?'<span class="tg">Sin iniciar</span>':s.status==="proceso"?'<span class="tg">En proceso</span>':rcvChip(s.status);
-  return `<div class="vx"><div class="t"><b>${esc(lpFmt(e.lpn))}</b>${st}</div><p style="margin:4px 0 0;font-size:12px;color:var(--mu)">${e.pcs.toLocaleString("es-MX")} piezas · ${f2(e.qty)} cajas/pzas · ${e.nc} código(s)</p>
+  return `<div class="vx"><div class="t"><b>${esc(lpFmt(e.lpn))}</b>${st}</div><p style="margin:4px 0 0;font-size:12px;color:var(--mu)">${e.nc} código(s) · cantidades ocultas</p>
   <div class="row3" style="margin-top:8px">${!s?`<button type="button" class="btn pri" data-aq="start" data-lpn="${e.lpn}" data-m="${m}">Iniciar</button>`:`<button type="button" class="btn ${s.status==="proceso"?"pri":""}" data-lr="open" data-id="${s.id}" data-m="${m}">${s.status==="proceso"?"Continuar":"Ver"}</button>`}</div></div>`;}).join("")}
  <div class="row3" style="margin-top:10px">${pr.d?`<button type="button" class="btn" data-aq="an" data-m="${m}">Análisis</button><button type="button" class="btn" data-aq="pdf" data-m="${m}">Reporte PDF</button>`:""}${started?"":`<button type="button" class="btn" data-aq="redraw" data-m="${m}">Volver a sortear</button>`}<button type="button" class="btn" data-aq="close" data-m="${m}">Volver</button><button type="button" class="btn dg" data-aq="end" data-m="${m}">Cerrar inspección</button></div></div>`;}
 function aqPickView(m,plan){const A=AQ[m],e=plan.sel.find(x=>x.lpn===A.pick)||{pcs:0,qty:0};
  return `<div class="card"><h2 class="sh"><i>1</i>Confirma la LPN</h2><p class="mu" style="margin:6px 0 4px;font-size:14px">Busca la tarima con esta LPN y confírmala con foto o escribiéndola.</p>
- <p style="margin:6px 0;font-size:20px;font-weight:800;letter-spacing:.02em;color:var(--ac)">${esc(lpFmt(A.pick))}</p><p class="mu" style="margin:0 0 8px;font-size:13px">${e.pcs.toLocaleString("es-MX")} piezas · ${f2(e.qty)} cajas/pzas</p>
+ <p style="margin:6px 0;font-size:20px;font-weight:800;letter-spacing:.02em;color:var(--ac)">${esc(lpFmt(A.pick))}</p>
  <label class="lb">LPN</label><div class="fld"><input data-aqin="lpn" data-m="${m}" inputmode="numeric" maxlength="40" placeholder="(00) 1003 7000 3106 0950 58" value="${esc(A.txt||"")}">${sb("L:"+m+":aqlpn")}</div>
  <div class="row3"><button type="button" class="btn pri" data-aq="lpnok" data-m="${m}">Confirmar LPN</button><button type="button" class="btn" data-aq="plan" data-m="${m}">Cancelar</button></div></div>`;}
 function aqView(m){const plan=aqPlan(m),A=AQ[m];
@@ -118,14 +118,14 @@ function aqRowForm(m,c,k){const it=c.items[k],d=it.d||(it.d={}),sp=aqSplit(it.l)
  <label class="lb">Código del producto</label><input data-aqin="g" ${M} inputmode="numeric" maxlength="8" placeholder="80XXXXXX" value="${esc(d.g||"")}">
  <label class="lb">Lote</label>
  ${sp?`<div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap"><div><div class="mu" style="font-size:11px">Año + día (4)</div><input data-aqin="a" ${M} inputmode="numeric" maxlength="4" placeholder="6123" value="${esc(d.a||"")}" style="width:92px"></div>
- <div><div class="mu" style="font-size:11px">Planta (fija)</div>${fixed?`<div style="font-weight:800;font-size:18px;padding:8px 4px">${esc(sp.p)}</div>`:`<input data-aqin="p" ${M} inputmode="numeric" maxlength="4" placeholder="####" value="${esc(d.p||"")}" style="width:82px">`}</div>
+ <div><div class="mu" style="font-size:11px">Planta (fija)</div>${fixed?`<div style="font-weight:800;font-size:18px;padding:8px 4px">${esc(sp.p)}</div>${d.pp&&d.pp!==sp.p?`<div style="font-size:11px;color:var(--er)">Foto: ${esc(d.pp)}</div>`:""}`:`<input data-aqin="p" ${M} inputmode="numeric" maxlength="4" placeholder="####" value="${esc(d.p||"")}" style="width:82px">`}</div>
  <div><div class="mu" style="font-size:11px">Últimos 2</div><input data-aqin="z" ${M} autocapitalize="characters" maxlength="2" placeholder="00" value="${esc(d.z||"")}" style="width:62px"></div></div>
  <div id="aqh${k}" class="mu" style="font-size:12px;min-height:16px;margin-top:4px;color:var(--er)">${esc(aqLotChk(d.a||""))}</div>`
  :`<input data-aqin="l" ${M} autocapitalize="characters" placeholder="Lote completo" value="${esc(d.l||"")}">`}
  <label class="lb">Cantidad contada (${aqUnit(it)})</label><div style="display:flex;gap:8px"><input data-aqin="q" ${M} inputmode="numeric" maxlength="6" placeholder="0" value="${esc(d.q||"")}"></div>
  ${it.est?`<label class="lb">Piezas por caja de este código (se guarda)</label><input data-aqin="pzc" ${M} inputmode="numeric" maxlength="4" placeholder="pzs/caja" value="${esc(d.pzc||"")}">`:""}
- <div style="display:flex;align-items:center;gap:8px;margin-top:8px"><span style="font-weight:600">Foto (opcional)</span>${sb("L:"+m+":aqph"+k)}</div>
- ${(it.ph||[]).length?`<img src="${it.ph[0]}" alt="" style="height:56px;margin-top:6px;border-radius:8px">`:""}
+ <div style="display:flex;align-items:center;gap:8px;margin-top:8px"><span style="font-weight:600">Foto (lee código y lote)</span>${sb("L:"+m+":aqph"+k)}</div>
+ ${(it.ph||[]).length?`<img src="${it.ph[0]}" alt="" style="display:block;width:100%;max-height:300px;object-fit:contain;margin-top:8px;border-radius:10px;border:1px solid var(--bd)">`:""}
  <div class="row3" style="margin-top:10px"><button type="button" class="btn pri full" data-aq="val" ${M}>Validar renglón</button><button type="button" class="btn" data-aq="skip" ${M}>Cerrar</button></div></div>`;}
 function aqLpnView(m){const P=LP[m],c=P.CUR,A=AQ[m],N=c.items.length,ok=c.items.filter(i=>i.st==="ok").length;
  if(c.status!=="proceso"){const good=c.status==="ok";
@@ -143,7 +143,7 @@ function aqLpnView(m){const P=LP[m],c=P.CUR,A=AQ[m],N=c.items.length,ok=c.items.
   <p style="margin:2px 0 0;font-size:12px;color:var(--mu)">Lote ${aqMask(it)} · cuenta en ${aqUnit(it)}</p>
   ${it.tried&&it.why?`<p style="margin:2px 0 0;font-size:12px;color:var(--er)">${esc(it.why)}</p>
   <label class="lb">Motivo de la diferencia (obligatorio)</label><select data-aqin="rs" data-m="${m}" data-k="${k}"><option value="">Elegir…</option>${AQ_RS.map(x=>`<option${it.rs===x?" selected":""}>${x}</option>`).join("")}</select>
-  <div style="display:flex;align-items:center;gap:8px;margin-top:8px"><span style="font-weight:600">Foto (obligatoria)</span>${sb("L:"+m+":aqph"+k)}</div>${(it.ph||[]).length?`<img src="${it.ph[0]}" alt="" style="height:56px;margin-top:6px;border-radius:8px">`:""}`:""}
+  <div style="display:flex;align-items:center;gap:8px;margin-top:8px"><span style="font-weight:600">Foto (obligatoria)</span>${sb("L:"+m+":aqev"+k)}</div>${(it.ph||[]).length?`<img src="${it.ph[0]}" alt="" style="display:block;width:100%;max-height:300px;object-fit:contain;margin-top:8px;border-radius:10px;border:1px solid var(--bd)">`:""}`:""}
   ${open?aqRowForm(m,c,k):`<div class="row3" style="margin-top:6px"><button type="button" class="btn ${it.st==="ok"?"":"pri"}" style="padding:6px 12px" data-aq="edit" data-m="${m}" data-k="${k}">${it.st==="ok"?"Volver a capturar":it.tried?"Reintentar":"Capturar"}</button></div>`}</div>`;}).join("")}</div>
  <div class="card" id="aqend"><h2 class="sh"><i>✍</i>Firma</h2><p class="mu" style="margin:6px 0 4px;font-size:13px">${left?"Faltan "+left+" renglón(es) por capturar.":tried?tried+" renglón(es) con diferencia: cada uno necesita motivo y foto. Puedes reintentarlos antes de firmar.":"Todo capturado."}</p>
  <label class="lb">Nombre de quien inspeccionó</label><input data-aqin="name" data-m="${m}" autocapitalize="words" placeholder="Ej: Manuel Chagala" value="${esc(c.signDraft||"")}">
@@ -184,12 +184,24 @@ async function aqLpnPhoto(m,pv){
  if(r.exact){aqConfirmLpn(m,r.exact,th);return;}
  if(r.near){dlg({title:"Revisa la LPN",body:"Leí "+lpFmt(r.raw)+", que no está en el Excel. ¿Es "+lpFmt(r.near)+"?",buttons:[{t:"Volver a tomar foto",fn:()=>{TARGET="L:"+m+":aqlpn";$("#cam").click();}},{t:"Sí, usar esa",cls:"pri",fn:()=>aqConfirmLpn(m,r.near,th)}]});return;}
  dlg({title:"LPN no encontrada",body:"No pude leer la LPN en la foto. Acerca la cámara a los números, evita reflejos o escríbela a mano.",buttons:[{t:"Escribir a mano"},{t:"Volver a tomar foto",cls:"pri",fn:()=>{TARGET="L:"+m+":aqlpn";$("#cam").click();}}]});}
-async function aqItemPhoto(m,pv,kind){const P=LP[m],k=+String(kind).slice(4);if(!P.CUR||!P.CUR.items[k])return;const th=await rcvThumb(pv.url);if(th){P.CUR.items[k].ph=[th];lpSave(m);render();}}
+async function aqThumb(url,max){try{const im=await new Promise((ok,no)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=no;i.src=url;});const k=Math.min(1,max/Math.max(im.width,im.height)),c=document.createElement("canvas");c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext("2d").drawImage(im,0,0,c.width,c.height);return c.toDataURL("image/jpeg",.72);}catch(e){return "";}}
+async function aqItemPhoto(m,pv,kind){
+ const P=LP[m],ev=/^aqev/.test(kind),k=+String(kind).slice(4),it=P.CUR&&P.CUR.items[k];if(!it)return;
+ const th=await aqThumb(pv.url,720);if(th)it.ph=[th];
+ if(!ev){let txt="";
+  try{txt=await ocrRaw(pv.blob,{max:1800,max2:2400,stop:t=>{const r=rcvRead(t,P.CUR.items);return !!(r.code&&r.lote);}});}
+  catch(e){const x=e&&e.message;lpSave(m);render();if(x!=="cancel")toast(x==="timeout"?"La lectura tardó demasiado. Acerca la cámara o escribe los datos.":"No se pudo leer la foto. Escribe los datos.");return;}
+  const r=rcvRead(txt,P.CUR.items),d=it.d||(it.d={});let got=[];
+  if(r.code){d.g=r.code;got.push("código");}
+  if(r.lote){const sp=aqSplit(r.lote);if(sp){d.a=sp.a;d.z=sp.z;d.pp=sp.p;}else d.l=r.lote;got.push("lote");}
+  lpSave(m);render();toast(got.length?"Leí "+got.join(" y ")+" de la foto. Revisa y escribe la cantidad.":"No pude leer la foto. Escribe los datos a mano.");return;}
+ lpSave(m);render();}
+async function aqItemPhotoOld(m,pv,kind){const P=LP[m],k=+String(kind).slice(4);if(!P.CUR||!P.CUR.items[k])return;const th=await rcvThumb(pv.url);if(th){P.CUR.items[k].ph=[th];lpSave(m);render();}}
 function aqValidate(m,k){
  const P=LP[m],c=P.CUR,it=c.items[k],d=it.d||(it.d={}),sp=aqSplit(it.l),C=aqCalc(m);
  if(!/^\d{6,8}$/.test(String(d.g||"").trim())){toast("Escribe el código del producto.");return;}
  let lot="";
- if(sp){const pl=sp.p;
+ if(sp){const pl=d.pp||sp.p;
   if(!/^\d{4}$/.test(d.a||"")||!/^[A-Z0-9]{2}$/.test(d.z||"")){toast("Completa el lote: año y día (4 dígitos) y los 2 finales.");return;}
   lot=d.a+pl+d.z;}
  else{lot=nlot(d.l||"");if(!lot){toast("Escribe el lote.");return;}}
@@ -264,5 +276,5 @@ document.addEventListener("change",e=>{const t=e.target,d=t.dataset;if(d&&d.aqc=
   if(P.X&&!P.MAP&&P.CUR&&P.CUR.aq)return aqLpnView(m);
   if(P.X&&!P.MAP&&!P.CUR&&A.open)return aqView(m);
   const h=_lv(m);return (P.X&&!P.MAP&&!P.CUR)?aqCard(m)+h:h;};}
-{const _lp=lpPhoto;lpPhoto=function(m,pv,kind){if(kind==="aqlpn")return aqLpnPhoto(m,pv);if(/^aqph\d+$/.test(kind))return aqItemPhoto(m,pv,kind);return _lp.apply(this,arguments);};}
+{const _lp=lpPhoto;lpPhoto=function(m,pv,kind){if(kind==="aqlpn")return aqLpnPhoto(m,pv);if(/^aq(ph|ev)\d+$/.test(kind))return aqItemPhoto(m,pv,kind);return _lp.apply(this,arguments);};}
 {const _ex=lpExit;lpExit=function(m){const P=LP[m];if(P&&P.CUR&&P.CUR.aq){aqPlanBack(m);return;}return _ex.apply(this,arguments);};}

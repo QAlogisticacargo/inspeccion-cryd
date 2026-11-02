@@ -15,6 +15,11 @@ Sube TODOS al repositorio (reemplaza los existentes).
 - Invitado: botón "Entrar" (nombre opcional).
 - Administrador: "Acceso administrador".
 
+## Novedades 3.7 (iconos y ajustes finales)
+- Icono "SMO CRyD" con versión de temporada (calavera y cempasúchil, gorro navideño, calabaza y un emblema por mes). Iconos: ati-*.png
+- Layout 3D: se muestra las primeras 7 veces que se abre la app cada día.
+- Conteo ciego: cantidades ocultas hasta el final de cada LPN. La foto lee código y lote y se ve más grande.
+
 ## Novedades 3.7 (eliminar con doble confirmación)
 - Historial y Pendientes: botón Eliminar en LPN, registros del historial y dashboards, con doble confirmación. Perfil: botón "Buscar actualización" y línea de versión de archivos.
 

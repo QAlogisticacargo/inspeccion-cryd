@@ -99,7 +99,7 @@ const jit=(c,a)=>{const k=1+(rnd()-.5)*a;return [Math.min(1,c[0]*k),Math.min(1,c
 const groups={};let CG=null,TR=null;
 const grp=n=>groups[n]||(groups[n]={op:[],tr:[],on:true,buf:null});
 const setG=n=>{CG=grp(n);};
-function T(p,isN){if(!TR)return p;const k=TR.r&3;let x=p[0],z=p[2];for(let i=0;i<k;i++){const nx=z,nz=-x;x=nx;z=nz;}return isN?[x,p[1],z]:[x+TR.ox,p[1],z+TR.oz];}
+function T(p,isN){if(!TR)return p;let x=p[0],z=p[2];if(TR.a!==undefined){const c=Math.cos(TR.a),sn=Math.sin(TR.a),nx=x*c+z*sn,nz=-x*sn+z*c;x=nx;z=nz;}else{const k=TR.r&3;for(let i=0;i<k;i++){const nx=z,nz=-x;x=nx;z=nz;}}return isN?[x,p[1],z]:[x+TR.ox,p[1],z+TR.oz];}
 function pushV(a,p,n,c,uv){a.push(p[0],p[1],p[2],n[0],n[1],n[2],c[0],c[1],c[2],c[3]===undefined?1:c[3],uv?uv[0]:-1,uv?uv[1]:-1);}
 function quad(p0,p1,p2,p3,n,c,tr,uvs){
   const P=[p0,p1,p2,p3].map(p=>{const q=T(p,false);return [q[0],q[1],-q[2]];}),nn=T(n,true),N=[nn[0],nn[1],-nn[2]];
@@ -285,6 +285,7 @@ function buildPeople(){
   xs.forEach((x,i)=>person(x,m.z1+.25,2,["#e4f000","#dbe800","#e4f000","#eaf41a","#e4f000"][i],i,.08));
   person(m.x1+.5,m.z0+.55,3,"#e4f000",5,0);person(m.x0-.5,m.z0+.55,1,"#e4f000",6,0);person(m.x0+2.1,m.z0-.3,0,"#e4f000",7,.06);
 }
+const SKIP={ox:21.2,oz:26.1,k:3,p:0};
 function rackBay(x,z,bw,bd,levels,row){
   setG("racks");
   const up=hex("#1f55a8"),beam=hex("#e8731a");
@@ -292,7 +293,7 @@ function rackBay(x,z,bw,bd,levels,row){
   levels.forEach(y=>{box(x,y,z,bw,.14,.07,beam);box(x,y,z+bd-.07,bw,.14,.07,beam);
     if(y>0.01)for(let i=0;i<3;i++)box(x+.3+i*(bw-.6)/2,y+.14,z,.05,.02,bd,hex("#6b6f73"));});
   for(let k=0;k<levels.length;k++){const y=levels[k]+(levels[k]>0?.16:0.02);
-    for(let p=0;p<2;p++)if(rnd()<.82){const w=1.25,pxx=x+.1+p*(bw-.2)/2+(bw/2-.1-w)/2,ph=rnd()<.5?2:3;
+    for(let p=0;p<2;p++)if(rnd()<.82&&!(SKIP&&TR&&TR.ox===SKIP.ox&&TR.oz===SKIP.oz&&k===SKIP.k&&p===SKIP.p)){const w=1.25,pxx=x+.1+p*(bw-.2)/2+(bw/2-.1-w)/2,ph=rnd()<.5?2:3;
       setG("racks");const x0=pxx,z0=z+.08,d=bd-.16;
       box(x0,y,z0,w,.1,d,WOOD);box(x0,y,z0,w,.03,d,CHEPD);
       for(let q=0;q<ph;q++)for(let i=0;i<2;i++)box(x0+i*w/2+.01,y+.1+q*.34,z0+.01,w/2-.02,.33,d-.02,jit(rnd()<.2?hex("#9a8e86"):CARD,.2));
@@ -336,7 +337,7 @@ function buildExtras(){
   [[36.9,1.0],[13.0,5.2]].forEach((p,k)=>{if(p[0]>HX1-1)return;const x=p[0],z=p[1];cyl(x,0,z,.2,.06,hex("#333"),10);cyl(x,0,z,.03,1.5,hex("#8a8d8f"),6);
     for(let i=0;i<5;i++)cyl(x,.15+i*.27,z,.16,.22,hex("#eef2f4"),12);box(x-.2,1.5,z-.02,.4,.03,.04,hex("#8a8d8f"));});
   /* 6 montacargas retráctiles: 3 rojos y 3 grises */
-  [[7.5,9.4,"#c3281e",0],[19.5,11.4,"#8a9096",2],[30.5,9.8,"#c3281e",0],[5.2,18.2,"#8a9096",1],[22.8,23.0,"#c3281e",3],[51.0,19.0,"#8a9096",2]].forEach(f=>forklift(f[0],f[1],hex(f[2]),f[3]));
+  [[7.5,9.4,"#c3281e",0],[19.5,11.4,"#8a9096",2],[30.5,9.8,"#c3281e",0],[5.2,18.2,"#8a9096",1],[51.0,19.0,"#8a9096",2]].forEach(f=>forklift(f[0],f[1],hex(f[2]),f[3]));
   /* personal: sentados en la oficina y caminando por el paso peatonal */
   const sh=["#e9eef2","#7aa6c8","#c9ced2","#b9d0c4","#e9eef2","#9bb4cc","#d8c9bd","#7aa6c8"];
   [[0,0],[0,2],[1,3],[1,1],[2,4],[2,0],[3,2],[3,4]].forEach((q,k)=>seated(38.0+.25+q[1]*1.55+(q[1]>1?.9:0),1.0+.25+q[0]*1.7+(q[0]>0?.9:0)+(q[0]>2?.0:0),hex(sh[k]),k));
@@ -503,6 +504,82 @@ function upload(){buildAtlas();gl.bindTexture(gl.TEXTURE_2D,tex);gl.texImage2D(g
 upload();
 buildBase();buildCordons();buildZones();buildPeople();buildRacks();buildExtras();buildRoof();
 Object.keys(groups).forEach(k=>{const g=groups[k];["op","tr"].forEach(t=>{const a=g[t];g[t]={n:a.length/12,b:a.length?(()=>{const b=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(a),gl.STATIC_DRAW);return b;})():null};});});
+
+/* ===== escenas animadas: junta en Recibo, montacargas y saludos ===== */
+const DY={op:[],tr:[]};
+groups.dyn={op:{n:0,b:gl.createBuffer()},tr:{n:0,b:gl.createBuffer()}};
+const cl01=x=>x<0?0:x>1?1:x,ez=x=>{x=cl01(x);return x<.5?2*x*x:1-Math.pow(-2*x+2,2)/2;},seg=(t,a,b)=>cl01((t-a)/(b-a));
+const DK=hex("#2a3236"),GY=hex("#7c858a"),VEST=hex("#eaff3d"),STRAP=hex("#868a74"),TOPC=hex("#1d2225"),HAIR=hex("#1c1a18");
+const SKN=["#c68a64","#b57852","#d29a74","#a96f4b"].map(hex),PNT=["#22303f","#1f2428","#2b3340"].map(hex),CARDS=[hex("#c9a06a"),hex("#d9b685"),hex("#c29a62"),hex("#d3ad7a")];
+function shadowD(x0,z0,w,d){const k=CG;quad([x0,.014,z0],[x0+w,.014,z0],[x0+w,.014,z0+d],[x0,.014,z0+d],[0,1,0],[0,0,0,.2],true);}
+function palD(x,y,z,w,d,ny){ny=ny||3;
+  box(x,y,z,w,.06,d,CHEPD);for(let i=0;i<3;i++)box(x+i*(w-.1)/2,y+.06,z,.1,.08,d,CHEPD);box(x,y+.14,z,w,.03,d,WOOD);
+  for(let k=0;k<ny;k++)for(let i=0;i<2;i++)for(let j=0;j<2;j++)box(x+i*w/2+.01,y+.17+k*.4,z+j*d/2+.01,w/2-.02,.385,d/2-.02,CARDS[(i+j*2+k)&3]);}
+/* persona con giro libre. o: {sk,pn,arm:"wave"|"talk"|null,nod,up,ph} */
+function personD(x,z,a,t,o){
+  TR={a:a,ox:x,oz:z};const sk=SKN[o.sk&3],pn=PNT[o.sk%3],ph=o.ph||0;
+  const bob=o.nod?Math.sin(t*1.6+ph)*.025:0,up=o.up?-.07:0;
+  box(-.17,0,-.07,.14,.82,.14,pn);box(.03,0,-.07,.14,.82,.14,pn);
+  box(-.22,.82,-.12,.44,.56,.24,TOPC);box(-.23,.84,-.13,.46,.5,.26,VEST);box(-.19,.84,-.137,.07,.5,.012,STRAP);box(.12,.84,-.137,.07,.5,.012,STRAP);box(-.235,.86,-.135,.47,.05,.27,STRAP);
+  box(-.32,.88,-.07,.1,.48,.14,TOPC);
+  if(o.arm==="wave"){const sw=Math.sin(t*7+ph);box(.22,1.28,-.07,.1,.36,.14,TOPC);box(.22+sw*.05,1.62,-.07,.1,.26,.14,TOPC);box(.2+sw*.09,1.86,-.075,.12,.12,.15,sk);}
+  else if(o.arm==="talk"){const g=Math.sin(t*2.3+ph);box(.22,1.12+g*.06,-.07,.1,.14,.55,TOPC);box(.21,1.1+g*.06,.46,.12,.12,.12,sk);}
+  else box(.22,.88,-.07,.1,.48,.14,TOPC);
+  box(-.1,1.38,-.1,.2,.1,.2,sk);box(-.11,1.48+bob,-.11+up,.22,.2,.22,sk);box(-.115,1.62+bob,-.115+up,.23,.07,.23,HAIR);
+  TR=null;shadowD(x-.25,z-.2,.5,.4);}
+function driverD(t,k){box(.32,.55,1.25,.36,.55,.22,TOPC);box(.31,.57,1.2,.38,.5,.22,VEST);box(.4,1.12,1.27,.2,.2,.2,SKN[k&3]);box(.39,1.3,1.26,.22,.06,.22,HAIR);box(.18,.8,.9,.1,.1,.4,TOPC);box(.72,.8,.9,.1,.1,.4,TOPC);box(.35,.4,.75,.12,.12,.5,PNT[0]);box(.55,.4,.75,.12,.12,.5,PNT[0]);}
+/* montacargas retráctil. (cx,cD) centro del cuerpo, a rumbo (frente = -z local). h altura de horquillas, R alcance, load: carga */
+function forkD(cx,cD,a,h,R,load,col,k,t){
+  const ox=cx-.5*Math.cos(a),oz=cD+.5*Math.sin(a);TR={a:a,ox:ox,oz:oz};
+  box(0,.25,0,1.0,.9,2.0,col);box(.05,1.15,.9,.9,.12,1.0,DK);
+  [[.08,.8],[.84,.8],[.08,1.75],[.84,1.75]].forEach(q=>box(q[0],1.15,q[1],.06,1.0,.06,DK));
+  box(.02,2.1,.8,.96,.05,1.2,DK);box(.3,.35,1.55,.4,.5,.4,hex("#1c2125"));
+  box(.1,.05,-1.9,.12,.12,1.9,GY);box(.78,.05,-1.9,.12,.12,1.9,GY);
+  const mh=Math.max(2.6,h+1.35);box(.15,.0,-1.85,.1,mh,.1,DK);box(.75,0,-1.85,.1,mh,.1,DK);box(.15,mh-.06,-1.85,.7,.08,.1,DK);
+  if(R>.03)box(.42,h+.15,-1.85-R,.16,.3,R,GY);
+  box(.12,h,-1.9-R,.76,.72,.06,DK);box(.15,h,-2.9-R,.1,.07,1.05,GY);box(.75,h,-2.9-R,.1,.07,1.05,GY);
+  [[-.05,.1],[.95,.1],[.45,1.7]].forEach(q=>box(q[0],0,q[1],.14,.3,.3,DK));
+  driverD(t,k);
+  if(load)palD(-.125,h+.07,-2.9-R,1.25,.94);
+  TR=null;
+  const c=Math.cos(a),sn=Math.sin(a),pts=[[0,-1.9],[1,-1.9],[1,2],[0,2]].map(q=>[ox+q[0]*c+q[1]*sn,oz-q[0]*sn+q[1]*c]);
+  const xs=pts.map(q=>q[0]),zs=pts.map(q=>q[1]);shadowD(Math.min(...xs)-.1,Math.min(...zs)-.1,Math.max(...xs)-Math.min(...xs)+.2,Math.max(...zs)-Math.min(...zs)+.2);}
+const BRIEF={cx:24.5,cz:6.6};
+const BR_P=[-62,-38,-14,14,38,62].map((d,i)=>{const r=1.55,an=d*Math.PI/180;return {x:BRIEF.cx+Math.sin(an)*r,z:BRIEF.cz-1.2+Math.cos(an)*r,sk:i+1,ph:i*1.7};});
+const WAVERS=[[32.3,8.2,0],[33.4,9.0,1],[16.9,14.9,2],[40.6,13.2,3]];
+function buildDyn(t){
+  CG=DY;DY.op.length=0;DY.tr.length=0;
+  /* junta (briefing) en el área de Recibo */
+  personD(BRIEF.cx,BRIEF.cz-1.2,0,t,{sk:0,arm:"talk",ph:.4});
+  BR_P.forEach(q=>{const a=Math.atan2(BRIEF.cx-q.x,BRIEF.cz-1.2-q.z);personD(q.x,q.z,a,t,{sk:q.sk,nod:true,ph:q.ph});});
+  /* saludan a la cámara, mirando hacia arriba */
+  WAVERS.forEach((w,i)=>{const a=Math.atan2(EYE[0]-w[0],-EYE[2]-w[1]);personD(w[0],w[1],a,t,{sk:w[2]+2,arm:"wave",up:true,ph:i*1.3});});
+  /* montacargas A: sube una tarima a la ubicación elevada (B71, nivel 4) */
+  {const T0=t%24,X0=16.3,X1=18.2,D=25.3;let x=X1,h=.1,R=0,load=true,placed=false;
+   if(T0<2)x=X0+(X1-X0)*ez(T0/2);
+   else if(T0<7)h=.1+4.8*ez(seg(T0,2,7));
+   else if(T0<9){h=4.9;R=1.12*ez(seg(T0,7,9));}
+   else if(T0<10){R=1.12;h=4.9-.3*seg(T0,9,10);}
+   else if(T0<12){h=4.6;R=1.12*(1-ez(seg(T0,10,12)));}
+   else if(T0<17){h=4.6-4.5*ez(seg(T0,12,17));}
+   else if(T0<19){h=.1;x=X1-(X1-X0)*ez(seg(T0,17,19));}
+   else {h=.1;x=X0;}
+   const empty=(T0>=19);
+   if(T0>=9.6&&T0<19){placed=true;load=false;}
+   if(empty)load=false;
+   forkD(x,D,3*Math.PI/2,h,R,load,hex("#8a9096"),1,t);
+   if(placed)palD(21.28,4.81,D-.625,.94,1.25);}
+  /* montacargas B: traslada una tarima por el pasillo principal */
+  {const L=28,sp=2.6,x0=16,x1=44,T0=t%(2*(x1-x0)/sp+4);const tr=(x1-x0)/sp;let x,a,d=14.2;
+   if(T0<tr){x=x0+sp*T0;a=3*Math.PI/2;}
+   else if(T0<tr+2){x=x1;a=3*Math.PI/2-Math.PI*ez((T0-tr)/2);}
+   else if(T0<2*tr+2){x=x1-sp*(T0-tr-2);a=Math.PI/2;}
+   else{x=x0;a=Math.PI/2+Math.PI*ez((T0-2*tr-2)/2);}
+   forkD(x,d,a,.3,0,true,hex("#c3281e"),2,t);}
+  const A=DY.op,B=DY.tr;
+  [["op",A],["tr",B]].forEach(([n,arr])=>{const g=groups.dyn[n];g.n=arr.length/12;gl.bindBuffer(gl.ARRAY_BUFFER,g.b);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(arr),gl.DYNAMIC_DRAW);});
+  CG=null;}
+let tDyn=-1;
 /* ===== cámara ===== */
 const cam={tx:6.6,ty:.6,td:3.8,yaw:.55,pit:.78,dist:25};
 const goal=Object.assign({},cam);
@@ -580,11 +657,12 @@ function frame(t){requestAnimationFrame(frame);if(document.hidden){tprev=t;retur
   if(anim){const k=Math.min(1,(t-anim.t0)/anim.ms),e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;["tx","ty","td","pit","dist"].forEach(a=>cam[a]=anim.from[a]+(anim.to[a]-anim.from[a])*e);
     let dy=anim.to.yaw-anim.from.yaw;cam.yaw=anim.from.yaw+dy*e;if(k>=1)anim=null;}
   if(st.spin&&!anim)cam.yaw+=dt*.25;
+  if(t-tDyn>(LOW?66:33)){tDyn=t;if(VP)buildDyn(window.__dynT!==undefined?window.__dynT:t/1000);}
   gl.viewport(0,0,cv.width,cv.height);gl.clearColor(BG[0],BG[1],BG[2],1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
   gl.enable(gl.DEPTH_TEST);gl.enable(gl.CULL_FACE);gl.cullFace(gl.BACK);camMat(cv.width/cv.height);
   gl.useProgram(pg);gl.uniformMatrix4fv(loc.m,false,VP);gl.uniform3f(loc.e,EYE[0],EYE[1],EYE[2]);gl.uniform3f(loc.bg,BG[0],BG[1],BG[2]);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,tex);gl.uniform1i(loc.s,0);
   const roofOn=st.roof==="auto"?EYE[1]<HH-.4:!!st.roof;
-  const vis=g=>g==="cordons"?st.cordons:g==="people"?st.people:g==="racks"?st.racks:g==="roof"?roofOn:true;
+  const vis=g=>g==="cordons"?st.cordons:g==="people"||g==="dyn"?st.people:g==="racks"?st.racks:g==="roof"?roofOn:true;
   gl.disable(gl.BLEND);gl.depthMask(true);Object.keys(groups).forEach(k=>{if(vis(k))drawG(groups[k],"op");});
   gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);gl.disable(gl.CULL_FACE);Object.keys(groups).forEach(k=>{if(vis(k))drawG(groups[k],"tr");});gl.depthMask(true);
   /* etiquetas */

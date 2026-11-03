@@ -320,14 +320,21 @@ async function hashPin(emp,pin){try{const h=await crypto.subtle.digest("SHA-256"
 function loadUserData(){REC=U.get("rec",[]);if(!Array.isArray(REC))REC=[];WARN=U.get("warn",{dup:{},del:{}});WARN.dup=WARN.dup||{};WARN.del=WARN.del||{};VAL.stmap=U.get("stmap",{});
  const d=U.get("draft",null);if(d&&d.id&&Array.isArray(d.lots)&&d.lots.length===5)S=d;else newForm();lpLoad();hlogLoad();dshLoad();attLoad();GPL="";setTimeout(()=>{marksPull();gPush();},2500);}
 function enterUser(u){ME={emp:u.emp,nombre:u.nombre,apellido:u.apellido,guest:false};LS.set("cryd:session",{emp:u.emp});AUTH={mode:"menu",f:{},err:""};loadUserData();TAB="home";render();window.scrollTo(0,0);cloudStart();}
-function enterGuest(){const raw=String(AUTH.f.gname!==undefined?AUTH.f.gname:LS.get("cryd:gname","")).trim().slice(0,30),nm=raw?titleCase(raw):"";LS.set("cryd:gname",nm);
- ME={emp:"INVITADO",nombre:nm||"Invitado",apellido:"",guest:true};LS.set("cryd:session",{guest:1});AUTH={mode:"menu",f:{},err:""};loadUserData();TAB="home";render();window.scrollTo(0,0);setTimeout(()=>gstInc("n"),50);}
+const ALLOW=[{id:"0",n:"Manuel",a:"Chagala",adm:1,h:"31081afa9b1c2fcf7c1f87cd9b5ce5c63bd8a3ff9b8d70929b2dfa422a346e73"},{id:"1",n:"Omar",a:"Mendoza",h:"e68922378aadc046be97dd7c93be38bb76a9c24bea6437b867364dfe5f5622b9"},{id:"2",n:"Carlos",a:"Vega",h:"22fcb848456af570005a3cf34aedaa2a1e2ddd8ba7fa8bf68a2f18a125e83c98"},{id:"3",n:"Natalia",a:"Juarez",h:"2d7e7def5f2249f93868f285a020fbc4e44375ca36ab59e083463932de03ccf7"},{id:"4",n:"Abcdefg",a:"Zzzzzzz",h:"542ce44300bd1002c0adfa82709d8b2aa2c5af1b2a46cd0c7f10c0231d1842b5"}];
+const normNm=s=>String(s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim();
+async function hashAcc(nm,code){const t="cryd|acc|"+nm+"|"+String(code||"").toUpperCase().replace(/\s/g,"");try{const h=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(t));return [...new Uint8Array(h)].map(x=>x.toString(16).padStart(2,"0")).join("");}catch(e){return "";}}
+function allowMe(u){let emp="U"+u.id;if(u.adm){const m=USERS.find(x=>normNm(x.nombre)===normNm(u.n)&&normNm(x.apellido).split(" ")[0]===normNm(u.a))||(USERS.length===1?USERS[0]:null);if(m)emp=m.emp;}return {emp,nombre:u.n,apellido:u.a,guest:false,al:!u.adm};}
+function enterAllow(u){ME=allowMe(u);LS.set("cryd:session",{al:u.id});AUTH={mode:"menu",f:{},err:""};loadUserData();TAB="home";render();window.scrollTo(0,0);cloudStart();}
+async function doAccess(){const f=AUTH.f,nm=normNm((f.an||"")+" "+(f.aa||"")),code=f.ac||"";
+ if(!nm||!code)return authErr("Escribe tu nombre, apellido y código.");
+ const hs=await hashAcc(nm,code),u=ALLOW.find(x=>normNm(x.n+" "+x.a)===nm&&x.h===hs);
+ if(!u)return authErr("Nombre o código incorrecto. Si no tienes acceso, solicítalo al responsable de la app.");
+ enterAllow(u);}
 function logout(){lpReset();ME=null;S=null;REC=[];WARN={dup:{},del:{}};VAL.sap=null;VAL.prime=null;VAL.res=null;LS.set("cryd:session",null);AUTH={mode:"menu",f:{},err:""};TAB="home";render();window.scrollTo(0,0);}
 function authErr(t){AUTH.err=t;renderAuth();}
 async function doLogin(){const f=AUTH.f,emp=(f.emp||"").trim();let u=USERS.find(x=>x.emp===emp);
  if(f.curl&&f.curl.trim()&&f.curl.trim()!==cloudCfg())LS.set("cryd:cloud",{url:normUrl(f.curl)});
- if(!u&&cloudCfg()&&/^\d{4,8}$/.test(emp)){busy("Buscando tu cuenta en el servidor…");const r=await cloudGet(emp);busy("");if(r&&r.acct&&r.acct.nombre){u={emp,nombre:r.acct.nombre,apellido:r.acct.apellido||"",pin:r.acct.pin||null,created:Date.now()};USERS.push(u);saveUsers();}}
- if(!u)return authErr("No hay una cuenta con ese número de empleado"+(cloudCfg()?" ni en el servidor":" en este dispositivo")+". Crea una cuenta.");
+ if(!u)return authErr("No hay una cuenta de administrador con ese número en este dispositivo.");
  if(cloudCfg()){const ra=await cloudGet(emp);if(ra&&ra.acct){if(ra.acct.off)return authErr("Esta cuenta está suspendida. Contacta al administrador.");if(ra.acct.reset&&ra.acct.reset>(u.resetSeen||0)){u.pin=null;u.resetSeen=ra.acct.reset;saveUsers();}}}
  if(u.pin&&(await hashPin(emp,f.pin||""))!==u.pin)return authErr("PIN incorrecto.");
  enterUser(u);}
@@ -348,18 +355,18 @@ function renderAuth(){
  document.body.classList.add("noauth");$("#tabs").innerHTML="";
  const A=AUTH,f=A.f,v=k=>esc(f[k]||""),er=A.err?`<div class="aerr">${esc(A.err)}</div>`:"";
  let h=`<div class="aw"><div class="aicon">${GLYPH}</div><h1 style="font-size:26px;line-height:1.15">Portal de Logística | Site SMO CRyD</h1><p class="asub">Logística-Cargo</p>`;
- if(A.mode==="menu")h+=`<div class="card"><label class="lb">¿Cómo te llamas? (opcional)</label><input data-au="gname" autocomplete="given-name" maxlength="30" placeholder="Tu nombre" value="${esc(f.gname!==undefined?f.gname:LS.get("cryd:gname",""))}"></div><div class="abtns"><button type="button" class="btn pri" data-ua="guest">Entrar</button><button type="button" class="btn txt" data-ua="mode:login">Acceso administrador</button></div><p class="anote">Recibo, Surtido, Validación, Maquila y Dashboards en un solo lugar. Tu avance se guarda en este dispositivo aunque la app se cierre.</p>`;
+ if(A.mode==="menu")h+=`<div class="card"><label class="lb">Nombre</label><input data-au="an" autocomplete="off" autocapitalize="words" maxlength="30" placeholder="Nombre" value="${v("an")}"><label class="lb">Apellido</label><input data-au="aa" autocomplete="off" autocapitalize="words" maxlength="30" placeholder="Apellido" value="${v("aa")}"><label class="lb">Código de acceso</label><input data-au="ac" type="password" autocomplete="off" autocapitalize="characters" maxlength="12" placeholder="Código" value="${v("ac")}"></div>${er}<div class="abtns"><button type="button" class="btn pri" data-ua="doAccess">Entrar</button><button type="button" class="btn txt" data-ua="mode:login">Acceso administrador</button></div><p class="anote">Acceso solo para personal autorizado.</p>`;
  else h+=`<h2 style="margin:0 0 10px;font-size:20px">Acceso administrador</h2>`+(USERS.length?`<div class="lst">${USERS.map(u=>`<button type="button" class="lr ${f.emp===u.emp?"on":""}" data-ua="pick:${esc(u.emp)}"><span class="av">${esc(initials(u))}</span><span><b>${esc(u.nombre+" "+u.apellido)}</b><small>No. ${esc(u.emp)}${u.pin?" · con PIN":""}</small></span></button>`).join("")}</div>`:"")+er
   +`<div class="card"><label class="lb">Número de empleado</label><input data-au="emp" inputmode="numeric" maxlength="8" autocomplete="off" value="${v("emp")}" placeholder="12345"><label class="lb">PIN (si lo configuraste)</label><input data-au="pin" type="password" inputmode="numeric" maxlength="4" autocomplete="off" value="${v("pin")}" placeholder="••••"></div><div class="abtns"><button type="button" class="btn pri" data-ua="doLogin">Entrar</button><button type="button" class="btn txt" data-ua="mode:menu">Volver</button></div>`;
  $("#app").innerHTML=h+`</div>`+FOOT;}
 function viewPerfil(){const g=ME.guest,th=LS.get("cryd:theme","system");
- return `<div class="card center"><div class="av big">${esc(initials(ME))}</div><h2 class="nm">${esc(g?ME.nombre:ME.nombre+" "+ME.apellido)}</h2><p class="mu" style="margin:4px 0 0">${g?"Invitado · tus datos se guardan en este dispositivo":"No. de empleado "+esc(ME.emp)+" · Administrador"}</p></div>
+ return `<div class="card center"><div class="av big">${esc(initials(ME))}</div><h2 class="nm">${esc(g?ME.nombre:ME.nombre+" "+ME.apellido)}</h2><p class="mu" style="margin:4px 0 0">${g?"Invitado · tus datos se guardan en este dispositivo":(ME.al?"Usuario autorizado":"No. de empleado "+esc(ME.emp)+" · Administrador")}</p></div>
  ${g?`<div class="card"><h2 class="sh">Tu nombre</h2><input data-gn value="${esc(ME.nombre==="Invitado"?"":ME.nombre)}" maxlength="30" placeholder="Cómo quieres que te llame"></div>`:""}
  <div class="card"><h2 class="sh">Apariencia</h2><div class="seg">${[["system","Sistema"],["light","Claro"],["dark","Oscuro"]].map(o=>`<button type="button" class="${th===o[0]?"on":""}" data-ua="theme:${o[0]}">${o[1]}</button>`).join("")}</div></div>
  <div class="card"><h2 class="sh">Instalar en el teléfono</h2><p class="mu" style="margin:6px 0 0;font-size:14px">Para abrirla como app: en Safari toca Compartir y elige "Agregar a pantalla de inicio". En Chrome, menú ⋮ y "Instalar app".</p></div>
  <div class="card"><h2 class="sh">Sesión</h2>${g?`<p class="mu" style="margin:6px 0 12px;font-size:14px">Tu avance de Recibo, Surtido, Validación, Maquila y Dashboards queda guardado aquí. Si la app se cierra, al volver a entrar continúas donde ibas.</p><button type="button" class="btn" style="width:100%" data-ua="logout">Salir</button><button type="button" class="btn dg" style="width:100%;margin-top:10px" data-ua="gwipe">Borrar mis datos de este dispositivo</button>`:`<p class="mu" style="margin:6px 0 12px;font-size:14px">Tu cuenta y tus avances se respaldan en el servidor. Si cambias de teléfono, entra con tu número de empleado y se recuperan.</p><button type="button" class="btn" style="width:100%" data-ua="logout">Cerrar sesión</button><button type="button" class="btn dg" style="width:100%;margin-top:10px" data-ua="delacc">Eliminar mi cuenta y datos</button>`}</div>
  ${g?"":viewCloud()}
- ${g?"":viewAdminCard()}
+ ${g||ME.al?"":viewAdminCard()}
  ${festPerfil()}${l3dPerfil()}
  <p class="mu" style="text-align:center;font-size:12px">Portal de Logística | Site SMO CRyD · versión 3.7<br>Archivos: aql ${typeof AQ_V!=="undefined"?AQ_V:"✗ antiguo"} · temporada ${typeof seaFor==="function"?"✓":"✗ falta"}<br>Icono de hoy: ${typeof seaFor==="function"&&seaFor()?seaFor()[3]+" ("+seaFor()[4]+")":"base"}</p>
  <button type="button" class="btn" style="width:100%" data-upd="1">Buscar actualización (borrar caché)</button>`;}
@@ -379,12 +386,12 @@ function render(){
 function applyTheme(){const t=LS.get("cryd:theme","system"),r=document.documentElement;if(t==="light"||t==="dark")r.setAttribute("data-theme",t);else r.removeAttribute("data-theme");}
 document.addEventListener("input",e=>{const t=e.target,k=t.dataset.au;if(!k||t.type==="checkbox")return;let v=t.value;if(k==="emp"||k==="pin"||k==="pin2"){v=v.replace(/\D/g,"");if(v!==t.value)t.value=v;}AUTH.f[k]=v;});
 document.addEventListener("change",e=>{const t=e.target;if(t.dataset.au==="usepin"){AUTH.f.usepin=t.checked;renderAuth();}});
-document.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.dataset&&e.target.dataset.au){e.preventDefault();if(AUTH.mode==="login")doLogin();else if(AUTH.mode==="menu")enterGuest();}});
+document.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.dataset&&e.target.dataset.au){e.preventDefault();if(AUTH.mode==="login")doLogin();else if(AUTH.mode==="menu")doAccess();}});
 document.addEventListener("click",e=>{
  if(e.target.closest("#who")){TAB="perfil";render();window.scrollTo(0,0);return;}
  const b=e.target.closest("[data-ua]");if(!b)return;const p=b.dataset.ua.split(":"),a=p[0],v=p[1];
  if(a==="mode"){AUTH.mode=v;AUTH.err="";if(v==="menu")AUTH.f={};renderAuth();}
- else if(a==="guest")enterGuest();
+ else if(a==="doAccess")doAccess();
  else if(a==="doLogin")doLogin();else if(a==="doSignup")doSignup();
  else if(a==="pick"){AUTH.f.emp=v;AUTH.f.pin="";AUTH.err="";renderAuth();}
  else if(a==="logout")logout();
@@ -562,8 +569,8 @@ function flushAll(){try{if(ME){if(S)saveDraft();lpFlush();LS.set("cryd:ui",{emp:
 addEventListener("pagehide",flushAll);document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden")flushAll();});
 let ERRN=0;addEventListener("error",()=>{flushAll();if(ERRN++<2)toast("Algo falló, pero tu avance está guardado.");});addEventListener("unhandledrejection",()=>{flushAll();});
 function boot(){applyTheme();const ses=LS.get("cryd:session",null),ui=LS.get("cryd:ui",null),fresh=ui&&ui.ts&&Date.now()-ui.ts<10*60*1000;
- if(ses&&ses.guest){ME={emp:"INVITADO",nombre:LS.get("cryd:gname","")||"Invitado",apellido:"",guest:true};loadUserData();TAB=fresh&&ui.emp==="INVITADO"&&TNAME[ui.tab]?ui.tab:"home";}
- else{const u=ses&&USERS.find(x=>x.emp===ses.emp);if(u){ME={emp:u.emp,nombre:u.nombre,apellido:u.apellido,guest:false};loadUserData();TAB=fresh&&ui.emp===ME.emp&&TNAME[ui.tab]?ui.tab:"home";}}
+ if(ses&&ses.al){const u=ALLOW.find(x=>x.id===ses.al);if(u){ME=allowMe(u);loadUserData();TAB=fresh&&ui.emp===ME.emp&&TNAME[ui.tab]?ui.tab:"home";}}
+ else if(ses&&!ses.guest){const u=ses&&USERS.find(x=>x.emp===ses.emp);if(u){ME={emp:u.emp,nombre:u.nombre,apellido:u.apellido,guest:false};loadUserData();TAB=fresh&&ui.emp===ME.emp&&TNAME[ui.tab]?ui.tab:"home";}}
  render();if(ME&&!ME.guest)cloudStart();}
 
 /* ---------- cámara y galería ---------- */

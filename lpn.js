@@ -202,7 +202,7 @@ function lpPdf(m,list){
  const txt=(t,x,yy,o={})=>{d.setFont("helvetica",o.b?"bold":"normal");d.setFontSize(o.sz||9);d.setTextColor(...(o.c||[30,30,30]));d.text(String(t),x,yy,o.al?{align:o.al}:undefined);};
  head();
  const sess=list.filter(s=>s.lpn).sort((a,b)=>(a.at||0)-(b.at||0)),ok=sess.filter(s=>s.status==="ok").length,df=sess.filter(s=>s.status==="dif").length,pr=sess.length-ok-df;
- const who=ME?(ME.guest?"Invitado"+(ME.nombre&&ME.nombre!=="Invitado"?" · "+ME.nombre:""):ME.nombre+" "+ME.apellido+" · No. "+ME.emp):"";
+ const who=ME?(ME.guest?"Invitado"+(ME.nombre&&ME.nombre!=="Invitado"?" · "+ME.nombre:""):ME.nombre+" "+ME.apellido+(ME.al?"":" · No. "+ME.emp)):"";
  txt("Generado: "+new Date().toLocaleString("es-MX"),L,y);y+=5;txt("Responsable: "+who,L,y);y+=5;if(P.X){txt("Archivo de inventario: "+P.X.name,L,y);y+=5;}y+=3;
  [["LPN revisadas",sess.length,T],["Correctas",ok,[47,143,107]],["Con diferencias",df,[201,81,78]],["En proceso",pr,[183,121,31]]].forEach((b,i)=>{const x=L+i*46;d.setFillColor(244,241,238);d.roundedRect(x,y,43,18,2,2,"F");txt(b[1],x+4,y+10,{b:1,sz:16,c:b[2]});txt(b[0],x+4,y+15,{sz:7.5,c:[90,90,90]});});
  y+=26;

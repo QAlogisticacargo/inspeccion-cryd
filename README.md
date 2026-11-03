@@ -17,6 +17,8 @@ Sube TODOS al repositorio (reemplaza los existentes).
 
 ## Novedades 3.7 (iconos y ajustes finales)
 
+- 3.9: acceso solo con nombre, apellido y código (4 usuarios autorizados; sin invitados ni registro). Layout 3D animado: junta en Recibo, montacargas subiendo tarima al rack, montacargas trasladando tarima y personas que saludan a la cámara.
+
 - 3.8.3: la muestra AQL se revisa por renglones: se sortean LPN y, dentro de cada una, solo los renglones necesarios para completar las cajas de la muestra. Botón "Pasar a 100%" y textos aclarados.
 
 - 3.8.2: banderas en el Layout 3D (Ir a Recibo, Surtido, Maquila, Pendientes, Historial) y colores por proceso en el menú.

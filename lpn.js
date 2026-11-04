@@ -46,6 +46,19 @@ const LCFG={
 const LP={};
 Object.keys(LCFG).forEach(m=>{LP[m]={c:LCFG[m],X:null,S:[],CUR:null,IDX:null,UI:{msg:null},MAP:null,RT:0};});
 const nlot=l=>vU(l).replace(/R$/,"");
+/* coherencia lote–producto. La familia sale de la matriz master data (código → familia); si el código no está, de la descripción.
+   Detergentes, suavizantes y jabones (FHC) llevan línea XX al final del lote; cuidado del cabello (HRC) y femenino (FEM), no. */
+const LF_JAB=/\b(ARIEL|SALVO|DOWNY|DWY|ACE|TIDE|DETERG\w*|SUAVIZ\w*|JABON\w*|LAVATRAST\w*)\b/,LF_OTR=/\b(PANTENE|PTN|PNT|H&S|HS|HERBAL|SHAMPOO|SHAMP|ACONDICIONADOR|NATURELLA)\b|HEAD ?& ?SHOULDERS/;
+function lotCls(desc,code){const d=String(desc||"").toUpperCase(),f=typeof mzFam==="function"?mzFam(code):"";
+ if(f==="HRC")return {t:"o",n:"cuidado del cabello"};if(f==="FEM")return {t:"o",n:"cuidado femenino"};
+ if(f==="FHC")return LF_JAB.test(d)?{t:"j",n:"detergente, suavizante o jabón"}:null;
+ if(f)return null;const j=LF_JAB.test(d),o=LF_OTR.test(d);return j===o?null:j?{t:"j",n:"detergente, suavizante o jabón"}:{t:"o",n:"shampoo o similar"};}
+function lotSus(desc,lote,code){const l=vU(lote);if(!l)return "";const c=lotCls(desc,code);if(!c)return "";const xx=/XX$/.test(l);
+ if(c.t==="j"&&!xx)return "El lote "+l+" no termina en XX, como los lotes de "+c.n+".";
+ if(c.t==="o"&&xx)return "El lote "+l+" termina en XX, que es de jabones y detergentes; este producto es de "+c.n+".";return "";}
+function lotLev(a,b){a=vU(a);b=vU(b);if(a===b)return 0;if(Math.abs(a.length-b.length)>2)return 9;const m=[];for(let i=0;i<=a.length;i++){m[i]=[i];}for(let j=1;j<=b.length;j++)m[0][j]=j;
+ for(let i=1;i<=a.length;i++)for(let j=1;j<=b.length;j++)m[i][j]=Math.min(m[i-1][j]+1,m[i][j-1]+1,m[i-1][j-1]+(a[i-1]===b[j-1]?0:1));return m[a.length][b.length];}
+
 const rcvFix=t=>String(t).toUpperCase().replace(/O/g,"0").replace(/[IL]/g,"1");
 const lpFmt=l=>String(l||"").replace(/(\d{4})(?=\d)/g,"$1 ");
 function lpLoad(){Object.keys(LP).forEach(m=>{const p=LP[m],k=p.c.keys;p.X=U.get(k[0],null);p.S=U.get(k[1],[]);if(!Array.isArray(p.S))p.S=[];
@@ -161,8 +174,11 @@ function lpConfirm(m){
  if(!code||!lote){toast("Faltan el código y el lote.");return;}
  if(!/^\d+$/.test(String(d.cnt||"").trim())){toast("Escribe la cantidad de cajas.");return;}
  const its=P.CUR.items,same=its.filter(i=>vG(i.g)===vG(code)),ex=same.find(i=>nlot(i.l)===nlot(lote)),lots=new Set(its.map(i=>nlot(i.l)));
+ const sysBad=same.filter(i=>lotSus(i.desc,i.l,i.g)),near=sysBad.find(i=>lotLev(i.l,lote)<=2),own=lotSus((same[0]||{}).desc,lote,code);
+ if(!d.susOk&&(near||own)){const why=near?lotSus(near.desc,near.l,near.g):own;
+  dlg({title:"Verifica el lote",body:(near?"El sistema (PrIME) trae el lote "+near.l+" para el código "+code+", y no corresponde al tipo de producto. "+why+" El lote que capturaste es igual o muy parecido.":"El lote que capturaste no corresponde al tipo de producto. "+why)+" Compáralo letra por letra con la etiqueta física.",buttons:[{t:"Revisar"},{t:"Es correcto, continuar",cls:"dg",fn:()=>{d.susOk=1;lpConfirm(m);}}]});return;}
  const via=((d.th||[]).length?"foto":"")+(d.man?((d.th||[]).length?" + manual":"manual"):"")||"manual";
- const done=()=>{d.tgtPrev=d.tgt>=0?d.tgt:(ex?its.indexOf(ex):-1);d.code="";d.lote="";d.cnt="";d.th=[];d.man=0;d.chk=null;lpAdv(m);lpSave(m);render();};
+ const done=()=>{d.susOk=0;d.tgtPrev=d.tgt>=0?d.tgt:(ex?its.indexOf(ex):-1);d.code="";d.lote="";d.cnt="";d.th=[];d.man=0;d.chk=null;lpAdv(m);lpSave(m);render();};
  const th=(d.th||[]).slice(-1),dcn=d.chk?" · Doble check ("+via+")":"";
  const rec=(kind,txt)=>dlg({title:kind,body:txt,buttons:[{t:"Corregir a mano"},{t:"Volver a tomar foto",fn:()=>lpRetake(m,"item")},{t:"Registrar diferencia",cls:"dg",fn:()=>{
    if(kind==="Cantidad distinta"&&ex){ex.st="dif";ex.cnt=cnt;ex.ph=th;ex.via=via;ex.note="Cantidad: Excel "+f2(ex.exp)+", contado "+cnt+dcn;}
@@ -170,7 +186,7 @@ function lpConfirm(m){
    P.UI.msg={t:"no",x:"Diferencia registrada: "+kind+"."};done();}}]});
  if(ex){
   if(ex.st==="ok"){toast("Ese renglón ya estaba verificado.");return;}
-  if(Math.abs(cnt-ex.exp)<.0005){ex.st="ok";ex.cnt=cnt;ex.ph=th;ex.note="";ex.via=via;ex.dc=d.chk?1:0;P.UI.msg={t:"ok",x:"Coincide con el Excel: código "+ex.g+", lote "+ex.l+", "+cnt+" caja(s)."+(d.chk?" Doble check correcto.":"")};done();toast("Coincide con el Excel.");}
+  if(Math.abs(cnt-ex.exp)<.0005){ex.st="ok";ex.cnt=cnt;ex.ph=th;ex.note="";ex.via=via;if(lotSus(ex.desc,ex.l,ex.g)){ex.sw=1;}ex.dc=d.chk?1:0;P.UI.msg={t:"ok",x:"Coincide con el Excel: código "+ex.g+", lote "+ex.l+", "+cnt+" caja(s)."+(d.chk?" Doble check correcto.":"")};done();toast("Coincide con el Excel.");}
   else rec("Cantidad distinta","Código "+ex.g+", lote "+ex.l+". Excel: "+f2(ex.exp)+" · Tú contaste: "+cnt+". Vuelve a contar o registra la diferencia.");
   return;}
  const kind=same.length?"Lote distinto":"Código fuera de la LPN",bad=[];
@@ -213,7 +229,7 @@ function lpPdf(m,list){
   txt(new Date(s.done||s.upd||s.at).toLocaleString("es-MX")+" · "+items.filter(i=>i.st==="ok").length+" de "+items.length+" renglones OK"+(ex.length?" · "+ex.length+" extra(s)":"")+(s.aq?" · "+(s.aq.mode==="tot"?"Inspección total":"AQL General II"):"")+(s.sign?" · Inspeccionó: "+s.sign.name:""),L,y+5,{sz:8,c:[90,90,90]});y+=8;
   const cx=[L,L+24,L+54,L+110,L+128,L+146],cl=["Código","Lote","Descripción","Excel","Contado","Resultado"];
   d.setFillColor(232,236,238);d.rect(L,y,R-L,6,"F");cl.forEach((c,i)=>txt(c,cx[i]+1.5,y+4.2,{b:1,sz:7.5,c:[60,60,60]}));y+=6;
-  const rowsAll=items.map(i=>({g:i.g,l:i.l,desc:i.desc||"",e:f2(i.exp),c:i.cnt==null?"—":i.cnt,r:i.st==="ok"?"OK":i.st==="dif"?"Diferencia":"Pendiente",note:i.note||"",st:i.st})).concat(ex.map(i=>({g:i.g,l:i.l,desc:"(no está en la LPN)",e:0,c:i.cnt,r:"Extra",note:i.note||"",st:"dif"})));
+  const rowsAll=items.map(i=>({g:i.g,l:i.l,desc:i.desc||"",e:f2(i.exp),c:i.cnt==null?"—":i.cnt,r:i.st==="ok"?"OK":i.st==="dif"?"Diferencia":"Pendiente",note:i.note||(lotSus(i.desc,i.l,i.g)?"Aviso: el lote del sistema no corresponde al tipo de producto (posible error de captura en PrIME).":""),st:i.st})).concat(ex.map(i=>({g:i.g,l:i.l,desc:"(no está en la LPN)",e:0,c:i.cnt,r:"Extra",note:i.note||"",st:"dif"})));
   rowsAll.forEach((r,ri)=>{const dl=d.splitTextToSize(String(r.desc),52).slice(0,2),nl=r.note?d.splitTextToSize(r.note,R-L-4).slice(0,2):[],h=Math.max(6,dl.length*3.6+2)+(nl.length?nl.length*3.4+1:0);need(h);
    if(ri%2===0){d.setFillColor(249,248,246);d.rect(L,y,R-L,h,"F");}
    txt(r.g,cx[0]+1.5,y+4.2,{sz:8});txt(r.l,cx[1]+1.5,y+4.2,{sz:8});dl.forEach((x,k)=>txt(x,cx[2]+1.5,y+4.2+k*3.6,{sz:7.5}));txt(r.e,cx[3]+1.5,y+4.2,{sz:8});txt(r.c,cx[4]+1.5,y+4.2,{sz:8});
@@ -252,10 +268,10 @@ function lpView(m){
   <div class="row3"><button type="button" class="btn pri" data-lr="lpnok" ${M}>Validar LPN</button><button type="button" class="btn" data-lr="exit" ${M}>Cancelar</button></div></div>`;
 const d=lpDet(m),its=c.items,N=its.length,ti=(d.tgt>=0&&its[d.tgt])?d.tgt:-1,T=ti>=0?its[ti]:null,np=its.filter(i=>i.st==="pend").length,ck=d.chk,bd=k=>ck&&ck.bad.indexOf(k)>=0?' style="border-color:var(--er);box-shadow:0 0 0 2px var(--erb)"':'';
  const nb=dir=>`<button type="button" class="btn" style="padding:8px 16px;font-size:18px" data-lr="nv" data-dir="${dir}" ${M} aria-label="${dir<0?"Anterior":"Siguiente"}">${dir<0?"‹":"›"}</button>`;
- return msg+`<div class="card"><div class="t" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><b style="font-size:17px">LPN ${esc(lpFmt(c.lpn))}</b><span class="tg" style="background:var(--okb);color:var(--ok)">En el Excel</span></div><p class="mu" style="margin:6px 0 0;font-size:13px">${ok} de ${N} verificados${c.extras.length?" · "+c.extras.length+" extra(s)":""}. Avance guardado automáticamente.</p>
+ return msg+`<div class="card"><div class="t" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><b style="font-size:17px">LPN ${esc(lpFmt(c.lpn))}</b><span class="tg" style="background:var(--okb);color:var(--ok)">En el Excel</span></div>${(()=>{const sb2=its.filter(i=>lotSus(i.desc,i.l,i.g));return sb2.length?`<div class="vbanner no" style="margin:8px 0 0;font-weight:600">⚠ ${sb2.length} renglón(es) con lote que no corresponde al tipo de producto (posible error de captura en PrIME): ${esc(sb2.map(i=>i.g).join(", "))}. Verifica contra la etiqueta física.</div>`:"";})()}<p class="mu" style="margin:6px 0 0;font-size:13px">${ok} de ${N} verificados${c.extras.length?" · "+c.extras.length+" extra(s)":""}. Avance guardado automáticamente.</p>
   <div class="row3" style="margin-top:8px"><button type="button" class="btn" data-lr="back" ${M}>‹ Cambiar LPN</button><button type="button" class="btn" data-lr="toend" ${M}>Ir a finalizar ›</button></div></div>
  <div class="card" id="lpcard"><h2 class="sh"><i>2</i>Código y lote</h2>
-  <div style="display:flex;align-items:center;gap:8px;margin:6px 0 4px">${nb(-1)}<div style="flex:1;text-align:center;font-size:13px">${T?`<b>Renglón ${ti+1} de ${N}</b><br><span class="mu">Busca: ${esc(T.g)} · lote ${esc(T.l)}</span>`:`<b>${np} renglón(es) por verificar</b><br><span class="mu">Usa ‹ › para ir uno por uno</span>`}</div>${nb(1)}</div>
+  <div style="display:flex;align-items:center;gap:8px;margin:6px 0 4px">${nb(-1)}<div style="flex:1;text-align:center;font-size:13px">${T?`<b>Renglón ${ti+1} de ${N}</b><br><span class="mu">Busca: ${esc(T.g)} · lote ${esc(T.l)}</span>${lotSus(T.desc,T.l,T.g)?`<br><span style="color:var(--er);font-weight:600">⚠ Lote del sistema sospechoso: verifica la etiqueta</span>`:""}`:`<b>${np} renglón(es) por verificar</b><br><span class="mu">Usa ‹ › para ir uno por uno</span>`}</div>${nb(1)}</div>
   ${ck?`<div class="vbanner no" style="margin:8px 0;font-weight:600">${esc(ck.x)}</div>`:`<p class="mu" style="margin:6px 0 4px;font-size:14px">Toma foto donde se vean el código y el lote, o por separado si están lejos. También puedes escribirlos.</p>`}
   <div style="display:flex;align-items:center;gap:8px"><span style="font-weight:600">Foto</span>${sb("L:"+m+":item")}</div>
   <label class="lb">Código</label><input data-rd="code" ${M} inputmode="numeric" maxlength="8" placeholder="80XXXXXX" value="${esc(d.code)}"${bd("code")}>
@@ -269,7 +285,7 @@ const d=lpDet(m),its=c.items,N=its.length,ti=(d.tgt>=0&&its[d.tgt])?d.tgt:-1,T=t
 
 /* ---- eventos ---- */
 document.addEventListener("input",e=>{const t=e.target,d=t.dataset;if(!d||!d.m||!LP[d.m])return;const P=LP[d.m];
- if(d.rd&&P.CUR){let v=t.value;if(d.rd==="code"||d.rd==="cnt"){v=v.replace(/\D/g,"");if(v!==t.value)t.value=v;}lpDet(d.m)[d.rd]=v;if(d.rd==="code"||d.rd==="lote")lpDet(d.m).man=1;clearTimeout(P.RT);P.RT=setTimeout(()=>lpSave(d.m),300);}
+ if(d.rd&&P.CUR){let v=t.value;if(d.rd==="code"||d.rd==="cnt"){v=v.replace(/\D/g,"");if(v!==t.value)t.value=v;}lpDet(d.m)[d.rd]=v;if(d.rd==="code"||d.rd==="lote")lpDet(d.m).man=1;if(d.rd==="lote")lpDet(d.m).susOk=0;clearTimeout(P.RT);P.RT=setTimeout(()=>lpSave(d.m),300);}
  if(d.rm==="lpn"){const v=t.value.replace(/\D/g,"");if(v!==t.value)t.value=v;P.UI.lpnTxt=v;}});
 document.addEventListener("change",e=>{const t=e.target,d=t.dataset;
  if(d.lm){const p=d.lm.split(":"),P=LP[p[0]];if(P&&P.MAP){P.MAP.map[p[1]]=t.value===""?undefined:+t.value;}}

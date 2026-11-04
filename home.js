@@ -71,7 +71,7 @@ function tileSub(k){
  if(k==="val")return VAL.res?(VAL.res.D.length?VAL.res.D.length+" diferencias":"Todo OK"):"Compara SAP contra PrIME";
  if(k==="insp"){const n=REC.length;return n?n+" folio"+(n===1?"":"s")+" guardado"+(n===1?"":"s"):"Formato de inspección con PDF";}
  if(k==="dash")return DSH.length?DSH.length+" guardado"+(DSH.length===1?"":"s"):"Extrae información de tus archivos";
- if(k==="pend"){const n=pendCount();return n?n+" por terminar":"Nada pendiente";}
+ if(k==="pend"){const n=pendCount(),tn=TEAM.length;return (n?n+" por terminar":"Nada pendiente")+(tn?" · "+tn+" del equipo":"");}
  if(k==="hist"){const n=REC.length+HLOG.length+Object.keys(LP).reduce((a,m)=>a+LP[m].S.filter(s=>s.lpn).length,0);return n?n+" registro"+(n===1?"":"s"):"Todos tus procesos";}
  return (TILES.find(x=>x[0]===k)||[0,0,""])[2];}
 function viewHome(){
@@ -88,8 +88,8 @@ function dlgDel(what,name,fn){
 const lpCard=(m,s,ac)=>{const ok=s.items.filter(i=>i.st==="ok").length,bd=s.status==="dup"?'<span class="bd" style="background:var(--erb);color:var(--er)">para borrar</span>':s.status==="proceso"?'<span class="bd pend">en proceso</span>'+attBadge(s.id):s.status==="ok"?'<span class="bd ok">correcta</span>':'<span class="bd" style="background:var(--erb);color:var(--er)">diferencias</span>';
  return `<div class="item"><div class="h"><b>${esc(lpFmt(s.lpn))}</b>${bd}<span style="margin-left:auto;color:var(--mu);font-size:13px">${esc(fdate(s.upd||s.at))}</span></div><p>${LCFG[m].name} · ${ok} de ${s.items.length} renglones OK${s.extras.length?" · "+s.extras.length+" extra(s)":""}</p>
  <div class="ac"><button type="button" class="btn ${s.status==="proceso"?"pri":""}" data-pgo="${m}:${s.id}">${s.status==="proceso"?"Continuar":"Abrir"}</button>${s.status==="proceso"?"":`<button type="button" class="btn" data-lr="pdf1" data-m="${m}" data-id="${s.id}">PDF</button>`}<button type="button" class="btn dg" data-ldel="${m}:${s.id}">Eliminar</button></div></div>`;};
-function viewPend(){const lp=lpProc(),na=attList().filter(x=>attIs(x.id)).length;
- return `${na?`<div class="vbanner no" style="margin-bottom:12px;font-weight:600">⚠ ${na} proceso(s) sin terminar con atención. El administrador puede verlos. Termínalos o avisa si no se van a terminar.</div>`:""}${lp.length?`<div class="card"><h2 class="sh"><i>${lp.length}</i>LPN en proceso</h2><p style="margin:0;color:var(--mu);font-size:13px">Recibo y Surtido con renglones por verificar.</p>${lp.map(x=>lpCard(x.m,x.s)).join("")}</div>`:""}${viewPendMaq()}`;}
+function viewPend(){teamPullSoon();const lp=lpProc(),na=attList().filter(x=>attIs(x.id)).length;
+ return `${teamCard()}${na?`<div class="vbanner no" style="margin-bottom:12px;font-weight:600">⚠ ${na} proceso(s) sin terminar con atención. El administrador puede verlos. Termínalos o avisa si no se van a terminar.</div>`:""}${lp.length?`<div class="card"><h2 class="sh"><i>${lp.length}</i>LPN en proceso</h2><p style="margin:0;color:var(--mu);font-size:13px">Recibo y Surtido con renglones por verificar.</p>${lp.map(x=>lpCard(x.m,x.s)).join("")}</div>`:""}${viewPendMaq()}`;}
 const HFS=[["all","Todo"],["rcv","Recibo"],["sur","Surtido"],["val","Validación"],["insp","Maquila"],["dash","Dashboards"]];
 function logCard(h){const bd=h.st==="ok"?'<span class="bd ok">OK</span>':h.st==="dif"?'<span class="bd" style="background:var(--erb);color:var(--er)">diferencias</span>':'';
  return `<div class="item"><div class="h"><b>${esc(h.t)}</b>${bd}<span style="margin-left:auto;color:var(--mu);font-size:13px">${esc(fdate(h.at))}</span></div><p>${esc(h.s||"")}</p><div class="ac"><button type="button" class="btn dg" data-hdel="${h.id}">Eliminar</button></div></div>`;}
@@ -175,3 +175,52 @@ window.addEventListener("message",e=>{if(e.origin!==location.origin||!e.data)ret
  if(e.data.l3dgo){const f=document.getElementById("l3df");if(f&&e.source===f.contentWindow&&["rcv","sur","insp","pend","hist"].includes(e.data.l3dgo)){TAB=e.data.l3dgo;render();window.scrollTo(0,0);}}
  if(e.data.l3dh){const f=document.getElementById("l3df");if(f&&e.source===f.contentWindow)f.style.height=Math.min(3000,e.data.l3dh)+"px";}});
 {const _r3=render;render=function(){_r3.apply(this,arguments);try{l3dMaybe();}catch(e){}};}
+
+/* ===== Pendientes compartidos del equipo (servidor) ===== */
+let TEAM=[],TSIG="",TMR=null,TL=0,TBUSY=false;
+const teamUrl=id=>cloudCfg()+"/cryd_team"+(id?"/"+id:"")+".json";
+const teamWho=()=>({emp:ME.emp,n:(ME.nombre+" "+(ME.apellido||"")).trim()});
+const teamStrip=o=>JSON.parse(JSON.stringify(o,(k,v)=>typeof v==="string"&&v.indexOf("data:")===0?"":v));
+function teamMine(){const a=[];
+ REC.filter(r=>r.status==="pendiente").forEach(r=>a.push({id:r.id,k:"insp",t:"Maquila · folio "+r.folio,s:((r.data&&r.data.codigo)||"")+((r.data&&r.data.desc)?" · "+r.data.desc:""),upd:r.upd||0,rec:r}));
+ Object.keys(LP).forEach(m=>LP[m].S.filter(s=>s.lpn&&s.status==="proceso").forEach(s=>{const ok=(s.items||[]).filter(i=>i.st==="ok").length;a.push({id:s.id,k:"lp",m,t:LCFG[m].name+" · LPN "+lpFmt(s.lpn),s:ok+" de "+(s.items||[]).length+" renglones OK",upd:s.upd||s.at||0,ses:s});}));
+ return a;}
+function teamSoon(){if(!ME||ME.guest||!cloudCfg())return;clearTimeout(TMR);TMR=setTimeout(teamSync,3000);}
+async function teamPush(){
+ const tp=U.get("tp",{}),mine=teamMine(),ids=new Set(mine.map(x=>x.id));let ch=false;
+ for(const p of mine){if(tp[p.id]===p.upd)continue;
+  try{const body=teamStrip(Object.assign({},p,{by:teamWho()}));const r=await fetch(teamUrl(p.id),{method:"PUT",body:JSON.stringify(body)});if(r.ok){tp[p.id]=p.upd;ch=true;}}catch(e){}}
+ for(const id of Object.keys(tp)){if(ids.has(id))continue;
+  try{const r=await fetch(teamUrl(id),{method:"DELETE"});if(r.ok){delete tp[id];ch=true;}}catch(e){}}
+ if(ch)U.set("tp",tp);}
+async function teamPull(){
+ let all;try{const r=await fetch(teamUrl(),{cache:"no-store"});if(!r.ok)return;all=await r.json();}catch(e){return;}
+ all=all||{};const me=ME.emp,tp=U.get("tp",{}),list=[];let moved=0;
+ Object.keys(all).forEach(id=>{const it=all[id];if(!it||!it.by)return;it.id=it.id||id;
+  if(it.by.emp===me)return;list.push(it);
+  if(tp[id]!==undefined){ /* alguien más lo tomó: sale de mi lista */
+   if(it.k==="insp"&&REC.some(r=>r.id===id&&r.status==="pendiente")){REC=REC.filter(r=>r.id!==id);saveRecs();moved++;}
+   else if(it.k==="lp"){const P=LP[it.m];if(P&&P.S.some(s=>s.id===id&&s.status==="proceso")){P.S=P.S.filter(s=>s.id!==id);if(P.CUR&&P.CUR.id===id){P.CUR=null;U.set(P.c.keys[2],null);}U.set(P.c.keys[1],P.S);moved++;}}
+   delete tp[id];U.set("tp",tp);}});
+ list.sort((a,b)=>(b.upd||0)-(a.upd||0));TEAM=list;
+ const sig=list.map(x=>x.id+":"+x.upd+":"+x.by.emp).join("|")+"|"+moved;
+ if(moved)toast(moved+" pendiente(s) pasó(aron) a otro compañero.");
+ if(sig!==TSIG){TSIG=sig;if(TAB==="pend"||TAB==="home"||TAB==="more")render();}}
+async function teamSync(){if(TBUSY||!ME||ME.guest||!cloudCfg()||navigator.onLine===false)return;TBUSY=true;try{await teamPush();await teamPull();}finally{TBUSY=false;}}
+function teamPullSoon(){if(Date.now()-TL<8000)return;TL=Date.now();setTimeout(teamSync,50);}
+setInterval(()=>{if(ME&&!ME.guest&&document.visibilityState==="visible")teamSync();},30000);
+function teamCard(){if(!ME||ME.guest||!cloudCfg())return "";
+ return `<div class="card"><h2 class="sh"><i>${TEAM.length}</i>Pendientes del equipo</h2><p style="margin:0;color:var(--mu);font-size:13px">Los que dejaron tus compañeros. Si tomas uno, pasa a tu lista y ya no aparece a los demás. Se actualiza cada 30 segundos.</p>${TEAM.length?TEAM.map(x=>`<div class="item"><div class="h"><b>${esc(x.t)}</b><span class="bd pend">pendiente</span><span style="margin-left:auto;color:var(--mu);font-size:13px">${esc(fdate(x.upd))}</span></div><p>Lo dejó: ${esc(x.by.n)}</p>${x.s?`<p>${esc(x.s)}</p>`:""}<div class="ac"><button type="button" class="btn pri" data-tk="${esc(x.id)}">Tomar y continuar</button></div></div>`).join(""):'<div class="emp">Nada pendiente del equipo.</div>'}</div>`;}
+async function teamTake(id){
+ const it=TEAM.find(x=>x.id===id);if(!it)return;busy("Tomando el pendiente…");
+ let cur=null;try{const r=await fetch(teamUrl(id),{cache:"no-store"});cur=r.ok?await r.json():null;}catch(e){busy("");toast("Sin conexión. Intenta de nuevo.");return;}
+ busy("");if(!cur||!cur.by||cur.by.emp!==it.by.emp){toast(cur&&cur.by?cur.by.n+" ya lo tomó.":"Ese pendiente ya se cerró.");TL=0;teamSync();return;}
+ const now=Date.now(),tp=U.get("tp",{});
+ if(cur.k==="insp"){const r=cur.rec;r.by=ME.emp;r.upd=now;REC=REC.filter(x=>x.id!==r.id);REC.push(r);saveRecs();tp[id]=now;U.set("tp",tp);
+  try{await fetch(teamUrl(id),{method:"PUT",body:JSON.stringify(teamStrip(Object.assign({},cur,{rec:r,upd:now,by:teamWho()})))});}catch(e){}
+  TEAM=TEAM.filter(x=>x.id!==id);load(id);}
+ else{const P=LP[cur.m];if(!P){toast("No se pudo abrir este pendiente.");return;}const s=cur.ses;if(!Array.isArray(s.items))s.items=[];if(!Array.isArray(s.extras))s.extras=[];s.items.forEach(i=>{if(!Array.isArray(i.ph))i.ph=[];});s.upd=now;
+  P.S=P.S.filter(x=>x.id!==s.id);P.S.push(s);P.CUR=s;P.UI.msg=null;U.set(P.c.keys[1],P.S);U.set(P.c.keys[2],s.id);tp[id]=now;U.set("tp",tp);
+  try{await fetch(teamUrl(id),{method:"PUT",body:JSON.stringify(teamStrip(Object.assign({},cur,{ses:s,upd:now,by:teamWho()})))});}catch(e){}
+  TEAM=TEAM.filter(x=>x.id!==id);TAB=cur.m;render();window.scrollTo(0,0);toast("Pendiente tomado. Las fotos no se comparten.");}}
+document.addEventListener("click",e=>{const b=e.target.closest("[data-tk]");if(b)teamTake(b.dataset.tk);});

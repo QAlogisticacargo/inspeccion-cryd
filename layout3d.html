@@ -82,6 +82,17 @@ var m=H.match(/t=(dark|light)/);if(m)c.setAttribute("data-theme",m[1]);})();</sc
   <h2>Zonas del área</h2>
   <div class="zones" id="zones"></div>
 
+  <h2>Seguridad e inocuidad</h2>
+  <p class="note">Capa "Seguridad" (se puede apagar en Mostrar). Los montacargas solo circulan por su carril y los peatones por el paso verde.</p>
+  <ul class="note" style="line-height:1.7;padding-left:18px">
+    <li><b style="color:#1d8f4e">Flechas verdes en piso</b>: ruta de evacuación hacia la puerta peatonal (oeste) y la salida de emergencia (este). Letreros "SALIDA" con flecha sobre los frentes de fila.</li>
+    <li><b style="color:#1d8f4e">Punto de reunión</b>: afuera, en el pasillo peatonal del lado oeste.</li>
+    <li><b style="color:#c8281e">Extintores</b>: en los frentes de fila, junto a la salida del este y en el muro oeste, con recuadro rojo en piso (2 m libres).</li>
+    <li><b style="color:#1d8f4e">Zonas seguras para celular</b>: recuadros verdes lejos del carril de montacargas; en el carril rige "NO CELULAR".</li>
+    <li><b style="color:#b8860b">Peligro eléctrico</b>: tableros con franja amarilla y negra en piso; no obstruir.</li>
+    <li><b style="color:#7a4fd0">Lámparas UV</b> atrapainsectos entre cortinas y junto a los baños.</li>
+    <li><b>Control de plagas</b>: cordón sanitario de 50 cm junto a los muros y estaciones de roedores (cajas negras) cada 5 m.</li>
+  </ul>
   <p class="note">El plano no trae escala: las medidas son estimadas (mesa de trabajo ≈ 4 m). Orden sobre el muro de andenes: maquila (sin cortinas), cortinas 80 a 84, oficinas (cubículos, entrada por el costado hacia la 85), acceso a baños y cortina 85; frente a la 85 la mesa de inspección con su espacio de descarga libre. Al fondo, reja azul con entrada de montacargas y entrada peatonal; las rutas peatonales (verde) llevan a la maquila, la oficina y los baños. Medidas y altura de reja son de referencia.</p>
   <footer>Logística-Cargo | Desarrollado por D-Umbral</footer>
 </div>
@@ -135,6 +146,19 @@ function buildAtlas(){
     c.fillStyle="#f6c40f";c.beginPath();c.moveTo(w*.54,h*.2);c.lineTo(w*.4,h*.4);c.lineTo(w*.5,h*.4);c.lineTo(w*.46,h*.5);c.lineTo(w*.6,h*.3);c.lineTo(w*.5,h*.3);c.closePath();c.fill();
     c.save();c.translate(0,h*.66);textFit(c,"PELIGRO",w*.9,h*.16,"","#161616");c.translate(0,h*.17);textFit(c,"ALTO VOLTAJE",w*.9,h*.14,"","#161616");c.restore();});
   atl("cap",256,160,(c,w,h)=>{c.fillStyle="#f6f6f4";c.fillRect(0,0,w,h);c.strokeStyle="#222";c.lineWidth=5;c.strokeRect(3,3,w-6,h-6);c.save();c.translate(0,h*.1);textFit(c,"CAPACIDAD DE",w*.9,h*.22,"","#111");c.translate(0,h*.24);textFit(c,"CARGA MÁXIMA",w*.9,h*.22,"","#111");c.translate(0,h*.26);textFit(c,"1,000 KG",w*.8,h*.28,"","#111");c.restore();});
+
+  /* seguridad e inocuidad */
+  [["ev_r",0],["ev_u",-Math.PI/2],["ev_l",Math.PI],["ev_d",Math.PI/2]].forEach(([n,an])=>atl(n,128,128,(c,w,h)=>{c.fillStyle="#1d8f4e";c.fillRect(0,0,w,h);c.strokeStyle="#fff";c.lineWidth=5;c.strokeRect(4,4,w-8,h-8);c.translate(w/2,h/2);c.rotate(an);c.fillStyle="#fff";c.beginPath();c.moveTo(-36,-14);c.lineTo(8,-14);c.lineTo(8,-36);c.lineTo(44,0);c.lineTo(8,36);c.lineTo(8,14);c.lineTo(-36,14);c.closePath();c.fill();}));
+  atl("hsL",256,80,(c,w,h)=>{c.fillStyle="#1d8f4e";c.fillRect(0,0,w,h);c.strokeStyle="#fff";c.lineWidth=4;c.strokeRect(3,3,w-6,h-6);textFit(c,"← SALIDA",w*.9,h*.6,"","#fff");});
+  atl("hsR",256,80,(c,w,h)=>{c.fillStyle="#1d8f4e";c.fillRect(0,0,w,h);c.strokeStyle="#fff";c.lineWidth=4;c.strokeRect(3,3,w-6,h-6);textFit(c,"SALIDA →",w*.9,h*.6,"","#fff");});
+  const phone=(c,x,y,w,h)=>{c.fillRect(x,y,w,h);c.clearRect(x+w*.12,y+h*.12,w*.76,h*.62);c.beginPath();c.arc(x+w/2,y+h*.86,w*.07,0,6.3);c.fill();};
+  atl("nocel",256,256,(c,w,h)=>{c.fillStyle="#fff";c.fillRect(0,0,w,h);c.strokeStyle="#c8281e";c.lineWidth=20;c.beginPath();c.arc(w/2,h*.44,h*.34,0,6.3);c.stroke();c.fillStyle="#1b1b1b";phone(c,w*.39,h*.24,w*.22,h*.4);c.strokeStyle="#c8281e";c.lineWidth=20;c.beginPath();c.moveTo(w*.3,h*.2);c.lineTo(w*.7,h*.68);c.stroke();c.save();c.translate(0,h*.88);textFit(c,"NO CELULAR",w*.92,h*.18,"","#c8281e");c.restore();});
+  atl("celok",256,256,(c,w,h)=>{c.fillStyle="#1d8f4e";c.fillRect(0,0,w,h);c.strokeStyle="#fff";c.lineWidth=8;c.strokeRect(6,6,w-12,h-12);c.fillStyle="#fff";phone(c,w*.38,h*.14,w*.24,h*.42);c.save();c.translate(0,h*.66);textFit(c,"ZONA SEGURA",w*.88,h*.14,"","#fff");c.translate(0,h*.15);textFit(c,"CELULARES",w*.88,h*.14,"","#fff");c.restore();});
+  atl("zcel",420,80,(c,w,h)=>{textFit(c,"ZONA SEGURA · CELULARES",w*.96,h*.7,"","#ffffff","rgba(10,80,40,.9)");});
+  atl("punto",256,256,(c,w,h)=>{c.fillStyle="#1d8f4e";c.fillRect(0,0,w,h);c.strokeStyle="#fff";c.lineWidth=8;c.strokeRect(6,6,w-12,h-12);c.fillStyle="#fff";[[.34,.38],[.5,.34],[.66,.38]].forEach(q=>{c.beginPath();c.arc(w*q[0],h*(q[1]-.1),h*.045,0,6.3);c.fill();c.fillRect(w*q[0]-w*.04,h*(q[1]-.05),w*.08,h*.2);});c.save();c.translate(0,h*.66);textFit(c,"PUNTO DE",w*.88,h*.15,"","#fff");c.translate(0,h*.16);textFit(c,"REUNIÓN",w*.88,h*.15,"","#fff");c.restore();});
+  atl("zpunto",420,80,(c,w,h)=>{textFit(c,"PUNTO DE REUNIÓN",w*.96,h*.7,"","#ffffff","rgba(10,80,40,.9)");});
+  atl("cordon",420,60,(c,w,h)=>{textFit(c,"CORDÓN SANITARIO · 50 CM LIBRES",w*.98,h*.7,"","#f6f0d0","rgba(40,40,36,.85)");});
+  atl("uv",128,64,(c,w,h)=>{c.fillStyle="#2a2f33";c.fillRect(0,0,w,h);c.fillStyle="#b48cff";for(let i=0;i<4;i++)c.fillRect(10,10+i*13,w-20,7);c.fillStyle="rgba(255,255,255,.55)";for(let i=0;i<4;i++)c.fillRect(14,11+i*13,w-60,2);});
   ZONES.forEach(z=>atl("z"+z.id,512,96,(c,w,h)=>{textFit(c,z.fl||z.name.toUpperCase(),w,h,"","#ffffff","rgba(20,30,34,.85)");}));
   atl("carton",256,96,(c,w,h)=>{c.fillStyle="#f4f4f2";c.fillRect(0,0,w,h);c.strokeStyle="#16376d";c.lineWidth=6;c.strokeRect(3,3,w-6,h-6);c.save();c.translate(0,h*.05);textFit(c,"CARTÓN",w*.9,h*.4,"","#16376d");c.translate(0,h*.45);textFit(c,"Y MADERA",w*.9,h*.4,"","#16376d");c.restore();});
   atl("ofic",256,64,(c,w,h)=>{c.fillStyle="#f4f4f2";c.fillRect(0,0,w,h);c.strokeStyle="#2b3338";c.lineWidth=5;c.strokeRect(3,3,w-6,h-6);textFit(c,"OFICINAS",w*.88,h*.7,"","#1f272b");});
@@ -337,11 +361,11 @@ function buildExtras(){
   [[36.9,1.0],[13.0,5.2]].forEach((p,k)=>{if(p[0]>HX1-1)return;const x=p[0],z=p[1];cyl(x,0,z,.2,.06,hex("#333"),10);cyl(x,0,z,.03,1.5,hex("#8a8d8f"),6);
     for(let i=0;i<5;i++)cyl(x,.15+i*.27,z,.16,.22,hex("#eef2f4"),12);box(x-.2,1.5,z-.02,.4,.03,.04,hex("#8a8d8f"));});
   /* 6 montacargas retráctiles: 3 rojos y 3 grises */
-  [[7.5,9.4,"#c3281e",0],[19.5,11.4,"#8a9096",2],[30.5,9.8,"#c3281e",0],[5.2,18.2,"#8a9096",1],[51.0,19.0,"#8a9096",2]].forEach(f=>forklift(f[0],f[1],hex(f[2]),f[3]));
+  [[7.5,9.4,"#c3281e",0],[16.6,6.2,"#8a9096",0],[35.0,6.0,"#c3281e",0],[5.2,18.2,"#8a9096",1],[51.0,19.0,"#8a9096",2]].forEach(f=>forklift(f[0],f[1],hex(f[2]),f[3]));
   /* personal: sentados en la oficina y caminando por el paso peatonal */
   const sh=["#e9eef2","#7aa6c8","#c9ced2","#b9d0c4","#e9eef2","#9bb4cc","#d8c9bd","#7aa6c8"];
   [[0,0],[0,2],[1,3],[1,1],[2,4],[2,0],[3,2],[3,4]].forEach((q,k)=>seated(38.0+.25+q[1]*1.55+(q[1]>1?.9:0),1.0+.25+q[0]*1.7+(q[0]>0?.9:0)+(q[0]>2?.0:0),hex(sh[k]),k));
-  [[18,14.8,1,"#e4f000",1],[33,14.6,3,"#e07a1a",2],[42,14.9,1,"#e4f000",3],[48.4,10.5,2,"#e4f000",0],[13.0,11.5,0,"#e4f000",2]].forEach(w=>person(w[0],w[1],w[2],w[3],w[4],.04));
+  [[18,14.8,1,"#e4f000",1],[33,14.6,3,"#e07a1a",2],[42,14.9,1,"#e4f000",3],[48.4,10.5,2,"#e4f000",0],[13.0,14.8,0,"#e4f000",2]].forEach(w=>person(w[0],w[1],w[2],w[3],w[4],.04));
   [[26,15.1,3,"#dfe6ea",1],[48.6,6.0,2,"#6f93b5",3]].forEach(w=>person(w[0],w[1],w[2],w[3],w[4],.04,true));
   /* oficina: cubículos tipo "open space", con la entrada por el costado hacia la 85 */
   {const ox=38.0,oz=1.0,ow=9.6,od=9.0,cr=hex("#e6e3dc"),gl_=[.62,.78,.84,.3],fr=hex("#8e969a");
@@ -483,6 +507,48 @@ function buildExtras(){
   }
 
 }
+
+/* ===== seguridad e inocuidad ===== */
+function buildSafety(){
+  setG("safe");
+  const RED=hex("#c8281e"),GRY=hex("#8f979c"),DKG=hex("#2a2f33"),GRN=hex("#1d8f4e"),WHT=hex("#f2f2ee");
+  const fq=(x0,x1,z0,z1,c,y,tr)=>quad([x0,y||.02,z0],[x1,y||.02,z0],[x1,y||.02,z1],[x0,y||.02,z1],[0,1,0],c,!!tr);
+  const rect=(x0,x1,z0,z1,c,w)=>{fq(x0,x1,z0,z0+w,c);fq(x0,x1,z1-w,z1,c);fq(x0,x0+w,z0,z1,c);fq(x1-w,x1,z0,z1,c);};
+  const hzRect=(x0,x1,z0,z1)=>{const w=.12;floorText("hz",x0,x1,z0,z0+w);floorText("hz",x0,x1,z1-w,z1);floorText("hz",x0,x0+w,z0,z1);floorText("hz",x1-w,x1,z0,z1);};
+  const signX=(n,dc,y0,w,h,X,dir)=>{const d0=dc-w/2,d1=dc+w/2,y1=y0+h;if(dir>0)tquad(n,[X,y0,d0],[X,y0,d1],[X,y1,d1],[X,y1,d0],[1,0,0],false);else tquad(n,[X,y0,d1],[X,y0,d0],[X,y1,d0],[X,y1,d1],[-1,0,0],false);};
+  const ext=(x,D)=>{box(x-.03,0,D+.1,.06,2.2,.06,GRY);cyl(x,.25,D,.1,.5,RED,12);cyl(x,.75,D,.04,.1,DKG,8);signWall("ext",x,1.65,.5,.5,D-.05,-1);signWall("ext",x,1.65,.5,.5,D+.16,1);rect(x-.45,x+.45,D-.5,D+.5,RED,.05);};
+  /* extintores en los frentes de fila, junto a la salida del este y en el muro oeste */
+  [12.55,20.75,28.95,37.15,45.35].forEach(x=>ext(x,16.5));ext(53.3,24.4);
+  box(-1.4,.8,4.3,.18,.5,.2,RED);signX("ext",4.4,1.7,.5,.5,-1.33,1);rect(-1.3,-.4,3.7,5.1,RED,.05);
+  /* rutas de evacuación: flechas verdes en piso hacia las salidas (oeste: puerta peatonal; este: puerta de emergencia) */
+  [4,12,20,28].forEach(x=>floorText("ev_l",x-.45,x+.45,14.35,15.25));
+  [36,42].forEach(x=>floorText("ev_r",x-.45,x+.45,14.35,15.25));
+  [50.4].forEach(x=>floorText("ev_r",x-.45,x+.45,14.35,15.25));
+  floorText("ev_u",51.75,52.65,15.9,16.8);floorText("ev_u",51.75,52.65,18.1,19.0);floorText("ev_u",51.75,52.65,20.3,21.2);
+  floorText("ev_r",51.75,52.65,21.95,22.85);floorText("ev_r",52.95,53.85,21.95,22.85);
+  /* letreros SALIDA con flecha en los frentes de fila */
+  [13.0,21.2,29.4].forEach(x=>signWall("hsL",x+.55,3.4,.95,.3,16.75,-1));[37.6,45.8].forEach(x=>signWall("hsR",x+.55,3.4,.95,.3,16.75,-1));
+  /* punto de reunión (fuera, pasillo peatonal oeste) */
+  fq(-8.2,-6.0,33.2,35.4,[.11,.56,.31,.9],.016);floorText("zpunto",-8.15,-6.05,34.0,34.6);
+  box(-7.13,0,34.4,.06,2.5,.06,GRY);signWall("punto",-7.1,1.5,.95,.95,34.35,-1);signWall("punto",-7.1,1.5,.95,.95,34.52,1);
+  /* zonas seguras para celular y dispositivos (fuera del carril de montacargas) */
+  [[18.2,21.3,4.5,7.0],[-8.2,-6.0,24.0,26.4]].forEach(r=>{const k=CG;CG=grp("safe");fq(r[0],r[1],r[2],r[3],[.11,.56,.31,.28],.014,true);CG=k;rect(r[0],r[1],r[2],r[3],GRN,.08);floorText("zcel",r[0]+.2,r[1]-.2,(r[2]+r[3])/2-.2,(r[2]+r[3])/2+.2);
+    const px=r[1]-.1,pz=r[3]-.15;box(px-.03,0,pz,.06,1.9,.06,GRY);signWall("celok",px,1.3,.6,.6,pz-.02,1);signWall("celok",px,1.3,.6,.6,pz+.08,-1);});
+  /* prohibido usar celular en el carril de montacargas */
+  [[6,0],[20,1],[34,1]].forEach(a=>{if(a[1])box(a[0]-.03,0,13.45,.06,1.9,.06,GRY);signWall("nocel",a[0],1.3,.55,.55,13.4,-1);});
+  /* peligro eléctrico: tableros con zona de piso libre y letrero */
+  hzRect(12.7,15.2,.32,1.7);
+  box(-1.4,.9,3.0,.28,1.7,1.0,GRY);signX("hv",3.5,2.7,.55,.55,-1.1,1);hzRect(-1.1,.3,2.6,4.2);
+  /* lámparas UV atrapainsectos entre cortinas y junto a baños */
+  [19.25,23.75,28.25,32.75,50.85].forEach(x=>{box(x-.32,1.55,.0,.64,.5,.18,DKG);tquad("uv",[x-.28,1.6,.185],[x+.28,1.6,.185],[x+.28,2.0,.185],[x-.28,2.0,.185],[0,0,1],false);
+    const k=CG;CG=grp("safe");quad([x-.7,1.25,.2],[x+.7,1.25,.2],[x+.7,2.4,.2],[x-.7,2.4,.2],[0,0,1],[.65,.45,1,.16],true);CG=k;});
+  /* cordón sanitario y estaciones de control de roedores */
+  fq(-1.3,56,.6,.66,WHT,.02);floorText("cordon",6.4,9.8,.74,1.02);floorText("cordon",26.4,29.8,.74,1.02);floorText("cordon",44.4,47.8,.74,1.02);
+  const bait=(x,D,r)=>{box(x-.17,0,D,.34,.12,.2,DKG);box(x-.15,.12,D+.01,.3,.03,.18,hex("#3b4348"));box(x-.04,.15,D+.07,.08,.01,.06,hex("#f0c419"));};
+  for(let x=2.5;x<55;x+=5)bait(x,.3);
+  [1.8,6.2].forEach(z=>box(-1.4,0,z,.2,.12,.34,DKG));
+  [15,22,29,36,43,50].forEach(x=>bait(x,29.1));
+}
 function buildRoof(){
   setG("roof");const st=hex("#6e777c");
   for(let z=1;z<HD;z+=4.2){box(HX0,HH-.45,z,HX1-HX0,.25,.18,st);box(HX0,HH-.2,z,HX1-HX0,.06,.4,st);}
@@ -502,7 +568,7 @@ const tex=gl.createTexture();
 function upload(){buildAtlas();gl.bindTexture(gl.TEXTURE_2D,tex);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,atlas.cv);gl.generateMipmap(gl.TEXTURE_2D);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);}
 /* El atlas se dibuja antes de generar la geometría porque ZONES ya existe */
 upload();
-buildBase();buildCordons();buildZones();buildPeople();buildRacks();buildExtras();buildRoof();
+buildBase();buildCordons();buildZones();buildPeople();buildRacks();buildExtras();buildSafety();buildRoof();
 Object.keys(groups).forEach(k=>{const g=groups[k];["op","tr"].forEach(t=>{const a=g[t];g[t]={n:a.length/12,b:a.length?(()=>{const b=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(a),gl.STATIC_DRAW);return b;})():null};});});
 
 /* ===== escenas animadas: junta en Recibo, montacargas y saludos ===== */
@@ -533,7 +599,7 @@ function forkD(cx,cD,a,h,R,load,col,k,t){
   const ox=cx-.5*Math.cos(a),oz=cD+.5*Math.sin(a);TR={a:a,ox:ox,oz:oz};
   box(0,.25,0,1.0,.9,2.0,col);box(.05,1.15,.9,.9,.12,1.0,DK);
   [[.08,.8],[.84,.8],[.08,1.75],[.84,1.75]].forEach(q=>box(q[0],1.15,q[1],.06,1.0,.06,DK));
-  box(.02,2.1,.8,.96,.05,1.2,DK);box(.3,.35,1.55,.4,.5,.4,hex("#1c2125"));
+  box(.02,2.1,.8,.96,.05,1.2,DK);box(.3,.35,1.55,.4,.5,.4,hex("#1c2125"));box(.42,2.16,1.25,.16,.14,.16,Math.sin(t*9)>0?BEACON:DK);
   box(.1,.05,-1.9,.12,.12,1.9,GY);box(.78,.05,-1.9,.12,.12,1.9,GY);
   const mh=Math.max(2.6,h+1.35);box(.15,.0,-1.85,.1,mh,.1,DK);box(.75,0,-1.85,.1,mh,.1,DK);box(.15,mh-.06,-1.85,.7,.08,.1,DK);
   if(R>.03)box(.42,h+.15,-1.85-R,.16,.3,R,GY);
@@ -544,11 +610,14 @@ function forkD(cx,cD,a,h,R,load,col,k,t){
   TR=null;
   const c=Math.cos(a),sn=Math.sin(a),pts=[[0,-1.9],[1,-1.9],[1,2],[0,2]].map(q=>[ox+q[0]*c+q[1]*sn,oz-q[0]*sn+q[1]*c]);
   const xs=pts.map(q=>q[0]),zs=pts.map(q=>q[1]);shadowD(Math.min(...xs)-.1,Math.min(...zs)-.1,Math.max(...xs)-Math.min(...xs)+.2,Math.max(...zs)-Math.min(...zs)+.2);}
+const BEACON=hex("#ffb000"),CONE=hex("#ff6a13"),CONEW=hex("#f4f4f2");
 const BRIEF={cx:24.5,cz:6.6};
 const BR_P=[-62,-38,-14,14,38,62].map((d,i)=>{const r=1.55,an=d*Math.PI/180;return {x:BRIEF.cx+Math.sin(an)*r,z:BRIEF.cz-1.2+Math.cos(an)*r,sk:i+1,ph:i*1.7};});
-const WAVERS=[[32.3,8.2,0],[33.4,9.0,1],[16.9,14.9,2],[40.6,13.2,3]];
+const WAVERS=[[30.6,6.6,0],[31.8,5.6,1],[16.9,14.8,2],[40.6,14.8,3]];
 function buildDyn(t){
   CG=DY;DY.op.length=0;DY.tr.length=0;
+  /* conos que delimitan la zona de junta, lejos del carril de montacargas */
+  [[22.0,4.3],[27.0,4.3],[22.0,7.9],[27.0,7.9]].forEach(c=>{cyl(c[0],0,c[1],.15,.04,CONE,10);cyl(c[0],.04,c[1],.09,.34,CONE,10);cyl(c[0],.2,c[1],.095,.06,CONEW,10);});
   /* junta (briefing) en el área de Recibo */
   personD(BRIEF.cx,BRIEF.cz-1.2,0,t,{sk:0,arm:"talk",ph:.4});
   BR_P.forEach(q=>{const a=Math.atan2(BRIEF.cx-q.x,BRIEF.cz-1.2-q.z);personD(q.x,q.z,a,t,{sk:q.sk,nod:true,ph:q.ph});});
@@ -570,7 +639,7 @@ function buildDyn(t){
    forkD(x,D,3*Math.PI/2,h,R,load,hex("#8a9096"),1,t);
    if(placed)palD(21.28,4.81,D-.625,.94,1.25);}
   /* montacargas B: traslada una tarima por el pasillo principal */
-  {const L=28,sp=2.6,x0=16,x1=44,T0=t%(2*(x1-x0)/sp+4);const tr=(x1-x0)/sp;let x,a,d=14.2;
+  {const sp=1.4,x0=16,x1=36,T0=t%(2*(x1-x0)/sp+4);const tr=(x1-x0)/sp;let x,a,d=10.9;
    if(T0<tr){x=x0+sp*T0;a=3*Math.PI/2;}
    else if(T0<tr+2){x=x1;a=3*Math.PI/2-Math.PI*ez((T0-tr)/2);}
    else if(T0<2*tr+2){x=x1-sp*(T0-tr-2);a=Math.PI/2;}
@@ -611,7 +680,7 @@ function camMat(as){const cp=Math.cos(cam.pit),tz=-cam.td;EYE=[cam.tx+cam.dist*M
   VP=mul(persp(.9,as,.1,260),lookAt(EYE,[cam.tx,cam.ty,tz],[0,1,0]));}
 function proj(x,y,D){const v=VP,X=x,Y=y,Z=-D,w=v[3]*X+v[7]*Y+v[11]*Z+v[15],cx=(v[0]*X+v[4]*Y+v[8]*Z+v[12])/w,cy=(v[1]*X+v[5]*Y+v[9]*Z+v[13])/w,cz=(v[2]*X+v[6]*Y+v[10]*Z+v[14])/w;return {x:(cx*.5+.5)*cv.clientWidth,y:(1-(cy*.5+.5))*cv.clientHeight,ok:w>0&&cz<1};}
 /* ===== interfaz ===== */
-const st={labels:true,cordons:true,people:true,racks:true,roof:"auto",spin:false};
+const st={labels:true,cordons:true,people:true,racks:true,safe:true,roof:"auto",spin:false};
 const stage=document.getElementById("stage"),pillsEl=document.getElementById("pills"),info=document.getElementById("info");
 let active=null;
 const pills=ZONES.map(z=>{const b=document.createElement("button");b.type="button";b.className="pill";b.innerHTML="<i></i>"+z.short;b.addEventListener("click",()=>focusZone(z.id));pillsEl.appendChild(b);return b;});
@@ -625,7 +694,7 @@ document.getElementById("infox").onclick=()=>{info.hidden=true;active=null;syncP
 const viewsEl=document.getElementById("views");
 VIEWS.forEach((v,i)=>{const b=document.createElement("button");b.type="button";b.className="chip";b.textContent=v.name;b.setAttribute("aria-pressed",i===1?"true":"false");b.onclick=()=>{[...viewsEl.querySelectorAll(".chip")].forEach(x=>x.setAttribute("aria-pressed","false"));b.setAttribute("aria-pressed","true");active=null;info.hidden=true;syncPills();setGoal(v.g,900);};viewsEl.appendChild(b);});
 const togEl=document.getElementById("toggles");
-[["labels","Etiquetas"],["cordons","Cordones"],["people","Personas"],["racks","Racks"],["roof","Techo"],["spin","Girar solo"]].forEach(([k,n])=>{const b=document.createElement("button");b.type="button";b.className="chip";b.textContent=n;
+[["labels","Etiquetas"],["cordons","Cordones"],["people","Personas"],["racks","Racks"],["safe","Seguridad"],["roof","Techo"],["spin","Girar solo"]].forEach(([k,n])=>{const b=document.createElement("button");b.type="button";b.className="chip";b.textContent=n;
   const on=()=>k==="roof"?st.roof!==false:st[k];b.setAttribute("aria-pressed",on()?"true":"false");
   b.onclick=()=>{if(k==="roof")st.roof=st.roof==="auto"?false:st.roof===false?true:"auto";else st[k]=!st[k];if(k==="roof"){b.textContent=st.roof==="auto"?"Techo (auto)":st.roof?"Techo":"Techo";b.setAttribute("aria-pressed",st.roof===false?"false":"true");}else b.setAttribute("aria-pressed",st[k]?"true":"false");};
   if(k==="roof")b.textContent="Techo (auto)";togEl.appendChild(b);});
@@ -662,7 +731,7 @@ function frame(t){requestAnimationFrame(frame);if(document.hidden){tprev=t;retur
   gl.enable(gl.DEPTH_TEST);gl.enable(gl.CULL_FACE);gl.cullFace(gl.BACK);camMat(cv.width/cv.height);
   gl.useProgram(pg);gl.uniformMatrix4fv(loc.m,false,VP);gl.uniform3f(loc.e,EYE[0],EYE[1],EYE[2]);gl.uniform3f(loc.bg,BG[0],BG[1],BG[2]);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,tex);gl.uniform1i(loc.s,0);
   const roofOn=st.roof==="auto"?EYE[1]<HH-.4:!!st.roof;
-  const vis=g=>g==="cordons"?st.cordons:g==="people"||g==="dyn"?st.people:g==="racks"?st.racks:g==="roof"?roofOn:true;
+  const vis=g=>g==="cordons"?st.cordons:g==="people"||g==="dyn"?st.people:g==="racks"?st.racks:g==="safe"?st.safe:g==="roof"?roofOn:true;
   gl.disable(gl.BLEND);gl.depthMask(true);Object.keys(groups).forEach(k=>{if(vis(k))drawG(groups[k],"op");});
   gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);gl.disable(gl.CULL_FACE);Object.keys(groups).forEach(k=>{if(vis(k))drawG(groups[k],"tr");});gl.depthMask(true);
   /* etiquetas */

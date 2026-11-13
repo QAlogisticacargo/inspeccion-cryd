@@ -247,8 +247,8 @@ async function dsPdf(){
  if(!window.jspdf){toast(_t(640,"No se pudo cargar el generador de PDF. Revisa tu conexión."));return;}
  busy(_t(641,"Generando PDF…"));await new Promise(r=>setTimeout(r,40));
  try{const {jsPDF}=window.jspdf,d=new jsPDF({unit:"mm",format:"a4"}),W=210,H=297,L=14,R=196,T=[32,79,95],B=[124,63,42],title=DS.name||_t(577,"Dashboard");let y=0,pg=1;
-  const head=()=>{d.setFillColor(...T);d.rect(0,0,W,22,"F");d.setFillColor(...B);d.rect(0,22,W,1.6,"F");d.setTextColor(255,255,255);d.setFont("helvetica","bold");d.setFontSize(15);d.text(dsCut(title,40),L,14);d.setFont("helvetica","normal");d.setFontSize(8.5);d.text(_t(642,"Soluciones en Logística Cargo"),R,14,{align:"right"});y=31;};
-  const foot=()=>{d.setFont("helvetica","normal");d.setFontSize(7);d.setTextColor(120,120,120);d.text("Logística-Cargo | Desarrollado por D-Umbral",L,H-8);d.text(_t(643,"Página ")+pg,R,H-8,{align:"right"});};
+  const head=()=>{d.setFillColor(...T);d.rect(0,0,W,22,"F");d.setFillColor(...B);d.rect(0,22,W,1.6,"F");d.setTextColor(255,255,255);d.setFont("helvetica","bold");d.setFontSize(15);d.text(dsCut(title,40),L,14);d.setFont("helvetica","normal");d.setFontSize(8.5);d.text(_t(642,"Soluciones en Log-Cargo"),R,14,{align:"right"});y=31;};
+  const foot=()=>{d.setFont("helvetica","normal");d.setFontSize(7);d.setTextColor(120,120,120);d.text("Log-Cargo | Desarrollado por M. Chagala Domínguez",L,H-8);d.text(_t(643,"Página ")+pg,R,H-8,{align:"right"});};
   const need=h=>{if(y+h>H-16){foot();d.addPage();pg++;head();}};
   const tx=(t,x,yy,o={})=>{d.setFont("helvetica",o.b?"bold":"normal");d.setFontSize(o.sz||9);d.setTextColor(...(o.c||[30,30,30]));d.text(String(t),x,yy,o.al?{align:o.al}:undefined);};
   head();tx(_t(644,"Archivo: ")+DS.file+" · "+DS.rows.length.toLocaleString(_t(163,"es-MX"))+_t(645," filas"),L,y);y+=5;tx(_t(646,"Generado: ")+new Date().toLocaleString(_t(163,"es-MX")),L,y);y+=5;

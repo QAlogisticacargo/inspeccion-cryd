@@ -171,7 +171,7 @@ body.fest .tile .ti.c2{background:#e9791a;color:#fff}
 #l3dsp .l3t b{font-size:22px;color:var(--ac,#204f5f);font-weight:800;letter-spacing:.01em}
 #l3dsp .l3t span{font-size:13px;color:var(--mu,#5c6a70)}
 #l3dsp .l3b{position:absolute;right:16px;bottom:max(26px,env(safe-area-inset-bottom,0px));min-width:110px}
-#l3dsp .l3p{position:absolute;left:0;bottom:0;height:4px;width:100%;background:var(--ac,#204f5f);transform-origin:left;animation:l3p 5.5s linear forwards}
+#l3dsp .l3p{position:absolute;left:0;bottom:0;height:4px;width:100%;background:var(--ac,#204f5f);transform-origin:left;animation:l3p 7.5s linear forwards}
 @keyframes l3p{from{transform:scaleX(0)}to{transform:scaleX(1)}}
 
 .brand .bt{font-size:13.5px;line-height:1.15;font-weight:700;min-width:0}
@@ -186,3 +186,5 @@ body.fest .tile .ti.c2{background:#e9791a;color:#fff}
 
 .tr{display:flex;align-items:center;gap:8px}
 .lang{height:34px;padding:0 11px;border-radius:17px;border:0;background:var(--acs);color:var(--ac);font:700 12px/1 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;cursor:pointer;white-space:nowrap}
+#l3dsp .l3q{position:absolute;left:16px;right:140px;bottom:max(26px,env(safe-area-inset-bottom,0px));margin:0;font-size:14px;font-weight:600;line-height:1.3;color:var(--ac,#204f5f);text-shadow:0 1px 6px var(--bg,#fff);pointer-events:none;animation:l3qf .8s ease both}
+@keyframes l3qf{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}

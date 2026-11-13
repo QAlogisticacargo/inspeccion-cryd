@@ -212,8 +212,8 @@ function lpPdf(m,list){
  try{if(!window.jspdf){toast(_t(640,"No se pudo cargar el generador de PDF. Revisa tu conexión."));return;}
  const P=LP[m],{jsPDF}=window.jspdf,d=new jsPDF({unit:"mm",format:"a4"}),W=210,H=297,L=14,R=196,T=[32,79,95],B=[124,63,42],title=_t(766,"Reporte de ")+P.c.name;
  let y=0,pg=1;
- const head=()=>{d.setFillColor(...T);d.rect(0,0,W,22,"F");d.setFillColor(...B);d.rect(0,22,W,1.6,"F");d.setTextColor(255,255,255);d.setFont("helvetica","bold");d.setFontSize(16);d.text(title,L,14);d.setFont("helvetica","normal");d.setFontSize(8.5);d.text(_t(767,"Logística-Cargo"),R,14,{align:"right"});y=32;};
- const foot=()=>{d.setFont("helvetica","normal");d.setFontSize(7);d.setTextColor(120,120,120);d.text("Logística-Cargo | Desarrollado por D-Umbral",L,H-8);d.text(_t(768,"Página ")+pg,R,H-8,{align:"right"});};
+ const head=()=>{d.setFillColor(...T);d.rect(0,0,W,22,"F");d.setFillColor(...B);d.rect(0,22,W,1.6,"F");d.setTextColor(255,255,255);d.setFont("helvetica","bold");d.setFontSize(16);d.text(title,L,14);d.setFont("helvetica","normal");d.setFontSize(8.5);d.text(_t(767,"Log-Cargo"),R,14,{align:"right"});y=32;};
+ const foot=()=>{d.setFont("helvetica","normal");d.setFontSize(7);d.setTextColor(120,120,120);d.text("Log-Cargo | Desarrollado por M. Chagala Domínguez",L,H-8);d.text(_t(768,"Página ")+pg,R,H-8,{align:"right"});};
  const need=h=>{if(y+h>H-16){foot();d.addPage();pg++;head();}};
  const txt=(t,x,yy,o={})=>{d.setFont("helvetica",o.b?"bold":"normal");d.setFontSize(o.sz||9);d.setTextColor(...(o.c||[30,30,30]));d.text(String(t),x,yy,o.al?{align:o.al}:undefined);};
  head();

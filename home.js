@@ -9,17 +9,17 @@ let ATT={};
 function attLoad(){ATT=U.get("att",{});if(!ATT||typeof ATT!=="object"||Array.isArray(ATT))ATT={};}
 function attSave(){U.set("att",ATT);cloudSoon();gPush();}
 function attList(){const a=[];Object.keys(LP).forEach(m=>LP[m].S.filter(s=>s.lpn&&s.status==="proceso").forEach(s=>a.push({id:s.id,m,t:LCFG[m].name+" · LPN "+lpFmt(s.lpn)})));
- REC.filter(r=>r.status==="pendiente").forEach(r=>a.push({id:r.id,m:"insp",t:"Maquila · folio "+r.folio}));return a;}
+ REC.filter(r=>r.status==="pendiente").forEach(r=>a.push({id:r.id,m:"insp",t:_t(870,"Maquila · folio ")+r.folio}));return a;}
 const attIs=id=>!!(ATT[id]&&ATT[id].att);
-const attBadge=id=>attIs(id)?'<span class="bd" style="background:var(--erb);color:var(--er)">⚠ Atención</span>':(ATT[id]&&ATT[id].wn?'<span class="bd pend">aviso '+ATT[id].wn+' de 2</span>':'');
+const attBadge=id=>attIs(id)?_t(871,'<span class="bd" style="background:var(--erb);color:var(--er)">⚠ Atención</span>'):(ATT[id]&&ATT[id].wn?_t(872,'<span class="bd pend">aviso ')+ATT[id].wn+_t(873,' de 2</span>'):'');
 function attGate(m,go){
  const L=attList().filter(x=>x.m===m);if(!L.length){go();return;}
  const n=Math.max.apply(null,L.map(x=>(ATT[x.id]||{}).wn||0)),mark=()=>{L.forEach(x=>{const e=ATT[x.id]=ATT[x.id]||{wn:0};e.wn=Math.max(e.wn||0,2);e.att=1;e.at=e.at||Date.now();});attSave();};
  if(n>=2){mark();go();return;}
  L.forEach(x=>{const e=ATT[x.id]=ATT[x.id]||{wn:0};e.wn=n+1;});attSave();
- const lst=L.slice(0,5).map(x=>"• "+x.t).join("\n")+(L.length>5?"\n• y "+(L.length-5)+" más":"");
- if(n===0)dlg({title:"⚠ Aviso 1 de 2",body:"Tienes un proceso sin terminar:\n"+lst+"\n\nTermínalo antes de empezar otro. Si no se va a terminar, avísalo con el siguiente intento.",buttons:[{t:"Ver pendientes",cls:"pri",fn:()=>{TAB="pend";render();}},{t:"Entendido"}]});
- else dlg({title:"⚠ Aviso 2 de 2",body:"Sigue sin terminar:\n"+lst+"\n\nSi empiezas otro proceso, lo pendiente quedará marcado con ATENCIÓN y el administrador podrá verlo.",buttons:[{t:"Ver pendientes",fn:()=>{TAB="pend";render();}},{t:"Empezar otro",cls:"pri",fn:()=>{mark();go();}}]});}
+ const lst=L.slice(0,5).map(x=>"• "+x.t).join("\n")+(L.length>5?_t(874,"\n• y ")+(L.length-5)+_t(875," más"):"");
+ if(n===0)dlg({title:_t(876,"⚠ Aviso 1 de 2"),body:_t(877,"Tienes un proceso sin terminar:\n")+lst+_t(878,"\n\nTermínalo antes de empezar otro. Si no se va a terminar, avísalo con el siguiente intento."),buttons:[{t:_t(879,"Ver pendientes"),cls:"pri",fn:()=>{TAB="pend";render();}},{t:_t(27,"Entendido")}]});
+ else dlg({title:_t(880,"⚠ Aviso 2 de 2"),body:_t(881,"Sigue sin terminar:\n")+lst+_t(882,"\n\nSi empiezas otro proceso, lo pendiente quedará marcado con ATENCIÓN y el administrador podrá verlo."),buttons:[{t:_t(879,"Ver pendientes"),fn:()=>{TAB="pend";render();}},{t:_t(883,"Empezar otro"),cls:"pri",fn:()=>{mark();go();}}]});}
 /* lista compacta para el administrador (invitados) */
 function attPl(){const a=[];Object.keys(LP).forEach(m=>LP[m].S.filter(s=>s.lpn).sort((x,y)=>(y.upd||0)-(x.upd||0)).slice(0,25).forEach(s=>a.push({m,k:s.lpn,id:s.id,st:s.status,ok:s.items.filter(i=>i.st==="ok").length,n:s.items.length,u:s.upd||s.at||0,w:(ATT[s.id]||{}).wn||0,a:attIs(s.id)?1:0})));
  REC.filter(r=>r.status==="pendiente"||r.status==="dup").slice(0,25).forEach(r=>a.push({m:"insp",k:r.folio,id:r.id,st:r.status,ok:0,n:0,u:r.upd||0,w:(ATT[r.id]||{}).wn||0,a:attIs(r.id)?1:0}));return a;}
@@ -49,51 +49,51 @@ setInterval(()=>{if(document.visibilityState==="visible")marksPull();},90000);
 
 const lpProc=()=>{const a=[];Object.keys(LP).forEach(m=>LP[m].S.filter(s=>s.lpn&&s.status==="proceso").forEach(s=>a.push({m,s})));return a.sort((x,y)=>(attIs(y.s.id)-attIs(x.s.id))||(y.s.upd||0)-(x.s.upd||0));};
 const pendCount=()=>REC.filter(r=>r.status==="pendiente").length+lpProc().length;
-const fdate=t=>new Date(t).toLocaleString("es-MX",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});
+const fdate=t=>new Date(t).toLocaleString(_t(163,"es-MX"),{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});
 const HELP={
- rcv:["Cómo funciona Recibo","1. Sube el Excel del inventario con las LPN.\n2. Toma foto de la etiqueta de la LPN. Los números con paréntesis y espacios no son problema.\n3. Toma foto del código y el lote de cada producto y escribe cuántas cajas hay. Las fotos quedan como evidencia.\n4. La app compara con el Excel y te avisa si hay diferencia de código, lote o cantidad. Puedes volver a tomar la foto, corregir a mano o registrar la diferencia.\n5. Finaliza la LPN y descarga el reporte en PDF. Puedes guardar el avance y seguir con otra LPN."],
- sur:["Cómo funciona Surtido","1. Sube el Excel del surtido con las LPN, códigos, lotes y cantidades.\n2. Toma foto de la etiqueta de la LPN.\n3. Toma foto del código y el lote de cada producto surtido y captura las cajas.\n4. La app valida contra el Excel y avisa cualquier diferencia.\n5. Finaliza la LPN y descarga el reporte en PDF. El avance queda guardado para seguir después."],
- val:["Cómo funciona Validación","1. Sube el inventario de SAP y el de PrIME, tal como los exportas.\n2. Asigna cada estatus de PrIME a Libre, Calidad o Ignorar (queda guardado).\n3. Compara: se revisa código, lote, planta, sloc, cantidades y estatus, sin importar el orden de las filas.\n4. Descarga el Excel con el detalle de las diferencias."],
- dash:["Cómo funciona Dashboards","1. Sube un archivo de Excel o CSV.\n2. Pide la información en el Constructor: qué medir, cómo agruparlo, qué filtrar y cómo verlo. O deja que la app arme un dashboard automático.\n3. Si prefieres, escribe una consulta tipo SQL o Google Query.\n4. Filtra todo el dashboard con un toque, guarda el diseño y descarga el reporte en PDF o Excel."]
+ rcv:[_t(884,"Cómo funciona Recibo"),_t(885,"1. Sube el Excel del inventario con las LPN.\n2. Toma foto de la etiqueta de la LPN. Los números con paréntesis y espacios no son problema.\n3. Toma foto del código y el lote de cada producto y escribe cuántas cajas hay. Las fotos quedan como evidencia.\n4. La app compara con el Excel y te avisa si hay diferencia de código, lote o cantidad. Puedes volver a tomar la foto, corregir a mano o registrar la diferencia.\n5. Finaliza la LPN y descarga el reporte en PDF. Puedes guardar el avance y seguir con otra LPN.")],
+ sur:[_t(886,"Cómo funciona Surtido"),_t(887,"1. Sube el Excel del surtido con las LPN, códigos, lotes y cantidades.\n2. Toma foto de la etiqueta de la LPN.\n3. Toma foto del código y el lote de cada producto surtido y captura las cajas.\n4. La app valida contra el Excel y avisa cualquier diferencia.\n5. Finaliza la LPN y descarga el reporte en PDF. El avance queda guardado para seguir después.")],
+ val:[_t(888,"Cómo funciona Validación"),_t(889,"1. Sube el inventario de SAP y el de PrIME, tal como los exportas.\n2. Asigna cada estatus de PrIME a Libre, Calidad o Ignorar (queda guardado).\n3. Compara: se revisa código, lote, planta, sloc, cantidades y estatus, sin importar el orden de las filas.\n4. Descarga el Excel con el detalle de las diferencias.")],
+ dash:[_t(890,"Cómo funciona Dashboards"),_t(891,"1. Sube un archivo de Excel o CSV.\n2. Pide la información en el Constructor: qué medir, cómo agruparlo, qué filtrar y cómo verlo. O deja que la app arme un dashboard automático.\n3. Si prefieres, escribe una consulta tipo SQL o Google Query.\n4. Filtra todo el dashboard con un toque, guarda el diseño y descarga el reporte en PDF o Excel.")]
 };
-function helpDlg(k){const h=HELP[k];if(!h)return;dlg({title:h[0],body:h[1],buttons:[{t:"Entendido",cls:"pri"}]});}
+function helpDlg(k){const h=HELP[k];if(!h)return;dlg({title:h[0],body:h[1],buttons:[{t:_t(27,"Entendido"),cls:"pri"}]});}
 let HELPED="";
 function firstHelp(){if(!ME||HELPED===TAB)return;HELPED=TAB;if(!HELP[TAB])return;const key="cryd:help:"+TAB;if(LS.get(key,0))return;LS.set(key,1);helpDlg(TAB);}
 function resumeItem(){
  const hasDraft=!!(S&&(S.codigo||S.lots.some(l=>used(l))));
  const a=[];
- lpProc().slice(0,1).forEach(x=>a.push({t:LCFG[x.m].name+" · LPN "+lpFmt(x.s.lpn),s:x.s.items.filter(i=>i.st==="ok").length+" de "+x.s.items.length+" verificados",go:x.m,m:x.m,id:x.s.id}));
- if(hasDraft)a.push({t:"Maquila · folio "+(S.folio||"sin folio"),s:(S.codigo||"Sin código")+" · borrador",go:"insp"});
+ lpProc().slice(0,1).forEach(x=>a.push({t:LCFG[x.m].name+" · LPN "+lpFmt(x.s.lpn),s:x.s.items.filter(i=>i.st==="ok").length+_t(781," de ")+x.s.items.length+_t(1009," verificados"),go:x.m,m:x.m,id:x.s.id}));
+ if(hasDraft)a.push({t:_t(870,"Maquila · folio ")+(S.folio||_t(892,"sin folio")),s:(S.codigo||_t(78,"Sin código"))+_t(893," · borrador"),go:"insp"});
  return a[0]||null;}
-const TILES=[["rcv","Recibo","Valida LPN, códigos y lotes contra el Excel"],["sur","Surtido","Valida lo surtido contra el Excel"],["val","Validación","Compara SAP contra PrIME"],["insp","Maquila","Formato de inspección con PDF"],["l3d","Layout 3D","Recorre el área de maquila"],["dash","Dashboards","Extrae información de tus archivos"],["pend","Pendientes","Lo que dejaste a medias"],["hist","Historial","Todos tus procesos"],["perfil","Perfil","Tema, sesión y respaldo"]];
+const TILES=[["rcv",_t(213,"Recibo"),_t(894,"Valida LPN, códigos y lotes contra el Excel")],["sur",_t(214,"Surtido"),_t(895,"Valida lo surtido contra el Excel")],["val",_t(215,"Validación"),_t(896,"Compara SAP contra PrIME")],["insp",_t(216,"Maquila"),_t(897,"Formato de inspección con PDF")],["l3d",_t(992,"Layout 3D"),_t(898,"Recorre el área de maquila")],["dash","Dashboards",_t(899,"Extrae información de tus archivos")],["pend",_t(218,"Pendientes"),_t(900,"Lo que dejaste a medias")],["hist",_t(219,"Historial"),_t(901,"Todos tus procesos")],["perfil",_t(221,"Perfil"),_t(902,"Tema, sesión y respaldo")]];
 function tileSub(k){
- if(k==="rcv"||k==="sur"){const p=LP[k],n=p.S.filter(s=>s.lpn&&s.status==="proceso").length,t=p.S.filter(s=>s.lpn).length;return t?t+" LPN"+(n?" · "+n+" en proceso":""):(p.X?"Excel cargado":"Sube tu Excel y empieza");}
- if(k==="val")return VAL.res?(VAL.res.D.length?VAL.res.D.length+" diferencias":"Todo OK"):"Compara SAP contra PrIME";
- if(k==="insp"){const n=REC.length;return n?n+" folio"+(n===1?"":"s")+" guardado"+(n===1?"":"s"):"Formato de inspección con PDF";}
- if(k==="dash")return DSH.length?DSH.length+" guardado"+(DSH.length===1?"":"s"):"Extrae información de tus archivos";
- if(k==="pend"){const n=pendCount(),tn=TEAM.length;return (n?n+" por terminar":"Nada pendiente")+(tn?" · "+tn+" del equipo":"");}
- if(k==="hist"){const n=REC.length+HLOG.length+Object.keys(LP).reduce((a,m)=>a+LP[m].S.filter(s=>s.lpn).length,0);return n?n+" registro"+(n===1?"":"s"):"Todos tus procesos";}
+ if(k==="rcv"||k==="sur"){const p=LP[k],n=p.S.filter(s=>s.lpn&&s.status==="proceso").length,t=p.S.filter(s=>s.lpn).length;return t?t+" LPN"+(n?" · "+n+_t(903," en proceso"):""):(p.X?_t(904,"Excel cargado"):_t(905,"Sube tu Excel y empieza"));}
+ if(k==="val")return VAL.res?(VAL.res.D.length?VAL.res.D.length+_t(906," diferencias"):_t(131,"Todo OK")):_t(896,"Compara SAP contra PrIME");
+ if(k==="insp"){const n=REC.length;return n?n+_t(907," folio")+_pl(n,"e")+_t(908," guardado")+_pl(n,""):_t(897,"Formato de inspección con PDF");}
+ if(k==="dash")return DSH.length?DSH.length+_t(908," guardado")+_pl(DSH.length,""):_t(899,"Extrae información de tus archivos");
+ if(k==="pend"){const n=pendCount(),tn=TEAM.length;return (n?n+_t(909," por terminar"):_t(910,"Nada pendiente"))+(tn?" · "+tn+_t(911," del equipo"):"");}
+ if(k==="hist"){const n=REC.length+HLOG.length+Object.keys(LP).reduce((a,m)=>a+LP[m].S.filter(s=>s.lpn).length,0);return n?n+_t(1010," registro")+_pl(n,"e"):_t(901,"Todos tus procesos");}
  return (TILES.find(x=>x[0]===k)||[0,0,""])[2];}
 function viewHome(){
- const g=ME.guest,nm=g?(ME.nombre==="Invitado"?"":ME.nombre):ME.nombre,hr=new Date().getHours(),sal=hr<12?"Buenos días":hr<19?"Buenas tardes":"Buenas noches",r=resumeItem();
- let fd=new Date().toLocaleDateString("es-MX",{weekday:"long",day:"numeric",month:"long"});fd=fd.charAt(0).toUpperCase()+fd.slice(1);
- return `${festHero()}<div class="hero"><p>${sal}${nm?",":""}</p><h1>${nm?esc(nm):"Bienvenido"}</h1><small>${esc(fd)}</small></div>
- ${r?`<button type="button" class="resume" ${r.m?`data-pgo="${r.m}:${r.id}"`:`data-tab="${r.go}"`}><span><small>Continuar donde ibas</small><b>${esc(r.t)}</b><em>${esc(r.s)}</em></span><i>›</i></button>`:""}
+ const g=ME.guest,nm=g?(ME.nombre===_t(769,"Invitado")?"":ME.nombre):ME.nombre,hr=new Date().getHours(),sal=hr<12?_t(912,"Buenos días"):hr<19?_t(913,"Buenas tardes"):_t(914,"Buenas noches"),r=resumeItem();
+ let fd=new Date().toLocaleDateString(_t(163,"es-MX"),{weekday:"long",day:"numeric",month:"long"});fd=fd.charAt(0).toUpperCase()+fd.slice(1);
+ return `${festHero()}<div class="hero"><p>${sal}${nm?",":""}</p><h1>${nm?esc(nm):_t(915,"Bienvenido")}</h1><small>${esc(fd)}</small></div>
+ ${r?`<button type="button" class="resume" ${r.m?`data-pgo="${r.m}:${r.id}"`:`data-tab="${r.go}"`}${_t(916,`><span><small>Continuar donde ibas</small><b>`)}${esc(r.t)}</b><em>${esc(r.s)}</em></span><i>›</i></button>`:""}
  <div class="tiles">${TILES.map((t,i)=>`<button type="button" class="tile" data-tab="${t[0]}"><span class="ti c${(i%2)+1}"><svg viewBox="0 0 24 24">${IC[t[0]]||IC.perfil}</svg></span><b>${t[1]}</b><small>${esc(tileSub(t[0]))}</small>${festOn()?`<span class="fi">${FA[["pump","mari","bat","pan","skull"][i%5]]}</span>`:""}${t[0]==="pend"&&pendCount()?`<span class="pb" style="top:12px;right:12px;left:auto">${pendCount()}</span>`:""}</button>`).join("")}</div>`;}
 function viewMore(){
- const rows=[["l3d","Layout 3D",tileSub("l3d")],["dash","Dashboards",tileSub("dash")],["pend","Pendientes",tileSub("pend")],["hist","Historial",tileSub("hist")],["perfil","Perfil",tileSub("perfil")]];if(admOn())rows.push(["admin","Administrador","Cuentas e invitados"]);
+ const rows=[["l3d",_t(992,"Layout 3D"),tileSub("l3d")],["dash","Dashboards",tileSub("dash")],["pend",_t(218,"Pendientes"),tileSub("pend")],["hist",_t(219,"Historial"),tileSub("hist")],["perfil",_t(221,"Perfil"),tileSub("perfil")]];if(admOn())rows.push(["admin",_t(917,"Administrador"),_t(918,"Cuentas e invitados")]);
  return `<div class="mrows">${rows.map(x=>`<button type="button" class="mrow" data-tab="${x[0]}"><span class="ti c${x[0]==="dash"||x[0]==="hist"?1:2}" style="width:38px;height:38px"><svg viewBox="0 0 24 24">${IC[x[0]]||IC.perfil}</svg></span><span style="flex:1"><b>${x[1]}</b><small>${esc(x[2])}</small></span><i>›</i></button>`).join("")}</div>`;}
 function dlgDel(what,name,fn){
- dlg({title:"Eliminar "+what,body:"¿Eliminar "+name+"? Esto no se puede deshacer.",buttons:[{t:"Cancelar"},{t:"Continuar",cls:"dg",fn:()=>setTimeout(()=>dlg({title:"Confirmación final",body:"Segunda confirmación: se elimina "+name+" de forma permanente.",buttons:[{t:"No, conservar",cls:"pri"},{t:"Sí, eliminar",cls:"dg",fn:fn}]}),150)}]});}
-const lpCard=(m,s,ac)=>{const ok=s.items.filter(i=>i.st==="ok").length,bd=s.status==="dup"?'<span class="bd" style="background:var(--erb);color:var(--er)">para borrar</span>':s.status==="proceso"?'<span class="bd pend">en proceso</span>'+attBadge(s.id):s.status==="ok"?'<span class="bd ok">correcta</span>':'<span class="bd" style="background:var(--erb);color:var(--er)">diferencias</span>';
- return `<div class="item"><div class="h"><b>${esc(lpFmt(s.lpn))}</b>${bd}<span style="margin-left:auto;color:var(--mu);font-size:13px">${esc(fdate(s.upd||s.at))}</span></div><p>${LCFG[m].name} · ${ok} de ${s.items.length} renglones OK${s.extras.length?" · "+s.extras.length+" extra(s)":""}</p>
- <div class="ac"><button type="button" class="btn ${s.status==="proceso"?"pri":""}" data-pgo="${m}:${s.id}">${s.status==="proceso"?"Continuar":"Abrir"}</button>${s.status==="proceso"?"":`<button type="button" class="btn" data-lr="pdf1" data-m="${m}" data-id="${s.id}">PDF</button>`}<button type="button" class="btn dg" data-ldel="${m}:${s.id}">Eliminar</button></div></div>`;};
+ dlg({title:_t(919,"Eliminar ")+what,body:_t(920,"¿Eliminar ")+name+_t(921,"? Esto no se puede deshacer."),buttons:[{t:_t(12,"Cancelar")},{t:_t(374,"Continuar"),cls:"dg",fn:()=>setTimeout(()=>dlg({title:_t(922,"Confirmación final"),body:_t(923,"Segunda confirmación: se elimina ")+name+_t(924," de forma permanente."),buttons:[{t:_t(925,"No, conservar"),cls:"pri"},{t:_t(926,"Sí, eliminar"),cls:"dg",fn:fn}]}),150)}]});}
+const lpCard=(m,s,ac)=>{const ok=s.items.filter(i=>i.st==="ok").length,bd=s.status==="dup"?_t(927,'<span class="bd" style="background:var(--erb);color:var(--er)">para borrar</span>'):s.status==="proceso"?_t(928,'<span class="bd pend">en proceso</span>')+attBadge(s.id):s.status==="ok"?_t(929,'<span class="bd ok">correcta</span>'):_t(930,'<span class="bd" style="background:var(--erb);color:var(--er)">diferencias</span>');
+ return `<div class="item"><div class="h"><b>${esc(lpFmt(s.lpn))}</b>${bd}<span style="margin-left:auto;color:var(--mu);font-size:13px">${esc(fdate(s.upd||s.at))}</span></div><p>${LCFG[m].name} · ${ok}${_t(781,` de `)}${s.items.length}${_t(782,` renglones OK`)}${s.extras.length?" · "+s.extras.length+_t(783," extra(s)"):""}</p>
+ <div class="ac"><button type="button" class="btn ${s.status==="proceso"?"pri":""}" data-pgo="${m}:${s.id}">${s.status==="proceso"?_t(374,"Continuar"):_t(80,"Abrir")}</button>${s.status==="proceso"?"":`<button type="button" class="btn" data-lr="pdf1" data-m="${m}" data-id="${s.id}">PDF</button>`}<button type="button" class="btn dg" data-ldel="${m}:${s.id}${_t(82,`">Eliminar</button></div></div>`)}`;};
 function viewPend(){teamPullSoon();const lp=lpProc(),na=attList().filter(x=>attIs(x.id)).length;
- return `${teamCard()}${na?`<div class="vbanner no" style="margin-bottom:12px;font-weight:600">⚠ ${na} proceso(s) sin terminar con atención. El administrador puede verlos. Termínalos o avisa si no se van a terminar.</div>`:""}${lp.length?`<div class="card"><h2 class="sh"><i>${lp.length}</i>LPN en proceso</h2><p style="margin:0;color:var(--mu);font-size:13px">Recibo y Surtido con renglones por verificar.</p>${lp.map(x=>lpCard(x.m,x.s)).join("")}</div>`:""}${viewPendMaq()}`;}
-const HFS=[["all","Todo"],["rcv","Recibo"],["sur","Surtido"],["val","Validación"],["insp","Maquila"],["dash","Dashboards"]];
-function logCard(h){const bd=h.st==="ok"?'<span class="bd ok">OK</span>':h.st==="dif"?'<span class="bd" style="background:var(--erb);color:var(--er)">diferencias</span>':'';
- return `<div class="item"><div class="h"><b>${esc(h.t)}</b>${bd}<span style="margin-left:auto;color:var(--mu);font-size:13px">${esc(fdate(h.at))}</span></div><p>${esc(h.s||"")}</p><div class="ac"><button type="button" class="btn dg" data-hdel="${h.id}">Eliminar</button></div></div>`;}
-const dshCard=d=>`<div class="item"><div class="h"><b>${esc(d.name)}</b><span class="bd">dashboard guardado</span><span style="margin-left:auto;color:var(--mu);font-size:13px">${esc(fdate(d.upd))}</span></div><p>${d.w.length} bloques. Se llena al subir el archivo.</p><div class="ac"><button type="button" class="btn pri" data-ds="open" data-id="${d.id}">Abrir</button><button type="button" class="btn dg" data-ds="rm" data-id="${d.id}">Eliminar</button></div></div>`;
+ return `${teamCard()}${na?`${_t(931,`<div class="vbanner no" style="margin-bottom:12px;font-weight:600">⚠ `)}${na}${_t(932,` proceso(s) sin terminar con atención. El administrador puede verlos. Termínalos o avisa si no se van a terminar.</div>`)}`:""}${lp.length?`<div class="card"><h2 class="sh"><i>${lp.length}${_t(933,`</i>LPN en proceso</h2><p style="margin:0;color:var(--mu);font-size:13px">Recibo y Surtido con renglones por verificar.</p>`)}${lp.map(x=>lpCard(x.m,x.s)).join("")}</div>`:""}${viewPendMaq()}`;}
+const HFS=[["all",_t(934,"Todo")],["rcv",_t(213,"Recibo")],["sur",_t(214,"Surtido")],["val",_t(215,"Validación")],["insp",_t(216,"Maquila")],["dash","Dashboards"]];
+function logCard(h){const bd=h.st==="ok"?'<span class="bd ok">OK</span>':h.st==="dif"?_t(930,'<span class="bd" style="background:var(--erb);color:var(--er)">diferencias</span>'):'';
+ return `<div class="item"><div class="h"><b>${esc(h.t)}</b>${bd}<span style="margin-left:auto;color:var(--mu);font-size:13px">${esc(fdate(h.at))}</span></div><p>${esc(h.s||"")}</p><div class="ac"><button type="button" class="btn dg" data-hdel="${h.id}${_t(82,`">Eliminar</button></div></div>`)}`;}
+const dshCard=d=>`<div class="item"><div class="h"><b>${esc(d.name)}${_t(935,`</b><span class="bd">dashboard guardado</span><span style="margin-left:auto;color:var(--mu);font-size:13px">`)}${esc(fdate(d.upd))}</span></div><p>${d.w.length}${_t(936,` bloques. Se llena al subir el archivo.</p><div class="ac"><button type="button" class="btn pri" data-ds="open" data-id="`)}${d.id}${_t(937,`">Abrir</button><button type="button" class="btn dg" data-ds="rm" data-id="`)}${d.id}${_t(82,`">Eliminar</button></div></div>`)}`;
 function viewHist(){
  const chips=`<div class="vc" style="margin-top:0">${HFS.map(f=>`<button type="button" class="${HF===f[0]?"on":""}" data-hf="${f[0]}">${f[1]}</button>`).join("")}</div>`;
  if(HF==="insp")return `<div class="card" style="padding:12px 16px 4px">${chips}</div>${viewHistMaq()}`;
@@ -103,7 +103,7 @@ function viewHist(){
  HLOG.forEach(h=>{if(HF==="all"||HF===h.k)E.push({at:h.at,h:logCard(h)});});
  if(HF==="all"||HF==="dash")DSH.forEach(d=>E.push({at:d.upd||0,h:dshCard(d)}));
  E.sort((a,b)=>b.at-a.at);const shown=E.slice(0,HLIM);
- return `<div class="card" style="padding:12px 16px 14px">${chips}${shown.length?shown.map(x=>x.h).join(""):'<div class="emp">Aún no hay registros de este proceso.</div>'}${E.length>shown.length?`<div class="row3"><button type="button" class="btn full" data-hf="more">Mostrar más (${E.length-shown.length})</button></div>`:""}</div>`;}
+ return `<div class="card" style="padding:12px 16px 14px">${chips}${shown.length?shown.map(x=>x.h).join(""):_t(938,'<div class="emp">Aún no hay registros de este proceso.</div>')}${E.length>shown.length?`${_t(939,`<div class="row3"><button type="button" class="btn full" data-hf="more">Mostrar más (`)}${E.length-shown.length})</button></div>`:""}</div>`;}
 
 /* ---- eventos ---- */
 document.addEventListener("click",e=>{
@@ -111,10 +111,10 @@ document.addEventListener("click",e=>{
  if(g&&g.dataset.pgo){const p=g.dataset.pgo.split(":"),P=LP[p[0]];if(P){const s=P.S.find(x=>x.id===p[1]);if(s){P.CUR=s;P.UI.msg=null;U.set(P.c.keys[2],s.id);TAB=p[0];render();window.scrollTo(0,0);return;}}}
  const h=e.target.closest("[data-help]");if(h){helpDlg(h.dataset.help);return;}
  const f=e.target.closest("[data-hf]");if(f){if(f.dataset.hf==="more")HLIM+=30;else{HF=f.dataset.hf;HLIM=30;}render();return;}
- const d=e.target.closest("[data-hdel]");if(d){const id=d.dataset.hdel,h=HLOG.find(x=>x.id===id);if(h)dlgDel("registro del historial",'"'+h.t+'"',()=>{HLOG=HLOG.filter(x=>x.id!==id);U.set("hlog",HLOG);render();toast("Registro eliminado.");});return;}
+ const d=e.target.closest("[data-hdel]");if(d){const id=d.dataset.hdel,h=HLOG.find(x=>x.id===id);if(h)dlgDel(_t(940,"registro del historial"),'"'+h.t+'"',()=>{HLOG=HLOG.filter(x=>x.id!==id);U.set("hlog",HLOG);render();toast(_t(941,"Registro eliminado."));});return;}
  const ld=e.target.closest("[data-ldel]");if(ld){const p=ld.dataset.ldel.split(":"),P=LP[p[0]],s=P&&P.S.find(x=>x.id===p[1]);if(!s)return;
-  dlgDel(s.status==="proceso"?"LPN en proceso":"LPN del historial","la LPN "+lpFmt(s.lpn)+" ("+LCFG[p[0]].name+")",()=>{P.S=P.S.filter(x=>x.id!==s.id);if(P.CUR&&P.CUR.id===s.id){P.CUR=null;U.set(P.c.keys[2],null);}U.set(P.c.keys[1],P.S);render();toast("LPN eliminada.");});}});
-document.addEventListener("input",e=>{if(e.target.dataset&&e.target.dataset.gn!==undefined&&ME&&ME.guest){const v=e.target.value.trim().slice(0,30);ME.nombre=v?titleCase(v):"Invitado";LS.set("cryd:gname",v?titleCase(v):"");$("#who").textContent=initials(ME);}});
+  dlgDel(s.status==="proceso"?_t(942,"LPN en proceso"):_t(943,"LPN del historial"),_t(944,"la LPN ")+lpFmt(s.lpn)+" ("+LCFG[p[0]].name+")",()=>{P.S=P.S.filter(x=>x.id!==s.id);if(P.CUR&&P.CUR.id===s.id){P.CUR=null;U.set(P.c.keys[2],null);}U.set(P.c.keys[1],P.S);render();toast(_t(945,"LPN eliminada."));});}});
+document.addEventListener("input",e=>{if(e.target.dataset&&e.target.dataset.gn!==undefined&&ME&&ME.guest){const v=e.target.value.trim().slice(0,30);ME.nombre=v?titleCase(v):_t(769,"Invitado");LS.set("cryd:gname",v?titleCase(v):"");$("#who").textContent=initials(ME);}});
 
 
 /* ===== Tema de temporada: Halloween y Día de Muertos ===== */
@@ -134,7 +134,7 @@ function festArt(){
  const r=document.documentElement.style;r.setProperty("--picado",fenc(pic));r.setProperty("--garland",fenc(gar));}
 const festPref=()=>LS.get("cryd:fest","");
 function festOn(){const p=festPref();if(p==="on")return true;if(p==="off")return false;const d=new Date(),m=d.getMonth(),n=d.getDate();return (m===9&&n>=20)||(m===10&&n<=3);}
-function festTitle(){const d=new Date(),m=d.getMonth(),n=d.getDate();if(m===10&&n<=3)return "¡Feliz Día de Muertos!";if(m===9&&n===31)return "¡Feliz Halloween y Día de Muertos!";if(m===9||m===10)return "Halloween y Día de Muertos";return "Halloween y Día de Muertos";}
+function festTitle(){const d=new Date(),m=d.getMonth(),n=d.getDate();if(m===10&&n<=3)return _t(946,"¡Feliz Día de Muertos!");if(m===9&&n===31)return _t(947,"¡Feliz Halloween y Día de Muertos!");if(m===9||m===10)return _t(948,"Halloween y Día de Muertos");return _t(948,"Halloween y Día de Muertos");}
 let FESTART=false;
 function festApply(){const on=festOn();document.body.classList.toggle("fest",on);let e=document.getElementById("fest");
  if(!on){if(e)e.remove();return;}
@@ -142,17 +142,17 @@ function festApply(){const on=festOn();document.body.classList.toggle("fest",on)
  if(!e){e=document.createElement("div");e.id="fest";e.setAttribute("aria-hidden","true");
   e.innerHTML=`<i class="web w1">${FA.web}</i><i class="web w2">${FA.web}</i><i class="bt b1">${FA.bat}</i><i class="bt b2">${FA.bat}</i><i class="bt b3">${FA.bat}</i>`;document.body.appendChild(e);}}
 function festHero(){return festOn()?`<div class="fhero"><span>${FA.pump}</span><span>${FA.bat}</span><span>${FA.skull}</span><span>${FA.mari}</span><span>${FA.pan}</span></div><div class="ftit">${festTitle()}</div>`:"";}
-function festPerfil(){const p=festPref()||"auto",o=[["auto","Automático"],["on","Activado"],["off","Apagado"]];
- return `<div class="card"><h2 class="sh"><i>🎃</i>Tema de temporada</h2><p class="mu" style="margin:6px 0 10px;font-size:14px">Calabazas, murciélagos, telarañas, cempasúchil y pan de muerto. En automático se activa del 20 de octubre al 3 de noviembre.</p><div class="vc" style="margin-top:0">${o.map(x=>`<button type="button" class="${p===x[0]?"on":""}" data-fest="${x[0]}">${x[1]}</button>`).join("")}</div></div>`;}
+function festPerfil(){const p=festPref()||"auto",o=[["auto",_t(949,"Automático")],["on",_t(993,"Activado")],["off",_t(994,"Apagado")]];
+ return `${_t(950,`<div class="card"><h2 class="sh"><i>🎃</i>Tema de temporada</h2><p class="mu" style="margin:6px 0 10px;font-size:14px">Calabazas, murciélagos, telarañas, cempasúchil y pan de muerto. En automático se activa del 20 de octubre al 3 de noviembre.</p><div class="vc" style="margin-top:0">`)}${o.map(x=>`<button type="button" class="${p===x[0]?"on":""}" data-fest="${x[0]}">${x[1]}</button>`).join("")}</div></div>`;}
 document.addEventListener("click",e=>{const b=e.target.closest("[data-fest]");if(!b)return;LS.set("cryd:fest",b.dataset.fest==="auto"?"":b.dataset.fest);festApply();render();});
 {const _r=render;render=function(){_r.apply(this,arguments);try{festApply();}catch(e){}};}
 
 /* ===== Layout 3D (sección + presentación al entrar, una vez al día por usuario) ===== */
 IC.l3d='<path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M12 12l8-4.5M12 12v9M12 12L4 7.5"/>';
 const l3dTheme=()=>{const t=LS.get("cryd:theme","system");return t==="light"||t==="dark"?"&t="+t:"";};
-function viewL3d(){return `<div class="l3dw"><iframe id="l3df" title="Layout 3D de la maquila CRyD" src="layout3d.html#emb${l3dTheme()}" loading="lazy" style="height:1100px"></iframe></div><p class="mu" style="font-size:12px;margin:8px 0 0">Arrastra para girar, pellizca para acercar. Medidas estimadas.</p>`;}
+function viewL3d(){return `<div class="l3dw"><iframe id="l3df" title="Layout 3D de la maquila CRyD" src="layout3d.html#emb${l3dTheme()}${_t(951,`" loading="lazy" style="height:1100px"></iframe></div><p class="mu" style="font-size:12px;margin:8px 0 0">Arrastra para girar, pellizca para acercar. Medidas estimadas.</p>`)}`;}
 const l3dSpOn=()=>LS.get("cryd:l3dsp","on")!=="off";
-function l3dPerfil(){return `<div class="card"><h2 class="sh">Presentación del layout</h2><p class="mu" style="margin:6px 0 12px;font-size:14px">Las primeras 7 veces que abres la app cada día se muestra unos segundos el layout 3D. Puedes saltarla con un toque.</p><button type="button" class="btn" style="width:100%" data-l3d="tog">${l3dSpOn()?"Activada · tocar para desactivar":"Desactivada · tocar para activar"}</button></div>`;}
+function l3dPerfil(){return `${_t(952,`<div class="card"><h2 class="sh">Presentación del layout</h2><p class="mu" style="margin:6px 0 12px;font-size:14px">Las primeras 7 veces que abres la app cada día se muestra unos segundos el layout 3D. Puedes saltarla con un toque.</p><button type="button" class="btn" style="width:100%" data-l3d="tog">`)}${l3dSpOn()?_t(953,"Activada · tocar para desactivar"):_t(954,"Desactivada · tocar para activar")}</button></div>`;}
 let L3DSHOWN=false,L3DTM=0;
 function l3dClose(){const o=document.getElementById("l3dsp");clearTimeout(L3DTM);if(!o)return;const f=o.querySelector("iframe");if(f)f.src="about:blank";o.classList.add("out");setTimeout(()=>{try{o.remove();}catch(e){}},260);}
 function l3dMaybe(){
@@ -165,7 +165,7 @@ function l3dMaybe(){
  LS.set(key,day+"|"+(cnt+1));
  setTimeout(()=>{if(document.getElementById("l3dsp")||!ME)return;
   const o=document.createElement("div");o.id="l3dsp";
-  o.innerHTML=`<iframe title="Layout 3D" src="layout3d.html#splash${l3dTheme()}" onload="this.classList.add('on')"></iframe><div class="l3t"><b>Portal de Logística | Site SMO CRyD</b><span>Maquila CRyD · Layout 3D</span></div><button type="button" class="btn pri l3b" data-l3d="skip">Entrar</button><i class="l3p"></i>`;
+  o.innerHTML=`<iframe title=_t(992,"Layout 3D") src="layout3d.html#splash${l3dTheme()}" onload="this.classList.add('on')"></iframe><div class="l3t"><b>Portal de Logística | Site SMO CRyD</b><span>Maquila CRyD · Layout 3D</span></div><button type="button" class="btn pri l3b" data-l3d="skip">Entrar</button><i class="l3p"></i>`;
   document.body.appendChild(o);L3DTM=setTimeout(l3dClose,5500);},700);}
 document.addEventListener("click",e=>{const b=e.target.closest("[data-l3d]");if(!b)return;
  if(b.dataset.l3d==="skip")l3dClose();
@@ -182,8 +182,8 @@ const teamUrl=id=>cloudCfg()+"/cryd_team"+(id?"/"+id:"")+".json";
 const teamWho=()=>({emp:ME.emp,n:(ME.nombre+" "+(ME.apellido||"")).trim()});
 const teamStrip=o=>JSON.parse(JSON.stringify(o,(k,v)=>typeof v==="string"&&v.indexOf("data:")===0?"":v));
 function teamMine(){const a=[];
- REC.filter(r=>r.status==="pendiente").forEach(r=>a.push({id:r.id,k:"insp",t:"Maquila · folio "+r.folio,s:((r.data&&r.data.codigo)||"")+((r.data&&r.data.desc)?" · "+r.data.desc:""),upd:r.upd||0,rec:r}));
- Object.keys(LP).forEach(m=>LP[m].S.filter(s=>s.lpn&&s.status==="proceso").forEach(s=>{const ok=(s.items||[]).filter(i=>i.st==="ok").length;a.push({id:s.id,k:"lp",m,t:LCFG[m].name+" · LPN "+lpFmt(s.lpn),s:ok+" de "+(s.items||[]).length+" renglones OK",upd:s.upd||s.at||0,ses:s});}));
+ REC.filter(r=>r.status==="pendiente").forEach(r=>a.push({id:r.id,k:"insp",t:_t(870,"Maquila · folio ")+r.folio,s:((r.data&&r.data.codigo)||"")+((r.data&&r.data.desc)?" · "+r.data.desc:""),upd:r.upd||0,rec:r}));
+ Object.keys(LP).forEach(m=>LP[m].S.filter(s=>s.lpn&&s.status==="proceso").forEach(s=>{const ok=(s.items||[]).filter(i=>i.st==="ok").length;a.push({id:s.id,k:"lp",m,t:LCFG[m].name+" · LPN "+lpFmt(s.lpn),s:ok+_t(781," de ")+(s.items||[]).length+_t(782," renglones OK"),upd:s.upd||s.at||0,ses:s});}));
  return a;}
 function teamSoon(){if(!ME||ME.guest||!cloudCfg())return;clearTimeout(TMR);TMR=setTimeout(teamSync,3000);}
 async function teamPush(){
@@ -204,23 +204,23 @@ async function teamPull(){
    delete tp[id];U.set("tp",tp);}});
  list.sort((a,b)=>(b.upd||0)-(a.upd||0));TEAM=list;
  const sig=list.map(x=>x.id+":"+x.upd+":"+x.by.emp).join("|")+"|"+moved;
- if(moved)toast(moved+" pendiente(s) pasó(aron) a otro compañero.");
+ if(moved)toast(moved+_t(955," pendiente(s) pasó(aron) a otro compañero."));
  if(sig!==TSIG){TSIG=sig;if(TAB==="pend"||TAB==="home"||TAB==="more")render();}}
 async function teamSync(){if(TBUSY||!ME||ME.guest||!cloudCfg()||navigator.onLine===false)return;TBUSY=true;try{await teamPush();await teamPull();}finally{TBUSY=false;}}
 function teamPullSoon(){if(Date.now()-TL<8000)return;TL=Date.now();setTimeout(teamSync,50);}
 setInterval(()=>{if(ME&&!ME.guest&&document.visibilityState==="visible")teamSync();},30000);
 function teamCard(){if(!ME||ME.guest||!cloudCfg())return "";
- return `<div class="card"><h2 class="sh"><i>${TEAM.length}</i>Pendientes del equipo</h2><p style="margin:0;color:var(--mu);font-size:13px">Los que dejaron tus compañeros. Si tomas uno, pasa a tu lista y ya no aparece a los demás. Se actualiza cada 30 segundos.</p>${TEAM.length?TEAM.map(x=>`<div class="item"><div class="h"><b>${esc(x.t)}</b><span class="bd pend">pendiente</span><span style="margin-left:auto;color:var(--mu);font-size:13px">${esc(fdate(x.upd))}</span></div><p>Lo dejó: ${esc(x.by.n)}</p>${x.s?`<p>${esc(x.s)}</p>`:""}<div class="ac"><button type="button" class="btn pri" data-tk="${esc(x.id)}">Tomar y continuar</button></div></div>`).join(""):'<div class="emp">Nada pendiente del equipo.</div>'}</div>`;}
+ return `<div class="card"><h2 class="sh"><i>${TEAM.length}${_t(956,`</i>Pendientes del equipo</h2><p style="margin:0;color:var(--mu);font-size:13px">Los que dejaron tus compañeros. Si tomas uno, pasa a tu lista y ya no aparece a los demás. Se actualiza cada 30 segundos.</p>`)}${TEAM.length?TEAM.map(x=>`<div class="item"><div class="h"><b>${esc(x.t)}${_t(957,`</b><span class="bd pend">pendiente</span><span style="margin-left:auto;color:var(--mu);font-size:13px">`)}${esc(fdate(x.upd))}${_t(958,`</span></div><p>Lo dejó: `)}${esc(x.by.n)}</p>${x.s?`<p>${esc(x.s)}</p>`:""}<div class="ac"><button type="button" class="btn pri" data-tk="${esc(x.id)}${_t(959,`">Tomar y continuar</button></div></div>`)}`).join(""):_t(960,'<div class="emp">Nada pendiente del equipo.</div>')}</div>`;}
 async function teamTake(id){
- const it=TEAM.find(x=>x.id===id);if(!it)return;busy("Tomando el pendiente…");
- let cur=null;try{const r=await fetch(teamUrl(id),{cache:"no-store"});cur=r.ok?await r.json():null;}catch(e){busy("");toast("Sin conexión. Intenta de nuevo.");return;}
- busy("");if(!cur||!cur.by||cur.by.emp!==it.by.emp){toast(cur&&cur.by?cur.by.n+" ya lo tomó.":"Ese pendiente ya se cerró.");TL=0;teamSync();return;}
+ const it=TEAM.find(x=>x.id===id);if(!it)return;busy(_t(961,"Tomando el pendiente…"));
+ let cur=null;try{const r=await fetch(teamUrl(id),{cache:"no-store"});cur=r.ok?await r.json():null;}catch(e){busy("");toast(_t(962,"Sin conexión. Intenta de nuevo."));return;}
+ busy("");if(!cur||!cur.by||cur.by.emp!==it.by.emp){toast(cur&&cur.by?cur.by.n+_t(963," ya lo tomó."):_t(964,"Ese pendiente ya se cerró."));TL=0;teamSync();return;}
  const now=Date.now(),tp=U.get("tp",{});
  if(cur.k==="insp"){const r=cur.rec;r.by=ME.emp;r.upd=now;REC=REC.filter(x=>x.id!==r.id);REC.push(r);saveRecs();tp[id]=now;U.set("tp",tp);
   try{await fetch(teamUrl(id),{method:"PUT",body:JSON.stringify(teamStrip(Object.assign({},cur,{rec:r,upd:now,by:teamWho()})))});}catch(e){}
   TEAM=TEAM.filter(x=>x.id!==id);load(id);}
- else{const P=LP[cur.m];if(!P){toast("No se pudo abrir este pendiente.");return;}const s=cur.ses;if(!Array.isArray(s.items))s.items=[];if(!Array.isArray(s.extras))s.extras=[];s.items.forEach(i=>{if(!Array.isArray(i.ph))i.ph=[];});s.upd=now;
+ else{const P=LP[cur.m];if(!P){toast(_t(965,"No se pudo abrir este pendiente."));return;}const s=cur.ses;if(!Array.isArray(s.items))s.items=[];if(!Array.isArray(s.extras))s.extras=[];s.items.forEach(i=>{if(!Array.isArray(i.ph))i.ph=[];});s.upd=now;
   P.S=P.S.filter(x=>x.id!==s.id);P.S.push(s);P.CUR=s;P.UI.msg=null;U.set(P.c.keys[1],P.S);U.set(P.c.keys[2],s.id);tp[id]=now;U.set("tp",tp);
   try{await fetch(teamUrl(id),{method:"PUT",body:JSON.stringify(teamStrip(Object.assign({},cur,{ses:s,upd:now,by:teamWho()})))});}catch(e){}
-  TEAM=TEAM.filter(x=>x.id!==id);TAB=cur.m;render();window.scrollTo(0,0);toast("Pendiente tomado. Las fotos no se comparten.");}}
+  TEAM=TEAM.filter(x=>x.id!==id);TAB=cur.m;render();window.scrollTo(0,0);toast(_t(966,"Pendiente tomado. Las fotos no se comparten."));}}
 document.addEventListener("click",e=>{const b=e.target.closest("[data-tk]");if(b)teamTake(b.dataset.tk);});

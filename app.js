@@ -4,7 +4,7 @@ const CRIT=[["Producto limpio, sin derrame"],["Empaque de producto dañado"],["C
 const tipo=n=>n<2?"Crítico (AQL 0.010)":n<9?"Mayor (AQL 0.040)":"Menor (AQL NA)";
 const GR=[[0,2,"Crítico","AQL 0.010"],[2,9,"Mayor","AQL 0.040"],[9,12,"Menor","AQL NA"]];
 const MES=["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
-const MESES=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+const MESES=[_t(0,"Enero"),_t(1,"Febrero"),_t(2,"Marzo"),_t(3,"Abril"),_t(4,"Mayo"),_t(5,"Junio"),_t(6,"Julio"),_t(7,"Agosto"),_t(8,"Septiembre"),_t(9,"Octubre"),_t(10,"Noviembre"),_t(11,"Diciembre")];
 const $=s=>document.querySelector(s);
 const esc=v=>String(v==null?"":v).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const pad=n=>String(n).padStart(2,"0");
@@ -44,21 +44,21 @@ function toast(t){const e=$("#toast");e.textContent=t;e.hidden=false;clearTimeou
 let BT=0;
 function busy(t,cancel){const e=$("#busy");clearTimeout(BT);if(!t){e.hidden=true;e.className="";e.textContent="";return;}
  e.className=cancel?"can":"";e.textContent="";const sp=document.createElement("span");sp.textContent=t;e.appendChild(sp);
- if(cancel){const b=document.createElement("button");b.type="button";b.textContent="Cancelar";b.onclick=()=>{busy("");try{cancel();}catch(x){}};e.appendChild(b);}
- e.hidden=false;BT=setTimeout(()=>{busy("");toast("Tardó demasiado. Inténtalo de nuevo o captura a mano.");},90000);}
+ if(cancel){const b=document.createElement("button");b.type="button";b.textContent=_t(12,"Cancelar");b.onclick=()=>{busy("");try{cancel();}catch(x){}};e.appendChild(b);}
+ e.hidden=false;BT=setTimeout(()=>{busy("");toast(_t(13,"Tardó demasiado. Inténtalo de nuevo o captura a mano."));},90000);}
 function dlg(o){$("#dlgT").textContent=o.title;$("#dlgB").textContent=o.body;const bx=$("#dlgBtns");bx.innerHTML="";o.buttons.forEach(b=>{const e=document.createElement("button");e.type="button";e.textContent=b.t;e.className="btn "+(b.cls||"");e.onclick=()=>{$("#dlg").hidden=true;if(b.fn)b.fn();};bx.appendChild(e);});$("#dlg").hidden=false;}
 function dupGuard(next){
- const f=(S.folio||"").trim().toUpperCase();if(!f){toast("Captura o genera el folio primero.");return;}
+ const f=(S.folio||"").trim().toUpperCase();if(!f){toast(_t(14,"Captura o genera el folio primero."));return;}
  const mk=mesKey(S.fecha);
  if(!REC.some(r=>r.id!==S.id&&r.mes===mk&&String(r.folio).toUpperCase()===f)){next();return;}
  const k=mk+"|"+f,n=Math.min((WARN.dup[k]||0)+1,3);WARN.dup[k]=n;saveWarn();
- if(n<3)dlg({title:"Folio duplicado · advertencia "+n+" de 3",body:"El folio "+f+" ya existe en "+mesName(mk)+". Corrige el folio. A la tercera advertencia podrás continuar.",buttons:[{t:"Corregir folio",cls:"pri"}]});
- else dlg({title:"Folio duplicado · advertencia 3 de 3",body:"El folio "+f+" ya existe en "+mesName(mk)+". Si continúas, quedará duplicado.",buttons:[{t:"Corregir folio"},{t:"Continuar de todos modos",cls:"dg",fn:next}]});
+ if(n<3)dlg({title:_t(15,"Folio duplicado · advertencia ")+n+_t(16," de 3"),body:_t(17,"El folio ")+f+_t(18," ya existe en ")+mesName(mk)+_t(19,". Corrige el folio. A la tercera advertencia podrás continuar."),buttons:[{t:_t(20,"Corregir folio"),cls:"pri"}]});
+ else dlg({title:_t(21,"Folio duplicado · advertencia 3 de 3"),body:_t(17,"El folio ")+f+_t(18," ya existe en ")+mesName(mk)+_t(22,". Si continúas, quedará duplicado."),buttons:[{t:_t(20,"Corregir folio")},{t:_t(23,"Continuar de todos modos"),cls:"dg",fn:next}]});
 }
 function delGuard(id){
  const r=REC.find(x=>x.id===id);if(!r)return;const n=Math.min((WARN.del[id]||0)+1,3);WARN.del[id]=n;saveWarn();
- if(n<3)dlg({title:"Eliminar folio · advertencia "+n+" de 3",body:"Eliminar "+r.folio+" es permanente. No se eliminó. Podrás hacerlo en la tercera advertencia.",buttons:[{t:"Entendido",cls:"pri"}]});
- else dlg({title:"Eliminar folio · advertencia 3 de 3",body:"¿Eliminar "+r.folio+" de forma permanente?",buttons:[{t:"Cancelar"},{t:"Eliminar",cls:"dg",fn:()=>{REC=REC.filter(x=>x.id!==id);delete WARN.del[id];WARN.gone=WARN.gone||{};WARN.gone[id]=1;saveRecs();saveWarn();toast("Folio "+r.folio+" eliminado.");render();}}]});
+ if(n<3)dlg({title:_t(24,"Eliminar folio · advertencia ")+n+_t(16," de 3"),body:_t(25,"Eliminar ")+r.folio+_t(26," es permanente. No se eliminó. Podrás hacerlo en la tercera advertencia."),buttons:[{t:_t(27,"Entendido"),cls:"pri"}]});
+ else dlg({title:_t(28,"Eliminar folio · advertencia 3 de 3"),body:_t(29,"¿Eliminar ")+r.folio+_t(30," de forma permanente?"),buttons:[{t:_t(12,"Cancelar")},{t:_t(31,"Eliminar"),cls:"dg",fn:()=>{REC=REC.filter(x=>x.id!==id);delete WARN.del[id];WARN.gone=WARN.gone||{};WARN.gone[id]=1;saveRecs();saveWarn();toast(_t(32,"Folio ")+r.folio+_t(1003," eliminado."));render();}}]});
 }
 
 /* ---------- guardar / retomar ---------- */
@@ -68,70 +68,76 @@ function saveRec(status){
  const i=REC.findIndex(r=>r.id===S.id);if(i>=0)REC[i]=rec;else REC.push(rec);
  const ok=saveRecs();saveDraft();return ok;
 }
-function load(id){const r=REC.find(x=>x.id===id);if(!r)return;S=clone(r.data);S.id=r.id;S.act=Math.max(0,S.lots.findIndex(l=>lotState(l)==="pend"));saveDraft();TAB="insp";render();window.scrollTo(0,0);toast("Folio "+r.folio+" cargado.");}
-function actPend(){if(!S.fecha){toast("Falta la fecha.");return;}dupGuard(()=>{const ok=saveRec("pendiente");toast(ok?"Folio "+S.folio+" guardado como pendiente.":"Guardado solo en esta sesión: el navegador no permite almacenar.");render();});}
-function actFin(){if(!S.codigo.trim()){toast("Falta el código.");return;}if(!S.lots.some(l=>used(l)&&l.lote)){toast("Captura al menos un lote.");return;}dupGuard(()=>{const ok=saveRec("completo");render();dlg({title:"Folio "+S.folio+" guardado",body:ok?"Quedó como completo. ¿Quieres generar el PDF para imprimir?":"Guardado solo en esta sesión: el navegador no permite almacenar. ¿Generar el PDF ahora?",buttons:[{t:"Cerrar"},{t:"Generar PDF",cls:"pri",fn:()=>runPdf(S)}]});});}
-function runPdf(d){try{makePdf(d);gstInc("pdf");}catch(err){toast("No se pudo generar el PDF: "+(err&&err.message||err));}}
+function load(id){const r=REC.find(x=>x.id===id);if(!r)return;S=clone(r.data);S.id=r.id;S.act=Math.max(0,S.lots.findIndex(l=>lotState(l)==="pend"));saveDraft();TAB="insp";render();window.scrollTo(0,0);toast(_t(32,"Folio ")+r.folio+_t(33," cargado."));}
+function actPend(){if(!S.fecha){toast(_t(34,"Falta la fecha."));return;}dupGuard(()=>{const ok=saveRec("pendiente");toast(ok?_t(32,"Folio ")+S.folio+_t(35," guardado como pendiente."):_t(36,"Guardado solo en esta sesión: el navegador no permite almacenar."));render();});}
+function actFin(){if(!S.codigo.trim()){toast(_t(37,"Falta el código."));return;}if(!S.lots.some(l=>used(l)&&l.lote)){toast(_t(38,"Captura al menos un lote."));return;}dupGuard(()=>{const ok=saveRec("completo");render();dlg({title:_t(32,"Folio ")+S.folio+_t(39," guardado"),body:ok?_t(40,"Quedó como completo. ¿Quieres generar el PDF para imprimir?"):_t(41,"Guardado solo en esta sesión: el navegador no permite almacenar. ¿Generar el PDF ahora?"),buttons:[{t:_t(42,"Cerrar")},{t:_t(43,"Generar PDF"),cls:"pri",fn:()=>runPdf(S)}]});});}
+function runPdf(d){try{makePdf(d);gstInc("pdf");}catch(err){toast(_t(44,"No se pudo generar el PDF: ")+(err&&err.message||err));}}
 function actPdf(){dupGuard(()=>runPdf(S));}
 async function saveBlob(name,blob){
- try{if(window.claude&&claude.use){try{const dl=await claude.use("downloads");if(dl){await dl.save({filename:name,data:blob});toast("Archivo listo: "+name);return;}}catch(e){if(e&&e.code==="declined")return;}}
+ try{if(window.claude&&claude.use){try{const dl=await claude.use("downloads");if(dl){await dl.save({filename:name,data:blob});toast(_t(45,"Archivo listo: ")+name);return;}}catch(e){if(e&&e.code==="declined")return;}}
   const file=new File([blob],name,{type:blob.type||"application/octet-stream"});
-  if(/\.pdf$/i.test(name)&&navigator.canShare&&navigator.canShare({files:[file]})){try{await navigator.share({files:[file],title:name});toast("PDF listo.");return;}catch(e){if(e&&e.name==="AbortError")return;}}
-  const u=URL.createObjectURL(blob),a=document.createElement("a");a.href=u;a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{a.remove();URL.revokeObjectURL(u);},4000);toast("Archivo listo: "+name);
- }catch(e){toast("No se pudo guardar el archivo.");}}
+  if(/\.pdf$/i.test(name)&&navigator.canShare&&navigator.canShare({files:[file]})){try{await navigator.share({files:[file],title:name});toast(_t(46,"PDF listo."));return;}catch(e){if(e&&e.name==="AbortError")return;}}
+  const u=URL.createObjectURL(blob),a=document.createElement("a");a.href=u;a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{a.remove();URL.revokeObjectURL(u);},4000);toast(_t(45,"Archivo listo: ")+name);
+ }catch(e){toast(_t(47,"No se pudo guardar el archivo."));}}
 function exportRecs(list,name){saveBlob(name,new Blob([JSON.stringify({app:"inspeccion-cryd",version:1,records:list})],{type:"application/json"}));}
 
 /* ---------- vistas ---------- */
-const sb=t=>`<button type="button" class="ico" data-scan="${t}" data-src="cam" aria-label="Tomar foto"><img src="${IC_CAM}" alt=""><span>Tomar foto</span></button><label class="ico" data-scan="${t}" data-src="gal" for="gal" aria-label="Cargar foto"><img src="${IC_GAL}" alt=""><span>Cargar foto</span></label>`;
+const sb=t=>`${_t(48,`<button type="button" class="ico" data-scan="`)}${t}${_t(49,`" data-src="cam" aria-label="Tomar foto"><img src="`)}${IC_CAM}${_t(50,`" alt=""><span>Tomar foto</span></button><label class="ico" data-scan="`)}${t}${_t(51,`" data-src="gal" for="gal" aria-label="Cargar foto"><img src="`)}${IC_GAL}${_t(52,`" alt=""><span>Cargar foto</span></label>`)}`;
 const fld=(lb,attr,val,o={})=>`<label class="lb">${lb}</label><div class="fld"><input ${attr} value="${esc(val)}"${o.ph?` placeholder="${o.ph}"`:""}${o.im?` inputmode="${o.im}"`:""}>${o.suf?`<span class="suf">${o.suf}</span>`:""}${o.scan?sb(o.scan):""}${o.extra||""}</div>`;
-const chips=()=>S.lots.map((x,i)=>`<button type="button" class="chip ${i===S.act?"on":""}" data-lot="${i}"><span class="dot ${lotState(x)}"></span>Lote ${i+1}<i>${esc(x.lote)||"—"}</i></button>`).join("");
+const chips=()=>S.lots.map((x,i)=>`<button type="button" class="chip ${i===S.act?"on":""}" data-lot="${i}"><span class="dot ${lotState(x)}${_t(53,`"></span>Lote `)}${i+1}<i>${esc(x.lote)||"—"}</i></button>`).join("");
 function viewInsp(){
  const l=S.lots[S.act],r=REC.find(x=>x.id===S.id),st=r?r.status:"";
- return `<div class="st"><span class="fo">${esc(S.folio)||"Sin folio"}</span><span class="bd ${st==="pendiente"?"pend":st==="completo"?"ok":""}">${st||"Borrador"}</span><button type="button" class="btn" style="margin-left:auto;padding:8px 12px" data-a="new">Nuevo folio</button></div>
+ return `<div class="st"><span class="fo">${esc(S.folio)||_t(54,"Sin folio")}</span><span class="bd ${st==="pendiente"?"pend":st==="completo"?"ok":""}">${st||_t(55,"Borrador")}${_t(56,`</span><button type="button" class="btn" style="margin-left:auto;padding:8px 12px" data-a="new">Nuevo folio</button></div>
  <div class="card"><h2 class="sh"><i>1</i>Folio y producto</h2>
-  <div class="two" style="grid-template-columns:1fr"><div><label class="lb">Fecha</label><input type="date" data-k="fecha" value="${esc(S.fecha)}"></div><div><label class="lb">Folio</label><div class="fld"><input data-k="folio" value="${esc(S.folio)}" placeholder="R10-01"><button type="button" class="auto" data-a="autofolio">Auto</button></div></div></div>
-  ${fld("Código","data-k=\"codigo\"",S.codigo,{scan:"codigo",im:"numeric",ph:"80XXXXXX"})}
-  ${fld("Descripción del producto","data-k=\"desc\"",S.desc,{scan:"desc",ph:"Ej. Toalla femenina 30 pzas"})}
-  <div class="two"><div><label class="lb">Nivel de inspección</label><input data-k="nivel" value="${esc(S.nivel)}"></div><div><label class="lb">Tipo de muestreo</label><input data-k="muestreo" value="${esc(S.muestreo)}"></div></div></div>
- <div class="card"><h2 class="sh"><i>2</i>Lotes<em>máx. 5 por folio</em></h2><div class="chips" id="chips">${chips()}</div>
-  ${fld("Lote "+(S.act+1),"data-l=\"lote\"",l.lote,{scan:"lote"})}
-  <div class="two"><div>${fld("Cantidad","data-l=\"cant\"",l.cant,{im:"numeric",suf:"CS"})}</div><div>${fld("Tamaño de muestra","data-l=\"muestra\"",l.muestra,{im:"numeric"})}</div></div>
-  <div class="two"><div>${fld("Ac (ANSI Z1.4)","data-l=\"ac\"",l.ac,{im:"numeric"})}</div><div>${fld("Re (ANSI Z1.4)","data-l=\"re\"",l.re,{im:"numeric"})}</div></div></div>
- <div class="card"><h2 class="sh"><i>3</i>Criterios · Lote ${S.act+1}<em>número de defectos</em></h2>
-  ${GR.map(g=>`<div class="grp">${g[2]}<span>${g[3]}</span></div>`+CRIT.slice(g[0],g[1]).map((c,j)=>{const i=g[0]+j;return `<div class="crit"><p><b>${i+1}</b>${c[0]}</p><input class="num" inputmode="numeric" data-r="${i}" value="${esc(l.res[i])}" placeholder="—"></div>`;}).join("")).join("")}
+  <div class="two" style="grid-template-columns:1fr"><div><label class="lb">Fecha</label><input type="date" data-k="fecha" value="`)}${esc(S.fecha)}${_t(57,`"></div><div><label class="lb">Folio</label><div class="fld"><input data-k="folio" value="`)}${esc(S.folio)}${_t(58,`" placeholder="R10-01"><button type="button" class="auto" data-a="autofolio">Auto</button></div></div></div>
+  `)}${fld(_t(59,"Código"),"data-k=\"codigo\"",S.codigo,{scan:"codigo",im:"numeric",ph:"80XXXXXX"})}
+  ${fld(_t(60,"Descripción del producto"),"data-k=\"desc\"",S.desc,{scan:"desc",ph:_t(61,"Ej. Toalla femenina 30 pzas")})}${_t(62,`
+  <div class="two"><div><label class="lb">Nivel de inspección</label><input data-k="nivel" value="`)}${esc(S.nivel)}${_t(63,`"></div><div><label class="lb">Tipo de muestreo</label><input data-k="muestreo" value="`)}${esc(S.muestreo)}${_t(64,`"></div></div></div>
+ <div class="card"><h2 class="sh"><i>2</i>Lotes<em>máx. 5 por folio</em></h2><div class="chips" id="chips">`)}${chips()}</div>
+  ${fld(_t(65,"Lote ")+(S.act+1),"data-l=\"lote\"",l.lote,{scan:"lote"})}
+  <div class="two"><div>${fld(_t(66,"Cantidad"),"data-l=\"cant\"",l.cant,{im:"numeric",suf:"CS"})}</div><div>${fld(_t(67,"Tamaño de muestra"),"data-l=\"muestra\"",l.muestra,{im:"numeric"})}</div></div>
+  <div class="two"><div>${fld(_t(68,"Ac (ANSI Z1.4)"),"data-l=\"ac\"",l.ac,{im:"numeric"})}</div><div>${fld(_t(69,"Re (ANSI Z1.4)"),"data-l=\"re\"",l.re,{im:"numeric"})}${_t(70,`</div></div></div>
+ <div class="card"><h2 class="sh"><i>3</i>Criterios · Lote `)}${S.act+1}${_t(71,`<em>número de defectos</em></h2>
+  `)}${GR.map(g=>`<div class="grp">${_ts(g[2])}<span>${g[3]}</span></div>`+CRIT.slice(g[0],g[1]).map((c,j)=>{const i=g[0]+j;return `<div class="crit"><p><b>${i+1}</b>${_ts(c[0])}</p><input class="num" inputmode="numeric" data-r="${i}" value="${esc(l.res[i])}" placeholder="—"></div>`;}).join("")).join("")}${_t(72,`
   <div class="row3"><button type="button" class="btn" data-a="all0">Todo en 0</button><button type="button" class="btn" data-a="clr">Limpiar lote</button></div>
-  <div class="tot"><span>Total de defectos</span><span id="tot">${defects(l)}</span></div></div>
- <div class="card"><h2 class="sh"><i>4</i>Cierre del lote ${S.act+1}</h2>
-  <label class="lb">Observaciones</label><textarea rows="3" data-l="obs">${esc(l.obs)}</textarea>
-  <label class="lb">Dictamen</label><select data-l="dict">${["","Liberado","Rechazado"].map(o=>`<option ${l.dict===o?"selected":""}>${o}</option>`).join("")}</select></div>
+  <div class="tot"><span>Total de defectos</span><span id="tot">`)}${defects(l)}${_t(73,`</span></div></div>
+ <div class="card"><h2 class="sh"><i>4</i>Cierre del lote `)}${S.act+1}${_t(74,`</h2>
+  <label class="lb">Observaciones</label><textarea rows="3" data-l="obs">`)}${esc(l.obs)}${_t(75,`</textarea>
+  <label class="lb">Dictamen</label><select data-l="dict">`)}${["","Liberado","Rechazado"].map(o=>`<option value="${o}"${l.dict===o?" selected":""}>${_ts(o)}</option>`).join("")}${_t(1002,`</select></div>
  <div class="card"><h2 class="sh"><i>5</i>Guardar</h2>
   <p style="margin:0 0 4px;color:var(--mu);font-size:13px">Lotes sin captura salen con diagonal NA y *. La firma manual va en el * al final de la hoja.</p>
-  <div class="row3"><button type="button" class="btn" data-a="pend">Dejar pendiente</button><button type="button" class="btn dk" data-a="fin">Finalizar y guardar</button><button type="button" class="btn pri full" data-a="pdf">Generar PDF</button></div></div>`;
+  <div class="row3"><button type="button" class="btn" data-a="pend">Dejar pendiente</button><button type="button" class="btn dk" data-a="fin">Finalizar y guardar</button><button type="button" class="btn pri full" data-a="pdf">Generar PDF</button></div></div>`)}`;
 }
-const lotsInfo=d=>{const s=d.lots.map(lotState);const ok=s.filter(x=>x==="ok").length,pe=s.filter(x=>x==="pend").length;return ok+" inspeccionado"+(ok===1?"":"s")+(pe?" · "+pe+" pendiente"+(pe===1?"":"s"):"");};
+const lotsInfo=d=>{const s=d.lots.map(lotState);const ok=s.filter(x=>x==="ok").length,pe=s.filter(x=>x==="pend").length;return ok+_t(1004," inspeccionado")+_pl(ok,"")+(pe?" · "+pe+_t(76," pendiente")+(pe===1?"":"s"):"");};
 const folNum=r=>{const p=parseFolio(r.folio);return p?p.n:0;};
-const item=r=>`<div class="item"><div class="h"><b>${esc(r.folio)}</b><span class="bd ${r.status==="pendiente"?"pend":"ok"}">${r.status==="dup"?"para borrar":r.status}</span>${r.status==="pendiente"?attBadge(r.id):""}<span style="margin-left:auto;color:var(--mu);font-size:13px">${fmtF(r.fecha)}</span></div>
- <p>${esc(r.data.codigo)||"Sin código"}${r.data.desc?" · "+esc(r.data.desc):""}</p><p>${lotsInfo(r.data)}</p>
- <div class="ac"><button type="button" class="btn ${r.status==="pendiente"?"pri":""}" data-a="open" data-id="${r.id}">${r.status==="pendiente"?"Retomar":"Abrir"}</button><button type="button" class="btn" data-a="pdfrec" data-id="${r.id}">PDF</button><button type="button" class="btn dg" data-a="del" data-id="${r.id}">Eliminar</button></div></div>`;
+const item=r=>`<div class="item"><div class="h"><b>${esc(r.folio)}</b><span class="bd ${r.status==="pendiente"?"pend":"ok"}">${r.status==="dup"?_t(77,"para borrar"):r.status}</span>${r.status==="pendiente"?attBadge(r.id):""}<span style="margin-left:auto;color:var(--mu);font-size:13px">${fmtF(r.fecha)}</span></div>
+ <p>${esc(r.data.codigo)||_t(78,"Sin código")}${r.data.desc?" · "+esc(r.data.desc):""}</p><p>${lotsInfo(r.data)}</p>
+ <div class="ac"><button type="button" class="btn ${r.status==="pendiente"?"pri":""}" data-a="open" data-id="${r.id}">${r.status==="pendiente"?_t(79,"Retomar"):_t(80,"Abrir")}${_t(81,`</button><button type="button" class="btn" data-a="pdfrec" data-id="`)}${r.id}">PDF</button><button type="button" class="btn dg" data-a="del" data-id="${r.id}${_t(82,`">Eliminar</button></div></div>`)}`;
 function viewPendMaq(){const l=REC.filter(r=>r.status==="pendiente").sort((a,b)=>b.upd-a.upd);
- return `<div class="card"><h2 class="sh"><i>${l.length}</i>Folios pendientes</h2><p style="margin:0;color:var(--mu);font-size:13px">Folios con lotes sin maquilar. Retómalos para agregar los lotes que faltan.</p>${l.length?l.map(item).join(""):'<div class="emp">No hay folios pendientes.</div>'}</div>`;}
+ return `<div class="card"><h2 class="sh"><i>${l.length}${_t(83,`</i>Folios pendientes</h2><p style="margin:0;color:var(--mu);font-size:13px">Folios con lotes sin maquilar. Retómalos para agregar los lotes que faltan.</p>`)}${l.length?l.map(item).join(""):_t(84,'<div class="emp">No hay folios pendientes.</div>')}</div>`;}
 function histList(){
  const q=HQ.trim().toLowerCase(),list=REC.filter(r=>!q||(r.folio+" "+r.data.codigo+" "+r.data.desc).toLowerCase().includes(q)),g={};
  list.forEach(r=>(g[r.mes]=g[r.mes]||[]).push(r));const ms=Object.keys(g).sort().reverse();
- if(!ms.length)return '<div class="emp">Aún no hay folios guardados.</div>';
+ if(!ms.length)return _t(85,'<div class="emp">Aún no hay folios guardados.</div>');
  return ms.map((m,i)=>{const a=g[m].sort((x,y)=>folNum(y)-folNum(x)||y.upd-x.upd),pe=a.filter(r=>r.status==="pendiente").length;
-  return `<details class="mes" ${i===0||q?"open":""}><summary><span>${mesName(m)}</span><small>${a.length} folio${a.length===1?"":"s"}${pe?" · "+pe+" pend.":""}</small></summary>${a.map(item).join("")}<div class="row3"><button type="button" class="btn full" data-a="expm" data-id="${m}">Exportar respaldo de ${mesName(m)}</button></div></details>`;}).join("");
+  return `<details class="mes" ${i===0||q?"open":""}><summary><span>${mesName(m)}</span><small>${a.length}${_t(86,` folio`)}${_pl(a.length,"e")}${pe?" · "+pe+" pend.":""}</small></summary>${a.map(item).join("")}<div class="row3"><button type="button" class="btn full" data-a="expm" data-id="${m}${_t(87,`">Exportar respaldo de `)}${mesName(m)}</button></div></details>`;}).join("");
 }
-function viewHistMaq(){return `<div class="card"><h2 class="sh"><i>▤</i>Folios de maquila por mes</h2>${STORE_OK?"":'<p style="color:var(--r);font-size:13px">Este navegador no permite guardar datos. Exporta un respaldo antes de salir.</p>'}
- <input id="hq" placeholder="Buscar folio, código o producto" value="${esc(HQ)}" style="margin:6px 0 4px">
- <div class="row3"><button type="button" class="btn" data-a="expall">Exportar todo</button><label class="btn" for="imp">Importar respaldo</label></div></div><div id="hl">${histList()}</div>`;}
+function viewHistMaq(){return `${_t(88,`<div class="card"><h2 class="sh"><i>▤</i>Folios de maquila por mes</h2>`)}${STORE_OK?"":_t(89,'<p style="color:var(--r);font-size:13px">Este navegador no permite guardar datos. Exporta un respaldo antes de salir.</p>')}${_t(90,`
+ <input id="hq" placeholder="Buscar folio, código o producto" value="`)}${esc(HQ)}${_t(91,`" style="margin:6px 0 4px">
+ <div class="row3"><button type="button" class="btn" data-a="expall">Exportar todo</button><label class="btn" for="imp">Importar respaldo</label></div></div><div id="hl">`)}${histList()}</div>`;}
 
+/* Muestra y Ac/Re automáticos (ANSI Z1.4 / AQL General II, inspección normal, muestreo simple, AQL 0.040).
+   N = cantidad del lote en cajas. Letra y tamaño de muestra: tabla AQL_T (aql.js). Para AQL 0.040 los planes con
+   n<500 llevan flecha y se usa n=500 (0/1); lote ≤500 cajas = 100% (0/1). 500→0/1, 800→1/2, 1250→1/2. Editable a mano. */
+function mqPlan(N){N=parseInt(N,10);if(!(N>0))return null;if(N<=500)return{n:N,ac:0,re:1,L:"100%"};const z=aqSize(N);const n=Math.max(z.n,500);return{n,ac:n>=800?1:0,re:n>=800?2:1,L:z.L};}
+function mqAuto(l,v){const p=/^\s*n/i.test(v)?null:mqPlan(v);if(!p)return;l.muestra=String(p.n);l.ac=String(p.ac);l.re=String(p.re);
+ for(const k of["muestra","ac","re"]){const i=document.querySelector('[data-l="'+k+'"]');if(i)i.value=l[k];}refreshCalc();}
 function refreshCalc(){const l=S.lots[S.act];auto(l);const t=$("#tot");if(t)t.textContent=defects(l);const s=document.querySelector('[data-l="dict"]');if(s)s.value=l.dict;const c=$("#chips");if(c)c.innerHTML=chips();}
 
 /* ---------- eventos ---------- */
 document.addEventListener("input",e=>{const t=e.target;
  if(t.dataset.k)S[t.dataset.k]=t.value;
- else if(t.dataset.l){let v=t.value;if(t.dataset.l==="cant"){v=/^\s*n/i.test(v)?v:v.replace(/\D/g,"");if(v!==t.value)t.value=v;}S.lots[S.act][t.dataset.l]=v;}
+ else if(t.dataset.l){let v=t.value;if(t.dataset.l==="cant"){v=/^\s*n/i.test(v)?v:v.replace(/\D/g,"");if(v!==t.value)t.value=v;}S.lots[S.act][t.dataset.l]=v;if(t.dataset.l==="cant")mqAuto(S.lots[S.act],v);}
  else if(t.dataset.r){t.value=t.value.replace(/\D/g,"");S.lots[S.act].res[+t.dataset.r]=t.value;}
  else if(t.id==="hq"){HQ=t.value;$("#hl").innerHTML=histList();return;}
  draftSoon();});
@@ -142,7 +148,7 @@ document.addEventListener("click",e=>{
  const tb=e.target.closest("[data-tab]");if(tb){TAB=tb.dataset.tab;render();window.scrollTo(0,0);return;}
  const ch=e.target.closest("[data-lot]");if(ch){S.act=+ch.dataset.lot;saveDraft();render();return;}
  const b=e.target.closest("[data-a]");if(!b)return;const a=b.dataset.a,id=b.dataset.id,l=S.lots[S.act];
- if(a==="new")attGate("insp",()=>dlg({title:"Nuevo folio",body:"Se limpiará el formulario actual. Lo guardado en Historial no se pierde.",buttons:[{t:"Cancelar"},{t:"Nuevo folio",cls:"pri",fn:()=>{newForm();render();window.scrollTo(0,0);}}]}));
+ if(a==="new")attGate("insp",()=>dlg({title:_t(92,"Nuevo folio"),body:_t(93,"Se limpiará el formulario actual. Lo guardado en Historial no se pierde."),buttons:[{t:_t(12,"Cancelar")},{t:_t(92,"Nuevo folio"),cls:"pri",fn:()=>{newForm();render();window.scrollTo(0,0);}}]}));
  else if(a==="autofolio"){S.folio=nextFolio(S.fecha);saveDraft();render();}
  else if(a==="all0"){l.res.fill("0");auto(l);saveDraft();render();}
  else if(a==="clr"){l.res.fill("");l.dict="";saveDraft();render();}
@@ -156,15 +162,15 @@ document.addEventListener("click",e=>{
 $("#imp").addEventListener("change",async e=>{const f=e.target.files[0];e.target.value="";if(!f)return;
  try{const j=JSON.parse(await f.text()),arr=Array.isArray(j)?j:j.records;let n=0;
   (arr||[]).forEach(r=>{if(!r||!r.id||!r.folio||!r.data||!Array.isArray(r.data.lots))return;const i=REC.findIndex(x=>x.id===r.id);if(i<0){REC.push(r);n++;}else if((r.upd||0)>(REC[i].upd||0)){REC[i]=r;n++;}});
-  saveRecs();toast(n+" folio"+(n===1?"":"s")+" importado"+(n===1?"":"s")+".");render();}catch(err){toast("El archivo de respaldo no es válido.");}});
+  saveRecs();toast(n+_t(86," folio")+_pl(n,"e")+_t(1005," importado")+_pl(n,"")+".");render();}catch(err){toast(_t(94,"El archivo de respaldo no es válido."));}});
 
 /* ---------- Validación SAP vs PrIME ---------- */
-const VF={sap:[["gcas","GCAS / Material",1],["desc","Descripción"],["planta","Planta / Centro",1],["sloc","Sloc / Almacén",1],["lote","Lote",1],["libre","Libre utilización"],["cal","Inspección de calidad"]],prime:[["gcas","GCAS / Material",1],["desc","Descripción"],["planta","Planta / Item Client ID",1],["estatus","Estatus",1],["sloc","Sloc / Warehouse ID"],["cant","Cantidad",1],["lote","Lote",1],["lpn","LPN"]]};
+const VF={sap:[["gcas",_t(95,"GCAS / Material"),1],["desc",_t(96,"Descripción")],["planta",_t(97,"Planta / Centro"),1],["sloc",_t(98,"Sloc / Almacén"),1],["lote",_t(99,"Lote"),1],["libre",_t(100,"Libre utilización")],["cal",_t(101,"Inspección de calidad")]],prime:[["gcas",_t(95,"GCAS / Material"),1],["desc",_t(96,"Descripción")],["planta",_t(102,"Planta / Item Client ID"),1],["estatus",_t(103,"Estatus"),1],["sloc",_t(104,"Sloc / Warehouse ID")],["cant",_t(66,"Cantidad"),1],["lote",_t(99,"Lote"),1],["lpn","LPN"]]};
 const VPAT={lpn:/lpn|license|placa|pallet|load number|load no|load id|carga/,estatus:/estatus|status|estado/,desc:/descri|texto breve|description|nombre/,gcas:/gcas|material|codigo|sku|articulo|item|producto/,planta:/planta|centro|plant|site|client id|item client|cliente/,sloc:/sloc|st loc|alm|almacen|storage|ubicacion|warehouse|bodega/,lote:/lote|batch|\blot\b/,cant:/cantidad|cant\b|quantity|qty|unidades|piezas|stock/,libre:/unrestr|libre|disponible/,cal:/quality|calidad|inspec|\bqi\b/,blo:/blocked|bloque/};
 const VORD={sap:["desc","gcas","planta","sloc","lote","libre","cal"],prime:["lpn","estatus","desc","gcas","planta","sloc","lote","cant"]};
-const BK={libre:"Libre",cal:"Calidad"};
+const BK={libre:_t(105,"Libre"),cal:_t(106,"Calidad")};
 const VEXC=/base unit|unit of measure|unidad de medida|\bum\b|transit|transfer|bloq|blocked|returns|devoluc|(^| )restricted use|uso restringido/;
-const VTIPOS=["Faltante en PrIME","Faltante en SAP","Cantidad","Estatus"];
+const VTIPOS=[_t(107,"Faltante en PrIME"),_t(108,"Faltante en SAP"),_t(66,"Cantidad"),_t(103,"Estatus")];
 let VAL={sap:null,prime:null,res:null,opt:{noR:false,sapLast:true},stmap:{},filter:"Todos",lim:100};
 const nz=s=>String(s==null?"":s).normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9 ]/g," ").replace(/\s+/g," ").trim();
 const vG=x=>String(x==null?"":x).trim().toUpperCase().replace(/^0+(?=.)/,"");
@@ -179,19 +185,19 @@ function vDetect(rows,kind){let b={n:-1,row:0,map:{}};for(let r=0;r<Math.min(row
 function vParse(kind){const f=VAL[kind];f.ws=f.wb.Sheets[f.sheet];const rg=f.ws["!ref"]?XLSX.utils.decode_range(f.ws["!ref"]):{s:{r:0,c:0}};f.r0=rg.s.r;f.c0=rg.s.c;
  f.rows=XLSX.utils.sheet_to_json(f.ws,{header:1,raw:true,defval:"",blankrows:true});const d=vDetect(f.rows,kind);f.hdr=d.row;f.map=d.map;}
 async function vLoad(kind,file){
- if(typeof XLSX==="undefined"){toast("No se pudo cargar el lector de Excel. Revisa tu conexión.");return;}
- busy("Leyendo "+file.name+"…");
+ if(typeof XLSX==="undefined"){toast(_t(110,"No se pudo cargar el lector de Excel. Revisa tu conexión."));return;}
+ busy(_t(111,"Leyendo ")+file.name+"…");
  try{const wb=XLSX.read(await file.arrayBuffer(),{type:"array"});VAL[kind]={name:file.name,wb,sheet:wb.SheetNames[0]};vParse(kind);}
- catch(e){toast("No se pudo abrir el archivo. Verifica que sea Excel (.xlsx, .xls) o CSV.");}
+ catch(e){toast(_t(112,"No se pudo abrir el archivo. Verifica que sea Excel (.xlsx, .xls) o CSV."));}
  finally{OCRON=false;busy("");}
  VAL.res=null;render();}
 function vStatuses(){const f=VAL.prime;if(!f||f.map.estatus==null||f.map.cant==null||f.map.gcas==null)return[];const m=new Map();
- for(let i=f.hdr+1;i<f.rows.length;i++){const r=f.rows[i];if(!vG(r[f.map.gcas]))continue;const s=String(r[f.map.estatus]==null?"":r[f.map.estatus]).trim()||"(vacío)",e=m.get(s)||{s,n:0,q:0};e.n++;e.q+=vN(r[f.map.cant]);m.set(s,e);}
+ for(let i=f.hdr+1;i<f.rows.length;i++){const r=f.rows[i];if(!vG(r[f.map.gcas]))continue;const s=String(r[f.map.estatus]==null?"":r[f.map.estatus]).trim()||_t(113,"(vacío)"),e=m.get(s)||{s,n:0,q:0};e.n++;e.q+=vN(r[f.map.cant]);m.set(s,e);}
  return [...m.values()];}
 function vLpn(f,i){const v=f.rows[i][f.map.lpn];if(typeof v==="number"){const c=f.ws[XLSX.utils.encode_cell({r:f.r0+i,c:f.c0+f.map.lpn})];return String(c&&c.w?c.w:v).replace(/\s/g,"");}return String(v==null?"":v).trim();}
-function vMissing(){const m=[];["sap","prime"].forEach(k=>{const f=VAL[k],n=k==="sap"?"SAP":"PrIME";if(!f){m.push("el archivo de "+n);return;}VF[k].filter(x=>x[2]).forEach(x=>{if(f.map[x[0]]==null)m.push(n+": la columna "+x[1]);});});
- const f=VAL.sap;if(f&&f.map.libre==null&&f.map.cal==null&&f.map.blo==null)m.push("SAP: al menos una columna de cantidad");
- if(VAL.prime&&VAL.prime.map.estatus!=null&&vStatuses().some(x=>!vBucket(x.s)))m.push("PrIME: asignar todos los estatus");return m;}
+function vMissing(){const m=[];["sap","prime"].forEach(k=>{const f=VAL[k],n=k==="sap"?"SAP":_t(114,"PrIME");if(!f){m.push(_t(115,"el archivo de ")+n);return;}VF[k].filter(x=>x[2]).forEach(x=>{if(f.map[x[0]]==null)m.push(n+_t(116,": la columna ")+x[1]);});});
+ const f=VAL.sap;if(f&&f.map.libre==null&&f.map.cal==null&&f.map.blo==null)m.push(_t(117,"SAP: al menos una columna de cantidad"));
+ if(VAL.prime&&VAL.prime.map.estatus!=null&&vStatuses().some(x=>!vBucket(x.s)))m.push(_t(118,"PrIME: asignar todos los estatus"));return m;}
 function vBuild(){
  const sap=VAL.sap,pr=VAL.prime,ln=l=>vU(l),isTot=x=>/^(total|overall|grand|resultado|result|suma|gran total)/i.test(String(x==null?"":x).trim());
  const MS=new Map(),MP=new Map(),inf={sap:{n:0,g:new Set()},pr:{n:0,g:new Set(),lpn:new Set(),dup:new Map(),bad:[],ign:0,by:new Map()}};
@@ -205,7 +211,7 @@ function vBuild(){
   if(!e.desc&&sap.map.desc!=null)e.desc=String(r[sap.map.desc]==null?"":r[sap.map.desc]).trim();
   e.rows.push(sap.r0+i+1);inf.sap.n++;inf.sap.g.add(g);}
  for(let i=pr.hdr+1;i<pr.rows.length;i++){const r=pr.rows[i],raw=r[pr.map.gcas],g=vG(raw);if(!g||isTot(raw))continue;
-  const st=String(r[pr.map.estatus]==null?"":r[pr.map.estatus]).trim()||"(vacío)",b=vBucket(st),q=vN(r[pr.map.cant]),row=pr.r0+i+1;
+  const st=String(r[pr.map.estatus]==null?"":r[pr.map.estatus]).trim()||_t(113,"(vacío)"),b=vBucket(st),q=vN(r[pr.map.cant]),row=pr.r0+i+1;
   const y=inf.pr.by.get(st)||{n:0,q:0,b};y.n++;y.q+=q;inf.pr.by.set(st,y);inf.pr.n++;inf.pr.g.add(g);
   const lpn=pr.map.lpn!=null?vLpn(pr,i):"";
   if(lpn){inf.pr.lpn.add(lpn);let a=inf.pr.dup.get(lpn);if(!a)inf.pr.dup.set(lpn,a=[]);a.push(row);if(!/^\d{20}$/.test(lpn))inf.pr.bad.push([lpn,row]);}
@@ -221,73 +227,73 @@ function vRun(){
  /* Igual que la macro: llave = GCAS + lote + planta + sloc. El orden y el número de filas de cada lado no importan. */
  const add=(t,o)=>D.push(Object.assign({t,g:"",l:"",pl:"",sl:"",S:[],P:[],txt:""},o));
  const other=(M,e)=>[...M.values()].filter(x=>x.g===e.g&&x.l===e.l&&x.k!==e.k);
- const hint=(M,e,n)=>{const o=other(M,e);return o.length?" Ojo: el mismo GCAS y lote sí existe en "+n+" con planta/sloc "+[...new Set(o.map(x=>x.pl+"/"+x.sl))].join(", ")+".":"";};
+ const hint=(M,e,n)=>{const o=other(M,e);return o.length?_t(119," Ojo: el mismo GCAS y lote sí existe en ")+n+_t(120," con planta/sloc ")+[...new Set(o.map(x=>x.pl+"/"+x.sl))].join(", ")+".":"";};
  for(const [k,e] of MS){e.k=k;} for(const [k,e] of MP){e.k=k;}
  for(const [k,s] of MS){const p=MP.get(k);
-  if(!p){add("Faltante en PrIME",{g:s.g,l:s.lraw,pl:s.pl,sl:s.sl,S:[s],P:[],txt:"Planta "+s.pl+", sloc "+(s.sl||"—")+": está en SAP y no en PrIME. Calidad SAP "+f2(s.cal)+(s.libre?" · Libre SAP "+f2(s.libre):"")+"."+hint(MP,s,"PrIME")});continue;}
+  if(!p){add(_t(107,"Faltante en PrIME"),{g:s.g,l:s.lraw,pl:s.pl,sl:s.sl,S:[s],P:[],txt:_t(121,"Planta ")+s.pl+", sloc "+(s.sl||"—")+_t(122,": está en SAP y no en PrIME. Calidad SAP ")+f2(s.cal)+(s.libre?_t(123," · Libre SAP ")+f2(s.libre):"")+"."+hint(MP,s,_t(114,"PrIME"))});continue;}
   if(eq(s.libre,p.libre)&&eq(s.cal,p.cal))continue;
-  const ta=s.libre+s.cal,tb=p.libre+p.cal,same=eq(ta,tb),dif=Object.keys(BK).filter(x=>!eq(s[x],p[x])).map(x=>BK[x]+": SAP "+f2(s[x])+" · PrIME "+f2(p[x]));
-  add(same?"Estatus":"Cantidad",{g:s.g,l:s.lraw,pl:s.pl,sl:s.sl,S:[s],P:[p],txt:(same?"La cantidad total coincide ("+f2(ta)+") pero cambia el estatus. ":"La cantidad no coincide (SAP "+f2(ta)+" · PrIME "+f2(tb)+"). ")+dif.join(" | ")});}
- for(const [k,p] of MP)if(!MS.has(k))add("Faltante en SAP",{g:p.g,l:p.lraw,pl:p.pl,sl:p.sl,S:[],P:[p],txt:"Planta "+p.pl+", sloc "+(p.sl||"—")+": está en PrIME y no en SAP. Cantidad PrIME "+f2(p.libre+p.cal)+"."+hint(MS,p,"SAP")});
+  const ta=s.libre+s.cal,tb=p.libre+p.cal,same=eq(ta,tb),dif=Object.keys(BK).filter(x=>!eq(s[x],p[x])).map(x=>BK[x]+": SAP "+f2(s[x])+_t(124," · PrIME ")+f2(p[x]));
+  add(same?_t(103,"Estatus"):_t(66,"Cantidad"),{g:s.g,l:s.lraw,pl:s.pl,sl:s.sl,S:[s],P:[p],txt:(same?_t(125,"La cantidad total coincide (")+f2(ta)+_t(126,") pero cambia el estatus. "):_t(127,"La cantidad no coincide (SAP ")+f2(ta)+_t(124," · PrIME ")+f2(tb)+"). ")+dif.join(" | ")});}
+ for(const [k,p] of MP)if(!MS.has(k))add(_t(108,"Faltante en SAP"),{g:p.g,l:p.lraw,pl:p.pl,sl:p.sl,S:[],P:[p],txt:_t(121,"Planta ")+p.pl+", sloc "+(p.sl||"—")+_t(128,": está en PrIME y no en SAP. Cantidad PrIME ")+f2(p.libre+p.cal)+"."+hint(MS,p,"SAP")});
  D.sort((a,b)=>VTIPOS.indexOf(a.t)-VTIPOS.indexOf(b.t)||a.g.localeCompare(b.g));
  const sm=(M,k)=>{let t=0;for(const e of M.values())t+=e[k];return f2(t);};
  VAL.res={ns:VAL.prime.map.sloc==null,D,names:[VAL.sap.name,VAL.prime.name],at:new Date(),
   sap:{n:inf.sap.n,g:inf.sap.g.size,c:MS.size,skip:inf.sap.skip?VAL.sap.r0+inf.sap.skip+1:0,libre:sm(MS,"libre"),cal:sm(MS,"cal"),blo:0},
   pr:{n:inf.pr.n,g:inf.pr.g.size,c:MP.size,lpn:inf.pr.lpn.size,ign:inf.pr.ign,libre:sm(MP,"libre"),cal:sm(MP,"cal"),blo:0,by:[...inf.pr.by].map(x=>({s:x[0],n:x[1].n,q:f2(x[1].q),b:x[1].b}))}};
  VAL.filter="Todos";VAL.lim=100;
- try{hlogAdd({k:"val",t:"Validación SAP vs PrIME",s:(D.length?D.length+" diferencia"+(D.length===1?"":"s"):"Todo OK")+" · "+VAL.sap.name+" vs "+VAL.prime.name,st:D.length?"dif":"ok"});}catch(e){}}
+ try{hlogAdd({k:"val",t:_t(129,"Validación SAP vs PrIME"),s:(D.length?D.length+_t(130," diferencia")+_pl(D.length,"en"):_t(131,"Todo OK"))+" · "+VAL.sap.name+" vs "+VAL.prime.name,st:D.length?"dif":"ok"});}catch(e){}}
 /* --- vistas --- */
-const vColOpts=(f,cur,kind)=>{const h=f.rows[f.hdr]||[],mx=kind==="prime"?Math.min(8,h.length):h.length;let o="";for(let c=0;c<mx;c++)o+=`<option value="${c}" ${c===cur?"selected":""}>${XLSX.utils.encode_col(c+f.c0)}: ${esc(String(h[c]==null?"":h[c]).trim()||"(vacío)")}</option>`;return o;};
+const vColOpts=(f,cur,kind)=>{const h=f.rows[f.hdr]||[],mx=kind==="prime"?Math.min(8,h.length):h.length;let o="";for(let c=0;c<mx;c++)o+=`<option value="${c}" ${c===cur?"selected":""}>${XLSX.utils.encode_col(c+f.c0)}: ${esc(String(h[c]==null?"":h[c]).trim()||_t(113,"(vacío)"))}</option>`;return o;};
 function vFileCard(kind,title,n){
  const f=VAL[kind],fields=VF[kind];
- let h=`<div class="card"><h2 class="sh"><i>${n}</i>${title}</h2><label class="btn ${f?"":"pri"}" for="f${kind}" style="display:block">${f?"Cambiar archivo":"Elegir archivo de Excel"}</label>`;
+ let h=`<div class="card"><h2 class="sh"><i>${n}</i>${title}${_t(132,`</h2><label class="btn `)}${f?"":"pri"}" for="f${kind}" style="display:block">${f?_t(133,"Cambiar archivo"):_t(134,"Elegir archivo de Excel")}</label>`;
  if(f){const miss=fields.filter(x=>x[2]&&f.map[x[0]]==null).map(x=>x[1]);
-  h+=`<p class="vf">${esc(f.name)} · ${f.rows.length} filas</p><p class="vf" style="margin-top:4px">${kind==="sap"?"Se ignoran las columnas Bloqueado, Base Unit of Measure y Transit and Transfer, y la última fila de totales.":"Solo se leen las columnas A a H; de la I en adelante se ignoran."}</p>`;
-  if(f.wb.SheetNames.length>1)h+=`<label class="lb">Hoja</label><select data-vs="${kind}">${f.wb.SheetNames.map(s=>`<option ${s===f.sheet?"selected":""}>${esc(s)}</option>`).join("")}</select>`;
-  h+=`<details class="vd" ${miss.length?"open":""}><summary>Columnas detectadas · encabezados en la fila ${f.r0+f.hdr+1}${miss.length?" · faltan: "+miss.join(", "):""}</summary>
-  <label class="lb">Fila de encabezados</label><input type="number" min="1" data-vh="${kind}" value="${f.r0+f.hdr+1}">
-  ${fields.map(x=>`<label class="lb">${x[1]}${x[2]?" *":""}</label><select data-vm="${kind}:${x[0]}"><option value="">— no usar —</option>${vColOpts(f,f.map[x[0]],kind)}</select>`).join("")}</details>`;}
+  h+=`<p class="vf">${esc(f.name)} · ${f.rows.length}${_t(135,` filas</p><p class="vf" style="margin-top:4px">`)}${kind==="sap"?_t(136,"Se ignoran las columnas Bloqueado, Base Unit of Measure y Transit and Transfer, y la última fila de totales."):_t(137,"Solo se leen las columnas A a H; de la I en adelante se ignoran.")}</p>`;
+  if(f.wb.SheetNames.length>1)h+=`${_t(138,`<label class="lb">Hoja</label><select data-vs="`)}${kind}">${f.wb.SheetNames.map(s=>`<option ${s===f.sheet?"selected":""}>${esc(s)}</option>`).join("")}</select>`;
+  h+=`<details class="vd" ${miss.length?"open":""}${_t(139,`><summary>Columnas detectadas · encabezados en la fila `)}${f.r0+f.hdr+1}${miss.length?_t(140," · faltan: ")+miss.join(", "):""}${_t(141,`</summary>
+  <label class="lb">Fila de encabezados</label><input type="number" min="1" data-vh="`)}${kind}" value="${f.r0+f.hdr+1}">
+  ${fields.map(x=>`<label class="lb">${x[1]}${x[2]?" *":""}</label><select data-vm="${kind}:${x[0]}${_t(142,`"><option value="">— no usar —</option>`)}${vColOpts(f,f.map[x[0]],kind)}</select>`).join("")}</details>`;}
  return h+`</div>`;}
-const vRows=(a,lim)=>{const r=a.reduce((x,e)=>x.concat(e.rows),[]);return r.length?"fila"+(r.length>1?"s":"")+" "+r.slice(0,lim).join(", ")+(r.length>lim?" … +"+(r.length-lim):""):"—";};
-function vSide(a,prime){if(!a.length)return "<span style=\"color:var(--mu)\">Sin registros</span>";
- return a.slice(0,4).map(e=>`${esc(e.pl)} / ${esc(e.sl)} · ${vRows([e],6)}<br>Libre ${f2(e.libre)} · Calidad ${f2(e.cal)}${prime&&e.lpns.length?"<br>LPN: "+e.lpns.slice(0,4).map(esc).join(", ")+(e.lpns.length>4?" … +"+(e.lpns.length-4):""):""}`).join("<hr style=\"border:0;border-top:1px solid var(--bd);margin:6px 0\">")+(a.length>4?"<br>… +"+(a.length-4)+" más":"");}
+const vRows=(a,lim)=>{const r=a.reduce((x,e)=>x.concat(e.rows),[]);return r.length?_t(143,"fila")+_pl(r.length,"n")+" "+r.slice(0,lim).join(", ")+(r.length>lim?" … +"+(r.length-lim):""):"—";};
+function vSide(a,prime){if(!a.length)return _t(144,"<span style=\"color:var(--mu)\">Sin registros</span>");
+ return a.slice(0,4).map(e=>`${esc(e.pl)} / ${esc(e.sl)} · ${vRows([e],6)}${_t(145,`<br>Libre `)}${f2(e.libre)}${_t(146,` · Calidad `)}${f2(e.cal)}${prime&&e.lpns.length?"<br>LPN: "+e.lpns.slice(0,4).map(esc).join(", ")+(e.lpns.length>4?" … +"+(e.lpns.length-4):""):""}`).join("<hr style=\"border:0;border-top:1px solid var(--bd);margin:6px 0\">")+(a.length>4?"<br>… +"+(a.length-4)+_t(147," más"):"");}
 function vResHtml(){
  const R=VAL.res,D=R.D,ok=!D.length,cnt={};D.forEach(d=>cnt[d.t]=(cnt[d.t]||0)+1);
  const lst=VAL.filter==="Todos"?D:D.filter(d=>d.t===VAL.filter),shown=lst.slice(0,VAL.lim);
  const row=(n,a,b)=>`<tr><td>${n}</td><td>${a}</td><td>${b}</td><td style="color:${Math.abs(a-b)<0.0005?"var(--ok)":"var(--r)"};font-weight:700">${Math.abs(a-b)<0.0005?"OK":f2(a-b)}</td></tr>`;
  const ts=R.sap.libre+R.sap.cal,tp=R.pr.libre+R.pr.cal;
- let h=`<div id="vres"><div class="vbanner ${ok?"ok":"no"}">${ok?"Todo OK: SAP y PrIME coinciden en código, lote, planta, sloc, cantidades y estatus.":D.length+" diferencia"+(D.length===1?"":"s")+" encontrada"+(D.length===1?"":"s")+"."}</div>
+ let h=`<div id="vres"><div class="vbanner ${ok?"ok":"no"}">${ok?_t(148,"Todo OK: SAP y PrIME coinciden en código, lote, planta, sloc, cantidades y estatus."):D.length+_t(130," diferencia")+_pl(D.length,"en")+_t(1006," encontrada")+_pl(D.length,"")+"."}${_t(149,`</div>
  <div class="card"><h2 class="sh"><i>▤</i>Resumen</h2>
-  ${R.ns?`<p class="mu" style="margin:0 0 10px;font-size:13px">PrIME sin columna de Sloc: se comparó por código, lote y planta (sin Sloc).</p>`:""}<div class="vsum"><div class="vs"><b>${R.sap.n}</b><span>filas SAP · ${R.sap.g} GCAS${R.sap.skip?" · fila "+R.sap.skip+" ignorada":""}</span></div><div class="vs"><b>${R.pr.n}</b><span>filas PrIME · ${R.pr.g} GCAS</span></div><div class="vs"><b>${R.sap.c}</b><span>combinaciones GCAS/lote/planta/sloc en SAP</span></div><div class="vs"><b>${R.pr.c}</b><span>combinaciones en PrIME</span></div><div class="vs"><b>${R.pr.lpn}</b><span>LPN únicos en PrIME</span></div><div class="vs"><b>${R.pr.ign}</b><span>filas PrIME ignoradas</span></div></div>
-  <table class="vt"><tr><th>Cantidades</th><th>SAP</th><th>PrIME</th><th>Dif.</th></tr>${row("Libre",R.sap.libre,R.pr.libre)}${row("Calidad",R.sap.cal,R.pr.cal)}${row("<b>Total</b>",f2(ts),f2(tp))}</table>
-  <table class="vt"><tr><th>Estatus PrIME</th><th>Filas</th><th>Cant.</th><th>Equivale</th></tr>${R.pr.by.map(x=>`<tr><td>${esc(x.s)}</td><td>${x.n}</td><td>${x.q}</td><td>${x.b==="ign"?"Ignorado":BK[x.b]||"—"}</td></tr>`).join("")}</table>
-  <p style="font-size:12px;color:var(--mu);margin:8px 0 0">${esc(R.names[0])} vs ${esc(R.names[1])} · ${R.at.toLocaleString("es-MX")}</p>
-  <div class="row3"><button type="button" class="btn dk full" data-va="exp">Descargar Excel con el detalle</button></div></div>`;
- if(!ok){h+=`<div class="card"><h2 class="sh"><i>!</i>Diferencias<em>${lst.length}</em></h2><div class="vc"><button type="button" data-va="flt" data-t="Todos" class="${VAL.filter==="Todos"?"on":""}">Todos ${D.length}</button>${VTIPOS.filter(t=>cnt[t]).map(t=>`<button type="button" data-va="flt" data-t="${t}" class="${VAL.filter===t?"on":""}">${t} ${cnt[t]}</button>`).join("")}</div>`;
+  `)}${R.ns?`${_t(150,`<p class="mu" style="margin:0 0 10px;font-size:13px">PrIME sin columna de Sloc: se comparó por código, lote y planta (sin Sloc).</p>`)}`:""}<div class="vsum"><div class="vs"><b>${R.sap.n}${_t(151,`</b><span>filas SAP · `)}${R.sap.g}${_t(152,` GCAS`)}${R.sap.skip?_t(153," · fila ")+R.sap.skip+_t(1007," ignorada"):""}</span></div><div class="vs"><b>${R.pr.n}${_t(154,`</b><span>filas PrIME · `)}${R.pr.g}${_t(155,` GCAS</span></div><div class="vs"><b>`)}${R.sap.c}${_t(156,`</b><span>combinaciones GCAS/lote/planta/sloc en SAP</span></div><div class="vs"><b>`)}${R.pr.c}${_t(157,`</b><span>combinaciones en PrIME</span></div><div class="vs"><b>`)}${R.pr.lpn}${_t(158,`</b><span>LPN únicos en PrIME</span></div><div class="vs"><b>`)}${R.pr.ign}${_t(159,`</b><span>filas PrIME ignoradas</span></div></div>
+  <table class="vt"><tr><th>Cantidades</th><th>SAP</th><th>PrIME</th><th>Dif.</th></tr>`)}${row(_t(105,"Libre"),R.sap.libre,R.pr.libre)}${row(_t(106,"Calidad"),R.sap.cal,R.pr.cal)}${row(_t(160,"<b>Total</b>"),f2(ts),f2(tp))}${_t(161,`</table>
+  <table class="vt"><tr><th>Estatus PrIME</th><th>Filas</th><th>Cant.</th><th>Equivale</th></tr>`)}${R.pr.by.map(x=>`<tr><td>${esc(x.s)}</td><td>${x.n}</td><td>${x.q}</td><td>${x.b==="ign"?_t(162,"Ignorado"):BK[x.b]||"—"}</td></tr>`).join("")}</table>
+  <p style="font-size:12px;color:var(--mu);margin:8px 0 0">${esc(R.names[0])} vs ${esc(R.names[1])} · ${R.at.toLocaleString(_t(163,"es-MX"))}${_t(164,`</p>
+  <div class="row3"><button type="button" class="btn dk full" data-va="exp">Descargar Excel con el detalle</button></div></div>`)}`;
+ if(!ok){h+=`${_t(165,`<div class="card"><h2 class="sh"><i>!</i>Diferencias<em>`)}${lst.length}${_t(166,`</em></h2><div class="vc"><button type="button" data-va="flt" data-t="Todos" class="`)}${VAL.filter==="Todos"?"on":""}${_t(167,`">Todos `)}${D.length}</button>${VTIPOS.filter(t=>cnt[t]).map(t=>`<button type="button" data-va="flt" data-t="${t}" class="${VAL.filter===t?"on":""}">${t} ${cnt[t]}</button>`).join("")}</div>`;
   h+=shown.map(d=>{const ds=(d.S[0]&&d.S[0].desc)||(d.P[0]&&d.P[0].desc)||"";
-   return `<div class="vx"><div class="t"><span class="tg">${d.t}</span><b>${esc(d.g)}${d.l?" · lote "+esc(d.l):""}</b></div>${ds?`<p style="margin:2px 0 0;font-size:12px;color:var(--mu)">${esc(ds)}</p>`:""}<p style="margin:6px 0 0;font-size:13px">${esc(d.txt)}</p>${d.S.length||d.P.length?`<div class="sd"><div><b>SAP</b>${vSide(d.S,false)}</div><div><b>PrIME</b>${vSide(d.P,true)}</div></div>`:""}</div>`;}).join("");
-  if(lst.length>shown.length)h+=`<div class="row3"><button type="button" class="btn full" data-va="more">Mostrar más (${lst.length-shown.length})</button></div>`;
+   return `<div class="vx"><div class="t"><span class="tg">${d.t}</span><b>${esc(d.g)}${d.l?_t(168," · lote ")+esc(d.l):""}</b></div>${ds?`<p style="margin:2px 0 0;font-size:12px;color:var(--mu)">${esc(ds)}</p>`:""}<p style="margin:6px 0 0;font-size:13px">${esc(d.txt)}</p>${d.S.length||d.P.length?`<div class="sd"><div><b>SAP</b>${vSide(d.S,false)}${_t(169,`</div><div><b>PrIME</b>`)}${vSide(d.P,true)}</div></div>`:""}</div>`;}).join("");
+  if(lst.length>shown.length)h+=`${_t(170,`<div class="row3"><button type="button" class="btn full" data-va="more">Mostrar más (`)}${lst.length-shown.length})</button></div>`;
   h+=`</div>`;}
  return h+`</div>`;}
 function viewVal(){
  const st=VAL.prime?vStatuses():[],miss=vMissing();
- let h=`<div class="card"><p style="margin:0;color:var(--mu);font-size:13px">Sube el inventario exportado de SAP y el de PrIME, tal como los exportas. Se valida código (GCAS), lote, planta, sloc, cantidades y estatus. Solo PrIME trae LPN. Los archivos se leen en tu dispositivo y no se suben a ningún servidor.</p></div>`;
- h+=vFileCard("sap","Archivo de SAP",1)+vFileCard("prime","Archivo de PrIME (con LPN)",2);
- if(st.length)h+=`<div class="card"><h2 class="sh"><i>3</i>Estatus de PrIME<em>equivalencia con SAP</em></h2><p style="margin:0 0 4px;color:var(--mu);font-size:13px">SAP se compara en Libre (Unrestricted) y Calidad (Quality Inspection). Asigna cada estatus de PrIME a uno de ellos, o elige Ignorar (por ejemplo, Bloqueado). Queda guardado para la próxima vez.</p>
-  ${st.map(x=>{const cur=VAL.stmap[nz(x.s)]||vGuess(x.s);return `<div class="crit"><p><b style="color:var(--tx)">${esc(x.s)}</b><br><span style="font-size:12px;color:var(--mu)">${x.n} filas · cantidad ${f2(x.q)}</span></p><select style="width:150px;flex:none" data-vst="${esc(x.s)}">${[["","Elegir…"],["libre","Libre"],["cal","Calidad"],["ign","Ignorar"]].map(o=>`<option value="${o[0]}" ${o[0]===cur?"selected":""}>${o[1]}</option>`).join("")}</select></div>`;}).join("")}</div>`;
- h+=`<div class="card"><h2 class="sh"><i>${st.length?4:3}</i>Comparar</h2><label class="lrow"><span>Ignorar la última fila de SAP (totales)</span><input type="checkbox" class="sw" data-vo="sapLast" ${VAL.opt.sapLast?"checked":""}></label>
-  ${miss.length?`<p style="margin:0 0 10px;color:var(--wn);font-size:13px">Falta: ${esc(miss.slice(0,3).join(" · "))}</p>`:""}
-  <div class="row3"><button type="button" class="btn pri" data-va="cmp" ${miss.length?"disabled style=\"opacity:.5\"":""}>Comparar archivos</button><button type="button" class="btn" data-va="clr">Limpiar</button></div></div>`;
+ let h=`${_t(171,`<div class="card"><p style="margin:0;color:var(--mu);font-size:13px">Sube el inventario exportado de SAP y el de PrIME, tal como los exportas. Se valida código (GCAS), lote, planta, sloc, cantidades y estatus. Solo PrIME trae LPN. Los archivos se leen en tu dispositivo y no se suben a ningún servidor.</p></div>`)}`;
+ h+=vFileCard("sap",_t(172,"Archivo de SAP"),1)+vFileCard("prime",_t(173,"Archivo de PrIME (con LPN)"),2);
+ if(st.length)h+=`${_t(174,`<div class="card"><h2 class="sh"><i>3</i>Estatus de PrIME<em>equivalencia con SAP</em></h2><p style="margin:0 0 4px;color:var(--mu);font-size:13px">SAP se compara en Libre (Unrestricted) y Calidad (Quality Inspection). Asigna cada estatus de PrIME a uno de ellos, o elige Ignorar (por ejemplo, Bloqueado). Queda guardado para la próxima vez.</p>
+  `)}${st.map(x=>{const cur=VAL.stmap[nz(x.s)]||vGuess(x.s);return `<div class="crit"><p><b style="color:var(--tx)">${esc(x.s)}</b><br><span style="font-size:12px;color:var(--mu)">${x.n}${_t(175,` filas · cantidad `)}${f2(x.q)}</span></p><select style="width:150px;flex:none" data-vst="${esc(x.s)}">${[["",_t(176,"Elegir…")],["libre",_t(105,"Libre")],["cal",_t(106,"Calidad")],["ign",_t(177,"Ignorar")]].map(o=>`<option value="${o[0]}" ${o[0]===cur?"selected":""}>${o[1]}</option>`).join("")}</select></div>`;}).join("")}</div>`;
+ h+=`<div class="card"><h2 class="sh"><i>${st.length?4:3}${_t(178,`</i>Comparar</h2><label class="lrow"><span>Ignorar la última fila de SAP (totales)</span><input type="checkbox" class="sw" data-vo="sapLast" `)}${VAL.opt.sapLast?"checked":""}></label>
+  ${miss.length?`${_t(179,`<p style="margin:0 0 10px;color:var(--wn);font-size:13px">Falta: `)}${esc(miss.slice(0,3).join(" · "))}</p>`:""}
+  <div class="row3"><button type="button" class="btn pri" data-va="cmp" ${miss.length?"disabled style=\"opacity:.5\"":""}${_t(180,`>Comparar archivos</button><button type="button" class="btn" data-va="clr">Limpiar</button></div></div>`)}`;
  return h+(VAL.res?vResHtml():"");}
 function vExport(){
  const R=VAL.res;if(!R||typeof XLSX==="undefined")return;
  const sumA=(a,k)=>f2(a.reduce((x,e)=>x+e[k],0)),rowsA=a=>a.reduce((x,e)=>x.concat(e.rows),[]).join(", "),lp=a=>a.reduce((x,e)=>x.concat(e.lpns),[]).join(", ");
  const ts=R.sap.libre+R.sap.cal,tp=R.pr.libre+R.pr.cal;
- const r1=[["Validación SAP vs PrIME"],["Archivo SAP",R.names[0]],["Archivo PrIME",R.names[1]],["Fecha",R.at.toLocaleString("es-MX")],["Resultado",R.D.length?R.D.length+" diferencias":"Todo OK"],[],["","SAP","PrIME","Diferencia"],["Filas",R.sap.n,R.pr.n,""],["GCAS únicos",R.sap.g,R.pr.g,""],["Combinaciones GCAS/lote/planta/sloc",R.sap.c,R.pr.c,""],["LPN únicos","",R.pr.lpn,""],["Libre",R.sap.libre,R.pr.libre,f2(R.sap.libre-R.pr.libre)],["Calidad",R.sap.cal,R.pr.cal,f2(R.sap.cal-R.pr.cal)],["Total",f2(ts),f2(tp),f2(ts-tp)],[],["Estatus PrIME","Filas","Cantidad","Equivale a"]].concat(R.pr.by.map(x=>[x.s,x.n,x.q,x.b==="ign"?"Ignorado":BK[x.b]||""]));
- const r2=[["Tipo","GCAS","Lote","Planta","Sloc","SAP filas","SAP libre","SAP calidad","PrIME filas","PrIME LPN","PrIME libre","PrIME calidad","Detalle"]].concat(R.D.map(d=>[d.t,d.g,d.l,d.pl||(d.S[0]||d.P[0]||{}).pl||"",d.sl||(d.S[0]||d.P[0]||{}).sl||"",rowsA(d.S),sumA(d.S,"libre"),sumA(d.S,"cal"),rowsA(d.P),lp(d.P),sumA(d.P,"libre"),sumA(d.P,"cal"),d.txt]));
- const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(r1),"Resumen");XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(r2),"Diferencias");
+ const r1=[[_t(129,"Validación SAP vs PrIME")],[_t(181,"Archivo SAP"),R.names[0]],[_t(182,"Archivo PrIME"),R.names[1]],[_t(183,"Fecha"),R.at.toLocaleString(_t(163,"es-MX"))],[_t(184,"Resultado"),R.D.length?R.D.length+_t(185," diferencias"):_t(131,"Todo OK")],[],["","SAP",_t(114,"PrIME"),_t(186,"Diferencia")],[_t(187,"Filas"),R.sap.n,R.pr.n,""],[_t(188,"GCAS únicos"),R.sap.g,R.pr.g,""],[_t(189,"Combinaciones GCAS/lote/planta/sloc"),R.sap.c,R.pr.c,""],[_t(190,"LPN únicos"),"",R.pr.lpn,""],[_t(105,"Libre"),R.sap.libre,R.pr.libre,f2(R.sap.libre-R.pr.libre)],[_t(106,"Calidad"),R.sap.cal,R.pr.cal,f2(R.sap.cal-R.pr.cal)],[_t(191,"Total"),f2(ts),f2(tp),f2(ts-tp)],[],[_t(192,"Estatus PrIME"),_t(187,"Filas"),_t(66,"Cantidad"),_t(193,"Equivale a")]].concat(R.pr.by.map(x=>[x.s,x.n,x.q,x.b==="ign"?_t(162,"Ignorado"):BK[x.b]||""]));
+ const r2=[[_t(194,"Tipo"),_t(195,"GCAS"),_t(99,"Lote"),_t(196,"Planta"),_t(197,"Sloc"),_t(198,"SAP filas"),_t(199,"SAP libre"),_t(200,"SAP calidad"),_t(201,"PrIME filas"),_t(202,"PrIME LPN"),_t(203,"PrIME libre"),_t(204,"PrIME calidad"),_t(205,"Detalle")]].concat(R.D.map(d=>[d.t,d.g,d.l,d.pl||(d.S[0]||d.P[0]||{}).pl||"",d.sl||(d.S[0]||d.P[0]||{}).sl||"",rowsA(d.S),sumA(d.S,"libre"),sumA(d.S,"cal"),rowsA(d.P),lp(d.P),sumA(d.P,"libre"),sumA(d.P,"cal"),d.txt]));
+ const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(r1),_t(206,"Resumen"));XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(r2),_t(207,"Diferencias"));
  const out=XLSX.write(wb,{bookType:"xlsx",type:"array"});
- saveBlob("Validacion_SAP_vs_PrIME_"+today()+".xlsx",new Blob([out],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}));}
+ saveBlob(_t(208,"Validacion_SAP_vs_PrIME_")+today()+".xlsx",new Blob([out],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}));}
 /* --- eventos --- */
 async function vPick(kind,e){const f=e.target.files[0];e.target.value="";if(f)await vLoad(kind,f);}
 $("#fsap").addEventListener("change",e=>vPick("sap",e));$("#fprime").addEventListener("change",e=>vPick("prime",e));
@@ -298,8 +304,8 @@ document.addEventListener("change",e=>{const t=e.target,d=t.dataset;
  else if(d.vst!==undefined){VAL.stmap[nz(d.vst)]=t.value;U.set("stmap",VAL.stmap);VAL.res=null;render();}
  else if(d.vo){VAL.opt[d.vo]=t.checked;VAL.res=null;render();}});
 document.addEventListener("click",e=>{const b=e.target.closest("[data-va]");if(!b||b.disabled)return;const a=b.dataset.va;
- if(a==="cmp"){const m=vMissing();if(m.length){toast("Falta: "+m[0]);return;}busy("Comparando…");
-  setTimeout(()=>{try{vRun();}catch(err){toast("No se pudo comparar: "+(err&&err.message||err));}busy("");render();const r=$("#vres");if(r)r.scrollIntoView();},30);}
+ if(a==="cmp"){const m=vMissing();if(m.length){toast(_t(209,"Falta: ")+m[0]);return;}busy(_t(210,"Comparando…"));
+  setTimeout(()=>{try{vRun();}catch(err){toast(_t(211,"No se pudo comparar: ")+(err&&err.message||err));}busy("");render();const r=$("#vres");if(r)r.scrollIntoView();},30);}
  else if(a==="flt"){VAL.filter=b.dataset.t;VAL.lim=100;render();}
  else if(a==="more"){VAL.lim+=100;render();}
  else if(a==="exp")vExport();
@@ -312,7 +318,7 @@ const saveUsers=()=>LS.set("cryd:users",USERS);
 const U={get(k,d){return ME&&!ME.guest?LS.get("cryd:u"+ME.emp+":"+k,d):LS.get("cryd:ug:"+k,d);},set(k,v){if(ME&&!ME.guest){const r=LS.set("cryd:u"+ME.emp+":"+k,v);cloudSoon();if(typeof teamSoon==="function")teamSoon();return r;}return LS.set("cryd:ug:"+k,v);}};
 const GLYPH='<svg viewBox="0 0 24 24"><path d="M9 4h6l1 2h3v14H5V6h3z"/><path d="M9 13l2 2 4-4"/></svg>';
 const IC={insp:'<path d="M9 4h6l1 2h3v14H5V6h3z"/><path d="M9 13l2 2 4-4"/>',pend:'<circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3 2"/>',hist:'<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/>',val:'<path d="M4 8h14l-3-3M20 16H6l3 3"/>',rcv:'<path d="M4 8l8-4 8 4v8l-8 4-8-4z"/><path d="M4 8l8 4 8-4M12 12v8"/>',perfil:'<circle cx="12" cy="8.5" r="3.6"/><path d="M5 20c.8-3.6 3.6-5.4 7-5.4s6.2 1.8 7 5.4"/>',home:'<path d="M4 11l8-7 8 7v9H5z"/><path d="M10 20v-6h4v6"/>',sur:'<path d="M3 7h11v9H3zM14 10h4l3 3v3h-7"/><circle cx="7" cy="18" r="1.6"/><circle cx="17" cy="18" r="1.6"/>',dash:'<rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="4" rx="1.5"/><rect x="13" y="10" width="7" height="10" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/>',more:'<circle cx="6" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="18" cy="12" r="1.4"/>'};
-const TNAME={home:"Inicio",rcv:"Recibo",sur:"Surtido",val:"Validación",insp:"Maquila",dash:"Dashboards",pend:"Pendientes",hist:"Historial",more:"Más",perfil:"Perfil",admin:"Administrador",l3d:"Layout 3D"};
+const TNAME={home:_t(212,"Inicio"),rcv:_t(213,"Recibo"),sur:_t(214,"Surtido"),val:_t(215,"Validación"),insp:_t(216,"Maquila"),dash:_t(217,"Dashboards"),pend:_t(218,"Pendientes"),hist:_t(219,"Historial"),more:_t(220,"Más"),perfil:_t(221,"Perfil"),admin:_t(222,"Administrador"),l3d:_t(223,"Layout 3D")};
 const initials=u=>((u.nombre||"?")[0]+((u.apellido||"")[0]||"")).toUpperCase();
 const titleCase=s=>s.trim().replace(/\s+/g," ").toLowerCase().replace(/(^|[\s'-])([a-záéíóúüñ])/g,(m,a,b)=>a+b.toUpperCase());
 const NAME_RE=/^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ' .-]{2,40}$/;
@@ -326,50 +332,50 @@ async function hashAcc(nm,code){const t="cryd|acc|"+nm+"|"+String(code||"").toUp
 function allowMe(u){let emp="U"+u.id;if(u.adm){const m=USERS.find(x=>normNm(x.nombre)===normNm(u.n)&&normNm(x.apellido).split(" ")[0]===normNm(u.a))||(USERS.length===1?USERS[0]:null);if(m)emp=m.emp;}return {emp,nombre:u.n,apellido:u.a,guest:false,al:!u.adm};}
 function enterAllow(u){ME=allowMe(u);LS.set("cryd:session",{al:u.id});AUTH={mode:"menu",f:{},err:""};loadUserData();TAB="home";render();window.scrollTo(0,0);cloudStart();}
 async function doAccess(){const f=AUTH.f,nm=normNm((f.an||"")+" "+(f.aa||"")),code=f.ac||"";
- if(!nm||!code)return authErr("Escribe tu nombre, apellido y código.");
+ if(!nm||!code)return authErr(_t(224,"Escribe tu nombre, apellido y código."));
  const hs=await hashAcc(nm,code),u=ALLOW.find(x=>normNm(x.n+" "+x.a)===nm&&x.h===hs);
- if(!u)return authErr("Nombre o código incorrecto. Si no tienes acceso, solicítalo al responsable de la app.");
+ if(!u)return authErr(_t(225,"Nombre o código incorrecto. Si no tienes acceso, solicítalo al responsable de la app."));
  enterAllow(u);}
 function logout(){if(typeof TEAM!=="undefined"){TEAM=[];TSIG="";}lpReset();ME=null;S=null;REC=[];WARN={dup:{},del:{}};VAL.sap=null;VAL.prime=null;VAL.res=null;LS.set("cryd:session",null);AUTH={mode:"menu",f:{},err:""};TAB="home";render();window.scrollTo(0,0);}
 function authErr(t){AUTH.err=t;renderAuth();}
 async function doLogin(){const f=AUTH.f,emp=(f.emp||"").trim();let u=USERS.find(x=>x.emp===emp);
  if(f.curl&&f.curl.trim()&&f.curl.trim()!==cloudCfg())LS.set("cryd:cloud",{url:normUrl(f.curl)});
- if(!u)return authErr("No hay una cuenta de administrador con ese número en este dispositivo.");
- if(cloudCfg()){const ra=await cloudGet(emp);if(ra&&ra.acct){if(ra.acct.off)return authErr("Esta cuenta está suspendida. Contacta al administrador.");if(ra.acct.reset&&ra.acct.reset>(u.resetSeen||0)){u.pin=null;u.resetSeen=ra.acct.reset;saveUsers();}}}
+ if(!u)return authErr(_t(226,"No hay una cuenta de administrador con ese número en este dispositivo."));
+ if(cloudCfg()){const ra=await cloudGet(emp);if(ra&&ra.acct){if(ra.acct.off)return authErr(_t(227,"Esta cuenta está suspendida. Contacta al administrador."));if(ra.acct.reset&&ra.acct.reset>(u.resetSeen||0)){u.pin=null;u.resetSeen=ra.acct.reset;saveUsers();}}}
  if(u.pin&&(await hashPin(emp,f.pin||""))!==u.pin)return authErr("PIN incorrecto.");
  enterUser(u);}
 async function doSignup(){const f=AUTH.f,nombre=titleCase(f.nombre||""),apellido=titleCase(f.apellido||""),emp=(f.emp||"").trim();
- if(!NAME_RE.test(nombre))return authErr("Escribe tu nombre (solo letras).");
- if(!NAME_RE.test(apellido))return authErr("Escribe tu apellido (solo letras).");
- if(!/^\d{4,8}$/.test(emp))return authErr("El número de empleado debe tener solo dígitos (normalmente 5).");
- if(USERS.some(x=>x.emp===emp))return authErr("Ya existe una cuenta con ese número de empleado en este dispositivo. Inicia sesión.");
- if(cloudCfg()){const ra=await cloudGet(emp);if(ra&&ra.acct&&ra.acct.nombre)return authErr("Ese número de empleado ya tiene cuenta en el servidor. Inicia sesión.");}
+ if(!NAME_RE.test(nombre))return authErr(_t(228,"Escribe tu nombre (solo letras)."));
+ if(!NAME_RE.test(apellido))return authErr(_t(229,"Escribe tu apellido (solo letras)."));
+ if(!/^\d{4,8}$/.test(emp))return authErr(_t(230,"El número de empleado debe tener solo dígitos (normalmente 5)."));
+ if(USERS.some(x=>x.emp===emp))return authErr(_t(231,"Ya existe una cuenta con ese número de empleado en este dispositivo. Inicia sesión."));
+ if(cloudCfg()){const ra=await cloudGet(emp);if(ra&&ra.acct&&ra.acct.nombre)return authErr(_t(232,"Ese número de empleado ya tiene cuenta en el servidor. Inicia sesión."));}
  let pin=null;
- if(f.usepin){if(!/^\d{4}$/.test(f.pin||""))return authErr("El PIN debe tener 4 dígitos.");if(f.pin!==f.pin2)return authErr("Los PIN no coinciden.");pin=await hashPin(emp,f.pin);}
+ if(f.usepin){if(!/^\d{4}$/.test(f.pin||""))return authErr(_t(233,"El PIN debe tener 4 dígitos."));if(f.pin!==f.pin2)return authErr(_t(234,"Los PIN no coinciden."));pin=await hashPin(emp,f.pin);}
  const make=()=>{const first=USERS.length===0,u={emp,nombre,apellido,pin,created:Date.now()};USERS.push(u);saveUsers();
   if(first)["rec","warn","draft","stmap"].forEach(k=>{const v=LS.get("cryd:"+k,null);if(v!=null)LS.set("cryd:u"+emp+":"+k,v);});
   enterUser(u);};
- if(emp.length!==5)dlg({title:"Número de empleado",body:"Normalmente tiene 5 dígitos. ¿Confirmas que "+emp+" es correcto?",buttons:[{t:"Corregir"},{t:"Confirmar",cls:"pri",fn:make}]});else make();}
+ if(emp.length!==5)dlg({title:_t(235,"Número de empleado"),body:_t(236,"Normalmente tiene 5 dígitos. ¿Confirmas que ")+emp+_t(999," es correcto?"),buttons:[{t:_t(990,"Corregir")},{t:_t(991,"Confirmar"),cls:"pri",fn:make}]});else make();}
 const FOOT='<footer class="foot">Logística-Cargo | Desarrollado por D-Umbral</footer>';
 function renderAuth(){
  document.body.classList.add("noauth");$("#tabs").innerHTML="";
  const A=AUTH,f=A.f,v=k=>esc(f[k]||""),er=A.err?`<div class="aerr">${esc(A.err)}</div>`:"";
  let h=`<div class="aw"><div class="aicon">${GLYPH}</div><h1 style="font-size:26px;line-height:1.15">Portal de Logística | Site SMO CRyD</h1><p class="asub">Logística-Cargo</p>`;
- if(A.mode==="menu")h+=`<div class="card"><label class="lb">Nombre</label><input data-au="an" autocomplete="off" autocapitalize="words" maxlength="30" placeholder="Nombre" value="${v("an")}"><label class="lb">Apellido</label><input data-au="aa" autocomplete="off" autocapitalize="words" maxlength="30" placeholder="Apellido" value="${v("aa")}"><label class="lb">Código de acceso</label><input data-au="ac" type="password" autocomplete="off" autocapitalize="characters" maxlength="12" placeholder="Código" value="${v("ac")}"></div>${er}<div class="abtns"><button type="button" class="btn pri" data-ua="doAccess">Entrar</button><button type="button" class="btn txt" data-ua="mode:login">Acceso administrador</button></div><p class="anote">Acceso solo para personal autorizado.</p>`;
- else h+=`<h2 style="margin:0 0 10px;font-size:20px">Acceso administrador</h2>`+(USERS.length?`<div class="lst">${USERS.map(u=>`<button type="button" class="lr ${f.emp===u.emp?"on":""}" data-ua="pick:${esc(u.emp)}"><span class="av">${esc(initials(u))}</span><span><b>${esc(u.nombre+" "+u.apellido)}</b><small>No. ${esc(u.emp)}${u.pin?" · con PIN":""}</small></span></button>`).join("")}</div>`:"")+er
-  +`<div class="card"><label class="lb">Número de empleado</label><input data-au="emp" inputmode="numeric" maxlength="8" autocomplete="off" value="${v("emp")}" placeholder="12345"><label class="lb">PIN (si lo configuraste)</label><input data-au="pin" type="password" inputmode="numeric" maxlength="4" autocomplete="off" value="${v("pin")}" placeholder="••••"></div><div class="abtns"><button type="button" class="btn pri" data-ua="doLogin">Entrar</button><button type="button" class="btn txt" data-ua="mode:menu">Volver</button></div>`;
+ if(A.mode==="menu")h+=`${_t(237,`<div class="card"><label class="lb">Nombre</label><input data-au="an" autocomplete="off" autocapitalize="words" maxlength="30" placeholder="Nombre" value="`)}${v("an")}${_t(238,`"><label class="lb">Apellido</label><input data-au="aa" autocomplete="off" autocapitalize="words" maxlength="30" placeholder="Apellido" value="`)}${v("aa")}${_t(239,`"><label class="lb">Código de acceso</label><input data-au="ac" type="password" autocomplete="off" autocapitalize="characters" maxlength="12" placeholder="Código" value="`)}${v("ac")}"></div>${er}${_t(240,`<div class="abtns"><button type="button" class="btn pri" data-ua="doAccess">Entrar</button><button type="button" class="btn txt" data-ua="mode:login">Acceso administrador</button></div><p class="anote">Acceso solo para personal autorizado.</p>`)}`;
+ else h+=`${_t(241,`<h2 style="margin:0 0 10px;font-size:20px">Acceso administrador</h2>`)}`+(USERS.length?`<div class="lst">${USERS.map(u=>`<button type="button" class="lr ${f.emp===u.emp?"on":""}" data-ua="pick:${esc(u.emp)}"><span class="av">${esc(initials(u))}</span><span><b>${esc(u.nombre+" "+u.apellido)}</b><small>No. ${esc(u.emp)}${u.pin?_t(242," · con PIN"):""}</small></span></button>`).join("")}</div>`:"")+er
+  +`${_t(243,`<div class="card"><label class="lb">Número de empleado</label><input data-au="emp" inputmode="numeric" maxlength="8" autocomplete="off" value="`)}${v("emp")}${_t(244,`" placeholder="12345"><label class="lb">PIN (si lo configuraste)</label><input data-au="pin" type="password" inputmode="numeric" maxlength="4" autocomplete="off" value="`)}${v("pin")}${_t(245,`" placeholder="••••"></div><div class="abtns"><button type="button" class="btn pri" data-ua="doLogin">Entrar</button><button type="button" class="btn txt" data-ua="mode:menu">Volver</button></div>`)}`;
  $("#app").innerHTML=h+`</div>`+FOOT;}
 function viewPerfil(){const g=ME.guest,th=LS.get("cryd:theme","system");
- return `<div class="card center"><div class="av big">${esc(initials(ME))}</div><h2 class="nm">${esc(g?ME.nombre:ME.nombre+" "+ME.apellido)}</h2><p class="mu" style="margin:4px 0 0">${g?"Invitado · tus datos se guardan en este dispositivo":(ME.al?"Usuario autorizado":"No. de empleado "+esc(ME.emp)+" · Administrador")}</p></div>
- ${g?`<div class="card"><h2 class="sh">Tu nombre</h2><input data-gn value="${esc(ME.nombre==="Invitado"?"":ME.nombre)}" maxlength="30" placeholder="Cómo quieres que te llame"></div>`:""}
- <div class="card"><h2 class="sh">Apariencia</h2><div class="seg">${[["system","Sistema"],["light","Claro"],["dark","Oscuro"]].map(o=>`<button type="button" class="${th===o[0]?"on":""}" data-ua="theme:${o[0]}">${o[1]}</button>`).join("")}</div></div>
+ return `<div class="card center"><div class="av big">${esc(initials(ME))}</div><h2 class="nm">${esc(g?ME.nombre:ME.nombre+" "+ME.apellido)}</h2><p class="mu" style="margin:4px 0 0">${g?_t(246,"Invitado · tus datos se guardan en este dispositivo"):(ME.al?_t(247,"Usuario autorizado"):_t(1000,"No. de empleado ")+esc(ME.emp)+_t(1001," · Administrador"))}</p></div>
+ ${g?`${_t(248,`<div class="card"><h2 class="sh">Tu nombre</h2><input data-gn value="`)}${esc(ME.nombre===_t(249,"Invitado")?"":ME.nombre)}${_t(250,`" maxlength="30" placeholder="Cómo quieres que te llame"></div>`)}`:""}${langCard()}${_t(251,`
+ <div class="card"><h2 class="sh">Apariencia</h2><div class="seg">`)}${[["system",_t(252,"Sistema")],["light",_t(253,"Claro")],["dark",_t(254,"Oscuro")]].map(o=>`<button type="button" class="${th===o[0]?"on":""}" data-ua="theme:${o[0]}">${o[1]}</button>`).join("")}${_t(255,`</div></div>
  <div class="card"><h2 class="sh">Instalar en el teléfono</h2><p class="mu" style="margin:6px 0 0;font-size:14px">Para abrirla como app: en Safari toca Compartir y elige "Agregar a pantalla de inicio". En Chrome, menú ⋮ y "Instalar app".</p></div>
- <div class="card"><h2 class="sh">Sesión</h2>${g?`<p class="mu" style="margin:6px 0 12px;font-size:14px">Tu avance de Recibo, Surtido, Validación, Maquila y Dashboards queda guardado aquí. Si la app se cierra, al volver a entrar continúas donde ibas.</p><button type="button" class="btn" style="width:100%" data-ua="logout">Salir</button><button type="button" class="btn dg" style="width:100%;margin-top:10px" data-ua="gwipe">Borrar mis datos de este dispositivo</button>`:`<p class="mu" style="margin:6px 0 12px;font-size:14px">Tu cuenta y tus avances se respaldan en el servidor. Si cambias de teléfono, entra con tu número de empleado y se recuperan.</p><button type="button" class="btn" style="width:100%" data-ua="logout">Cerrar sesión</button><button type="button" class="btn dg" style="width:100%;margin-top:10px" data-ua="delacc">Eliminar mi cuenta y datos</button>`}</div>
+ <div class="card"><h2 class="sh">Sesión</h2>`)}${g?`${_t(256,`<p class="mu" style="margin:6px 0 12px;font-size:14px">Tu avance de Recibo, Surtido, Validación, Maquila y Dashboards queda guardado aquí. Si la app se cierra, al volver a entrar continúas donde ibas.</p><button type="button" class="btn" style="width:100%" data-ua="logout">Salir</button><button type="button" class="btn dg" style="width:100%;margin-top:10px" data-ua="gwipe">Borrar mis datos de este dispositivo</button>`)}`:`${_t(257,`<p class="mu" style="margin:6px 0 12px;font-size:14px">Tu cuenta y tus avances se respaldan en el servidor. Si cambias de teléfono, entra con tu número de empleado y se recuperan.</p><button type="button" class="btn" style="width:100%" data-ua="logout">Cerrar sesión</button><button type="button" class="btn dg" style="width:100%;margin-top:10px" data-ua="delacc">Eliminar mi cuenta y datos</button>`)}`}</div>
  ${g?"":viewCloud()}
  ${g||ME.al?"":viewAdminCard()}
  ${festPerfil()}${l3dPerfil()}
- <p class="mu" style="text-align:center;font-size:12px">Portal de Logística | Site SMO CRyD · versión 3.7<br>Archivos: aql ${typeof AQ_V!=="undefined"?AQ_V:"✗ antiguo"} · temporada ${typeof seaFor==="function"?"✓":"✗ falta"}<br>Icono de hoy: ${typeof seaFor==="function"&&seaFor()?seaFor()[3]+" ("+seaFor()[4]+")":"base"}</p>
- <button type="button" class="btn" style="width:100%" data-upd="1">Buscar actualización (borrar caché)</button>`;}
+ <p class="mu" style="text-align:center;font-size:12px">Portal de Logística | Site SMO CRyD · v3.11<br>Archivos: aql ${typeof AQ_V!=="undefined"?AQ_V:"✗ antiguo"} · temporada ${typeof seaFor==="function"?"✓":"✗ falta"}<br>Icono de hoy: ${typeof seaFor==="function"&&seaFor()?seaFor()[3]+" ("+_tsea(seaFor()[4])+")":"base"}${_t(258,`</p>
+ <button type="button" class="btn" style="width:100%" data-upd="1">Buscar actualización (borrar caché)</button>`)}`;}
 const BAR=["home","rcv","sur","val","insp","more"],MORE=["dash","pend","hist","l3d","perfil","admin"];
 function render(){
  if(!ME){renderAuth();return;}
@@ -380,7 +386,7 @@ function render(){
  $("#tabs").innerHTML=BAR.map(t=>`<button type="button" class="tab ${t===act?"on":""}" data-tab="${t}"><svg viewBox="0 0 24 24">${IC[t]}</svg>${TNAME[t]}${t==="more"&&np?`<span class="pb">${np}</span>`:""}</button>`).join("");
  $("#who").textContent=initials(ME);
  const V={home:viewHome,rcv:()=>lpView("rcv"),sur:()=>lpView("sur"),val:viewVal,insp:viewInsp,dash:viewDash,pend:viewPend,hist:viewHist,more:viewMore,perfil:viewPerfil,admin:viewAdmin,l3d:viewL3d};
- const back=MORE.includes(TAB)?`<button type="button" class="back" data-tab="more">‹ Más</button>`:"";
+ const back=MORE.includes(TAB)?`${_t(259,`<button type="button" class="back" data-tab="more">‹ Más</button>`)}`:"";
  $("#app").innerHTML=(TAB==="home"?"":back+`<h1 class="lt">${TNAME[TAB]}</h1>`)+V[TAB]()+FOOT;
  if(TAB==="rcv"||TAB==="sur"||TAB==="insp")warmOcr();if(typeof firstHelp==="function")setTimeout(firstHelp,250);}
 function applyTheme(){const t=LS.get("cryd:theme","system"),r=document.documentElement;if(t==="light"||t==="dark")r.setAttribute("data-theme",t);else r.removeAttribute("data-theme");}
@@ -395,10 +401,10 @@ document.addEventListener("click",e=>{
  else if(a==="doLogin")doLogin();else if(a==="doSignup")doSignup();
  else if(a==="pick"){AUTH.f.emp=v;AUTH.f.pin="";AUTH.err="";renderAuth();}
  else if(a==="logout")logout();
- else if(a==="csave")cloudSave();else if(a==="cnow")cloudPush(true);else if(a==="crec")cloudRecover();else if(a==="coff"){LS.set("cryd:cloud",null);CL.st="";toast("Respaldo en servidor desactivado.");render();}
- else if(a==="gwipe")dlg({title:"Borrar mis datos",body:"Se borran de este dispositivo tus folios, LPN, validaciones y dashboards guardados. No se puede deshacer.",buttons:[{t:"Cancelar"},{t:"Borrar",cls:"dg",fn:()=>{try{Object.keys(localStorage).filter(k=>k.indexOf("cryd:ug:")===0).forEach(k=>localStorage.removeItem(k));}catch(x){}lpReset();loadUserData();toast("Datos borrados.");TAB="home";render();}}]});
+ else if(a==="csave")cloudSave();else if(a==="cnow")cloudPush(true);else if(a==="crec")cloudRecover();else if(a==="coff"){LS.set("cryd:cloud",null);CL.st="";toast(_t(260,"Respaldo en servidor desactivado."));render();}
+ else if(a==="gwipe")dlg({title:_t(261,"Borrar mis datos"),body:_t(262,"Se borran de este dispositivo tus folios, LPN, validaciones y dashboards guardados. No se puede deshacer."),buttons:[{t:_t(12,"Cancelar")},{t:_t(263,"Borrar"),cls:"dg",fn:()=>{try{Object.keys(localStorage).filter(k=>k.indexOf("cryd:ug:")===0).forEach(k=>localStorage.removeItem(k));}catch(x){}lpReset();loadUserData();toast(_t(264,"Datos borrados."));TAB="home";render();}}]});
  else if(a==="theme"){LS.set("cryd:theme",v);applyTheme();render();}
- else if(a==="delacc")dlg({title:"Eliminar cuenta",body:"Se borrarán tu cuenta y todos tus folios guardados en este dispositivo. No se puede deshacer.",buttons:[{t:"Cancelar"},{t:"Eliminar",cls:"dg",fn:()=>{const e2=ME.emp;["rec","warn","draft","stmap","rcvx","rcvs","rcvcur","surx","surs","surcur","hlog","dsh"].forEach(k=>{try{localStorage.removeItem("cryd:u"+e2+":"+k);}catch(x){}});USERS=USERS.filter(u=>u.emp!==e2);saveUsers();logout();toast("Cuenta eliminada.");}}]});});
+ else if(a==="delacc")dlg({title:_t(265,"Eliminar cuenta"),body:_t(266,"Se borrarán tu cuenta y todos tus folios guardados en este dispositivo. No se puede deshacer."),buttons:[{t:_t(12,"Cancelar")},{t:_t(31,"Eliminar"),cls:"dg",fn:()=>{const e2=ME.emp;["rec","warn","draft","stmap","rcvx","rcvs","rcvcur","surx","surs","surcur","hlog","dsh"].forEach(k=>{try{localStorage.removeItem("cryd:u"+e2+":"+k);}catch(x){}});USERS=USERS.filter(u=>u.emp!==e2);saveUsers();logout();toast(_t(267,"Cuenta eliminada."));}}]});});
 
 /* ---------- respaldo en servidor (Firebase Realtime Database, vía REST) ---------- */
 const CLOUD_DEFAULT="https://procesos-cryd-default-rtdb.firebaseio.com";/* opcional: pon aquí la dirección del servidor para que todos tus compañeros la usen sin configurar */
@@ -406,19 +412,19 @@ const CL={st:"",ing:false};let CT=0;
 const normUrl=s=>{s=(s||"").trim().replace(/\/+$/,"");if(s&&!/^https?:\/\//i.test(s))s="https://"+s;return s;};
 function cloudCfg(){const c=LS.get("cryd:cloud",null);return normUrl(c&&c.url?c.url:CLOUD_DEFAULT);}
 const cloudEp=emp=>cloudCfg()+"/cryd/u"+emp+".json";
-const hhmm=t=>new Date(t).toLocaleString("es-MX",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});
+const hhmm=t=>new Date(t).toLocaleString(_t(163,"es-MX"),{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});
 function cloudPack(){const u=USERS.find(x=>x.emp===ME.emp)||{};return {ts:Date.now(),acct:{nombre:ME.nombre,apellido:ME.apellido,pin:u.pin||null},rec:REC,warn:WARN,draft:S,stmap:VAL.stmap||{},rcvs:LP.rcv.S.filter(s=>s.lpn),surs:LP.sur.S.filter(s=>s.lpn),hlog:HLOG,dsh:DSH,att:ATT};}
 function cloudSoon(){if(!ME||ME.guest||!cloudCfg())return;LS.set("cryd:u"+ME.emp+":cpend",1);clearTimeout(CT);CT=setTimeout(()=>cloudPush(false),2500);}
 async function cloudGet(emp){try{const r=await fetch(cloudEp(emp),{cache:"no-store"});if(!r.ok)throw 0;return await r.json();}catch(e){return undefined;}}
 async function cloudPush(manual,hide){
- if(!ME||ME.guest)return false;if(!cloudCfg()){if(manual)toast("Primero guarda la dirección del servidor.");return false;}
+ if(!ME||ME.guest)return false;if(!cloudCfg()){if(manual)toast(_t(268,"Primero guarda la dirección del servidor."));return false;}
  if(CL.ing&&!manual)return false;
- if(navigator.onLine===false){CL.st="Sin conexión · se respaldará al volver el internet";if(manual)toast(CL.st);if(TAB==="perfil")render();return false;}
+ if(navigator.onLine===false){CL.st=_t(269,"Sin conexión · se respaldará al volver el internet");if(manual)toast(CL.st);if(TAB==="perfil")render();return false;}
  CL.ing=true;
  try{const body=cloudPack(),txt=JSON.stringify(body);
   const r=await fetch(cloudEp(ME.emp),{method:"PUT",body:txt,keepalive:!!hide&&txt.length<60000});if(!r.ok)throw new Error(r.status);
-  LS.set("cryd:u"+ME.emp+":cpend",0);LS.set("cryd:u"+ME.emp+":cts",body.ts);CL.st="Respaldado "+hhmm(body.ts);if(manual)toast("Respaldo listo.");CL.ing=false;if(TAB==="perfil"&&!hide)render();return true;}
- catch(e){CL.ing=false;CL.st="No se pudo conectar con el servidor · se reintentará solo";if(manual)toast(CL.st);if(TAB==="perfil"&&!hide)render();return false;}
+  LS.set("cryd:u"+ME.emp+":cpend",0);LS.set("cryd:u"+ME.emp+":cts",body.ts);CL.st=_t(270,"Respaldado ")+hhmm(body.ts);if(manual)toast(_t(271,"Respaldo listo."));CL.ing=false;if(TAB==="perfil"&&!hide)render();return true;}
+ catch(e){CL.ing=false;CL.st=_t(272,"No se pudo conectar con el servidor · se reintentará solo");if(manual)toast(CL.st);if(TAB==="perfil"&&!hide)render();return false;}
 }
 function cloudMerge(rm,force){
  let n=0;const lst=Array.isArray(rm.rec)?rm.rec:Object.values(rm.rec||{}),rw=rm.warn||{};
@@ -436,35 +442,35 @@ function cloudMerge(rm,force){
 }
 async function cloudStart(){
  if(!ME||ME.guest||!cloudCfg())return;
- if(navigator.onLine===false){CL.st="Sin conexión · se respaldará al volver el internet";return;}
+ if(navigator.onLine===false){CL.st=_t(269,"Sin conexión · se respaldará al volver el internet");return;}
  const rm=await cloudGet(ME.emp);
- if(rm===undefined){CL.st="No se pudo conectar con el servidor · se reintentará solo";cloudSoon();return;}
- if(rm&&rm.acct&&rm.acct.off){logout();dlg({title:"Cuenta suspendida",body:"El administrador suspendió esta cuenta. Contáctalo para volver a usarla.",buttons:[{t:"Entendido",cls:"pri"}]});return;}
+ if(rm===undefined){CL.st=_t(272,"No se pudo conectar con el servidor · se reintentará solo");cloudSoon();return;}
+ if(rm&&rm.acct&&rm.acct.off){logout();dlg({title:_t(273,"Cuenta suspendida"),body:_t(274,"El administrador suspendió esta cuenta. Contáctalo para volver a usarla."),buttons:[{t:_t(27,"Entendido"),cls:"pri"}]});return;}
  let n=0;if(rm&&(rm.rec||rm.draft))n=cloudMerge(rm,false);
  await cloudPush(false);render();
- if(n)toast("Se recuperaron avances del servidor.");
+ if(n)toast(_t(275,"Se recuperaron avances del servidor."));
 }
 async function cloudRecover(){
- if(!cloudCfg()){toast("Primero guarda la dirección del servidor.");return;}
- busy("Consultando el servidor…");const rm=await cloudGet(ME.emp);busy("");
- if(rm===undefined){toast("No se pudo conectar con el servidor.");return;}
- if(!rm||!(rm.rec||rm.draft)){toast("El servidor aún no tiene respaldo tuyo.");return;}
- dlg({title:"Recuperar del servidor",body:"Se agregarán los folios que falten y se restaurará el folio en captura que tenía el servidor ("+(rm.ts?hhmm(rm.ts):"")+"). Tus folios actuales no se borran.",buttons:[{t:"Cancelar"},{t:"Recuperar",cls:"pri",fn:()=>{const n=cloudMerge(rm,true);cloudPush(false);toast(n?"Avances recuperados.":"Ya tenías todo.");TAB="insp";render();}}]});
+ if(!cloudCfg()){toast(_t(268,"Primero guarda la dirección del servidor."));return;}
+ busy(_t(276,"Consultando el servidor…"));const rm=await cloudGet(ME.emp);busy("");
+ if(rm===undefined){toast(_t(277,"No se pudo conectar con el servidor."));return;}
+ if(!rm||!(rm.rec||rm.draft)){toast(_t(278,"El servidor aún no tiene respaldo tuyo."));return;}
+ dlg({title:_t(279,"Recuperar del servidor"),body:_t(280,"Se agregarán los folios que falten y se restaurará el folio en captura que tenía el servidor (")+(rm.ts?hhmm(rm.ts):"")+_t(281,"). Tus folios actuales no se borran."),buttons:[{t:_t(12,"Cancelar")},{t:_t(282,"Recuperar"),cls:"pri",fn:()=>{const n=cloudMerge(rm,true);cloudPush(false);toast(n?_t(283,"Avances recuperados."):_t(284,"Ya tenías todo."));TAB="insp";render();}}]});
 }
 async function cloudSave(){
- const u=normUrl(CL.url||"");if(!u){toast("Escribe la dirección del servidor.");return;}
- busy("Probando conexión…");
+ const u=normUrl(CL.url||"");if(!u){toast(_t(285,"Escribe la dirección del servidor."));return;}
+ busy(_t(286,"Probando conexión…"));
  try{const r=await fetch(u+"/cryd/ping.json",{method:"PUT",body:JSON.stringify({t:Date.now()})});if(!r.ok)throw new Error(r.status);}
- catch(e){busy("");toast("No se pudo escribir en esa dirección. Revisa la URL y las reglas del servidor.");return;}
- busy("");LS.set("cryd:cloud",{url:u});CL.url=u;toast("Servidor conectado.");await cloudStart();render();
+ catch(e){busy("");toast(_t(287,"No se pudo escribir en esa dirección. Revisa la URL y las reglas del servidor."));return;}
+ busy("");LS.set("cryd:cloud",{url:u});CL.url=u;toast(_t(288,"Servidor conectado."));await cloudStart();render();
 }
 function viewCloud(){
  const on=!!cloudCfg(),pend=LS.get("cryd:u"+ME.emp+":cpend",0),cts=LS.get("cryd:u"+ME.emp+":cts",0);
- const st=on?(CL.st||(pend?"Pendiente de respaldar":cts?"Respaldado "+hhmm(cts):"Conectado")):"Sin servidor configurado";
- return `<div class="card"><h2 class="sh">Respaldo en servidor</h2><p class="mu" style="margin:6px 0 10px;font-size:14px">Tus folios y el folio en captura se copian solos al servidor. Si se corta el internet o cambias de teléfono, se recuperan al volver a entrar.</p>
- <p style="margin:0 0 10px;font-size:14px"><b>Estado:</b> ${esc(st)}</p>
- <label class="lb">Dirección del servidor</label><input data-cu="url" autocomplete="off" autocapitalize="off" value="${esc(CL.url!==undefined?CL.url:cloudCfg())}" placeholder="https://tu-proyecto.firebaseio.com">
- <div class="row3" style="margin-top:10px"><button type="button" class="btn pri" data-ua="csave">${on?"Actualizar":"Conectar"}</button>${on?`<button type="button" class="btn" data-ua="cnow">Respaldar ahora</button><button type="button" class="btn" data-ua="crec">Recuperar</button>`:""}</div>${on?`<button type="button" class="btn txt" style="width:100%;margin-top:6px" data-ua="coff">Desactivar</button>`:""}</div>`;}
+ const st=on?(CL.st||(pend?_t(289,"Pendiente de respaldar"):cts?_t(270,"Respaldado ")+hhmm(cts):_t(290,"Conectado"))):_t(291,"Sin servidor configurado");
+ return `${_t(292,`<div class="card"><h2 class="sh">Respaldo en servidor</h2><p class="mu" style="margin:6px 0 10px;font-size:14px">Tus folios y el folio en captura se copian solos al servidor. Si se corta el internet o cambias de teléfono, se recuperan al volver a entrar.</p>
+ <p style="margin:0 0 10px;font-size:14px"><b>Estado:</b> `)}${esc(st)}${_t(293,`</p>
+ <label class="lb">Dirección del servidor</label><input data-cu="url" autocomplete="off" autocapitalize="off" value="`)}${esc(CL.url!==undefined?CL.url:cloudCfg())}${_t(294,`" placeholder="https://tu-proyecto.firebaseio.com">
+ <div class="row3" style="margin-top:10px"><button type="button" class="btn pri" data-ua="csave">`)}${on?_t(295,"Actualizar"):_t(296,"Conectar")}</button>${on?`<button type="button" class="btn" data-ua="cnow">Respaldar ahora</button><button type="button" class="btn" data-ua="crec">Recuperar</button>`:""}</div>${on?`<button type="button" class="btn txt" style="width:100%;margin-top:6px" data-ua="coff">Desactivar</button>`:""}</div>`;}
 document.addEventListener("input",e=>{if(e.target.dataset&&e.target.dataset.cu==="url")CL.url=e.target.value;});
 addEventListener("online",()=>{if(ME&&!ME.guest&&LS.get("cryd:u"+ME.emp+":cpend",0))cloudPush(false);});
 document.addEventListener("visibilitychange",()=>{if(!ME||ME.guest||!cloudCfg())return;if(document.visibilityState==="hidden"){if(LS.get("cryd:u"+ME.emp+":cpend",0))cloudPush(false,true);}else if(LS.get("cryd:u"+ME.emp+":cpend",0))cloudPush(false);});
@@ -567,14 +573,14 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-ad]");if(!
 /* ---------- recuperar avances ---------- */
 function flushAll(){try{if(ME){if(S)saveDraft();lpFlush();LS.set("cryd:ui",{emp:ME.emp,tab:TAB,ts:Date.now()});if(!ME.guest&&cloudCfg()&&LS.get("cryd:u"+ME.emp+":cpend",0))cloudPush(false,true);}}catch(e){}}
 addEventListener("pagehide",flushAll);document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden")flushAll();});
-let ERRN=0;addEventListener("error",()=>{flushAll();if(ERRN++<2)toast("Algo falló, pero tu avance está guardado.");});addEventListener("unhandledrejection",()=>{flushAll();});
+let ERRN=0;addEventListener("error",()=>{flushAll();if(ERRN++<2)toast(_t(297,"Algo falló, pero tu avance está guardado."));});addEventListener("unhandledrejection",()=>{flushAll();});
 function boot(){applyTheme();const ses=LS.get("cryd:session",null),ui=LS.get("cryd:ui",null),fresh=ui&&ui.ts&&Date.now()-ui.ts<10*60*1000;
  if(ses&&ses.al){const u=ALLOW.find(x=>x.id===ses.al);if(u){ME=allowMe(u);loadUserData();TAB=fresh&&ui.emp===ME.emp&&TNAME[ui.tab]?ui.tab:"home";}}
  else if(ses&&!ses.guest){const u=ses&&USERS.find(x=>x.emp===ses.emp);if(u){ME={emp:u.emp,nombre:u.nombre,apellido:u.apellido,guest:false};loadUserData();TAB=fresh&&ui.emp===ME.emp&&TNAME[ui.tab]?ui.tab:"home";}}
  render();if(ME&&!ME.guest)cloudStart();}
 
 /* ---------- cámara y galería ---------- */
-const PROMPT='Lee la etiqueta o documento de la foto. Extrae: codigo (código de producto/SKU/material), lote (lote/batch) y descripcion (nombre completo del producto, por ejemplo toalla femenina, jabón o shampoo, con su marca o variante y el contenido o cantidad exactamente como aparece, por ejemplo 400 ml, 30 piezas o 3 en 1). El código tiene 8 dígitos y empieza con 80. El lote tiene 10 caracteres entre números y letras: devuelve solo el lote, sin prefijos. Transcribe exactamente lo que ves, sin inventar. Responde SOLO un JSON {"codigo":"","lote":"","descripcion":""}; usa cadena vacía si no ves el dato.';
+const PROMPT=_t(298,'Lee la etiqueta o documento de la foto. Extrae: codigo (código de producto/SKU/material), lote (lote/batch) y descripcion (nombre completo del producto, por ejemplo toalla femenina, jabón o shampoo, con su marca o variante y el contenido o cantidad exactamente como aparece, por ejemplo 400 ml, 30 piezas o 3 en 1). El código tiene 8 dígitos y empieza con 80. El lote tiene 10 caracteres entre números y letras: devuelve solo el lote, sin prefijos. Transcribe exactamente lo que ves, sin inventar. Responde SOLO un JSON {"codigo":"","lote":"","descripcion":""}; usa cadena vacía si no ves el dato.');
 function stopCam(){if(STREAM){STREAM.getTracks().forEach(t=>t.stop());STREAM=null;}$("#vd").srcObject=null;$("#cv").hidden=true;}
 async function openCam(){
  $("#cvm").hidden=true;$("#vd").hidden=false;$("#fr").hidden=false;$("#shut").hidden=false;$("#cv").hidden=false;
@@ -595,8 +601,8 @@ async function shrink(file){
  return {blob:new Blob([u8],{type:"image/jpeg"}),url};}
 function showPreview(img,src){PV={blob:img.blob,src,url:img.url};const e=$("#pvimg");e.style.background="#fff";e.src=img.url;$("#pvg").hidden=src!=="gal";$("#pvc").hidden=src==="gal";$("#cv").hidden=true;$("#pv").hidden=false;}
 const tmo=(p,ms)=>new Promise((ok,no)=>{const t=setTimeout(()=>no(new Error("timeout")),ms);p.then(v=>{clearTimeout(t);ok(v);},e=>{clearTimeout(t);no(e);});});
-async function onFile(e,src){const f=e.target.files[0];e.target.value="";if(!f)return;busy("Preparando foto…");await new Promise(r=>setTimeout(r,40));
- try{showPreview(await tmo(shrink(f),25000),src);}catch(err){toast(err&&err.message==="timeout"?"La foto tardó demasiado en abrirse. Prueba con otra o usa la cámara.":"No se pudo abrir esa imagen.");}busy("");}
+async function onFile(e,src){const f=e.target.files[0];e.target.value="";if(!f)return;busy(_t(299,"Preparando foto…"));await new Promise(r=>setTimeout(r,40));
+ try{showPreview(await tmo(shrink(f),25000),src);}catch(err){toast(err&&err.message==="timeout"?_t(300,"La foto tardó demasiado en abrirse. Prueba con otra o usa la cámara."):_t(301,"No se pudo abrir esa imagen."));}busy("");}
 $("#gal").addEventListener("change",e=>onFile(e,"gal"));$("#cam").addEventListener("change",e=>onFile(e,"cam"));
 $("#pvno").onclick=()=>{$("#pv").hidden=true;};
 $("#pvc").onclick=()=>{$("#pv").hidden=true;$("#cam").click();};
@@ -604,7 +610,7 @@ $("#pvuse").onclick=()=>{$("#pv").hidden=true;if(PV){if(String(TARGET).indexOf("
 const WK={};let OCRON=false;
 function dropWorkers(){Object.keys(WK).forEach(k=>{const p=WK[k];delete WK[k];Promise.resolve(p).then(w=>w&&w.terminate&&w.terminate()).catch(()=>{});});}
 const withTimeout=(p,ms)=>new Promise((ok,no)=>{const t=setTimeout(()=>{dropWorkers();no(new Error("timeout"));},ms);p.then(v=>{clearTimeout(t);ok(v);},e=>{clearTimeout(t);no(e);});});
-const getWorker=t=>(t=t==="lote"?"codigo":t,WK[t])||(WK[t]=(async()=>{const w=await Tesseract.createWorker(t==="desc"?"spa":"eng",1,{logger:m=>{if(!OCRON)return;if(m.status==="recognizing text")busy("Leyendo etiqueta… "+Math.round((m.progress||0)*100)+"%",CANC);else if(m.status)busy("Preparando lector…",CANC);}});
+const getWorker=t=>(t=t==="lote"?"codigo":t,WK[t])||(WK[t]=(async()=>{const w=await Tesseract.createWorker(t==="desc"?"spa":"eng",1,{logger:m=>{if(!OCRON)return;if(m.status==="recognizing text")busy(_t(302,"Leyendo etiqueta… ")+Math.round((m.progress||0)*100)+"%",CANC);else if(m.status)busy(_t(303,"Preparando lector…"),CANC);}});
  await w.setParameters({tessedit_pageseg_mode:t==="desc"?"3":"11"});return w;})());
 let CANC=null;
 async function prep(blob,max,bin){const bm=await createImageBitmap(blob),k=Math.min(1,(max||1100)/Math.max(bm.width,bm.height)),c=document.createElement("canvas");c.width=Math.round(bm.width*k);c.height=Math.round(bm.height*k);
@@ -618,7 +624,7 @@ async function prep(blob,max,bin){const bm=await createImageBitmap(blob),k=Math.
 /* Lee una foto con hasta dos intentos (normal y blanco/negro). Nunca se queda colgada: tiene tiempo límite y botón Cancelar. */
 async function ocrRaw(blob,o){o=o||{};let cancelled=false;OCRON=true;CANC=()=>{cancelled=true;dropWorkers();};
  try{if(typeof Tesseract==="undefined")throw new Error("lib");
-  busy("Preparando lector…",CANC);await new Promise(r=>setTimeout(r,40));
+  busy(_t(303,"Preparando lector…"),CANC);await new Promise(r=>setTimeout(r,40));
   const lang=o.lang||"codigo",psm=lang==="desc"?"3":"11";
   const passes=[{wl:o.digits?"0123456789() ":"",max:o.max||1100,bin:false},{wl:"",max:o.max2||1600,bin:true}];let out="";
   for(const ps of passes){if(cancelled)throw new Error("cancel");
@@ -644,13 +650,13 @@ addEventListener("pagehide",()=>{try{dropWorkers();WARMED=false;}catch(e){}});
 async function ocr(blob,target){
  const idx=S.act,rd=target==="codigo"?readCod:target==="desc"?readDesc:readLote;let txt="";
  try{txt=await ocrRaw(blob,{lang:target==="desc"?"desc":"codigo",stop:t=>!!rd(t)});}
- catch(err){const x=err&&err.message;if(x==="cancel")return;delete WK[target];toast(x==="timeout"?"La lectura tardó demasiado. Acerca la cámara, mejora la luz o captura a mano.":"No se pudo leer la foto ("+String(x||"error").slice(0,40)+"). La primera vez necesita internet para descargar el lector. También puedes capturar a mano.");return;}
+ catch(err){const x=err&&err.message;if(x==="cancel")return;delete WK[target];toast(x==="timeout"?_t(304,"La lectura tardó demasiado. Acerca la cámara, mejora la luz o captura a mano."):_t(305,"No se pudo leer la foto (")+String(x||"error").slice(0,40)+_t(306,"). La primera vez necesita internet para descargar el lector. También puedes capturar a mano."));return;}
  let val="",sel="";
  if(target==="codigo"){val=readCod(txt);if(val){S.codigo=val;sel='[data-k="codigo"]';}}
  else if(target==="desc"){val=readDesc(txt);if(val){S.desc=val;sel='[data-k="desc"]';}}
  else{val=readLote(txt);if(val){S.lots[idx].lote=val;sel=S.act===idx?'[data-l="lote"]':"";}}
- if(!val){toast(target==="codigo"?"No encontré un código de 8 dígitos que inicie con 80.":target==="lote"?"No encontré un lote de 10 caracteres.":"No se detectó la descripción. Acércate y mejora la luz.");return;}
- const inp=sel&&document.querySelector(sel);if(inp)inp.value=val;const c=$("#chips");if(c)c.innerHTML=chips();saveDraft();toast("Cargado: "+val+". Revísalo.");}
+ if(!val){toast(target==="codigo"?_t(307,"No encontré un código de 8 dígitos que inicie con 80."):target==="lote"?_t(308,"No encontré un lote de 10 caracteres."):_t(309,"No se detectó la descripción. Acércate y mejora la luz."));return;}
+ const inp=sel&&document.querySelector(sel);if(inp)inp.value=val;const c=$("#chips");if(c)c.innerHTML=chips();saveDraft();toast(_t(310,"Cargado: ")+val+_t(311,". Revísalo."));}
 function makePdf(S){
  const {jsPDF}=window.jspdf;const d=new jsPDF({orientation:"landscape",unit:"mm",format:"a4"});
  const L=10,W=277;
@@ -707,7 +713,7 @@ function makePdf(S){
 }
 
 
-document.addEventListener("click",e=>{if(!e.target.closest("[data-upd]"))return;toast("Actualizando…");
+document.addEventListener("click",e=>{if(!e.target.closest("[data-upd]"))return;toast(_t(312,"Actualizando…"));
  (async()=>{try{const k=await caches.keys();await Promise.all(k.map(x=>caches.delete(x)));}catch(x){}
   try{const r=await navigator.serviceWorker.getRegistrations();await Promise.all(r.map(x=>x.unregister()));}catch(x){}
   setTimeout(()=>location.reload(),400);})();});

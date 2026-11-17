@@ -3,11 +3,11 @@
 <style>
 :root{
   /* Layout: cabecera compacta, escena 3D a todo el ancho, controles y lista de zonas debajo. */
-  --bg:#f4f1ee;--card:#ffffff;--tx:#1c2a30;--mu:#5c6a70;--ac:#204f5f;--ac2:#7c3f2a;--or:#d96a12;--bd:#ded8d2;--scene:#e8e4de;--chip:#ebe6e0;--chipon:#204f5f;--chiptx:#ffffff;
+  --bg:#ecebef;--card:#ffffff;--tx:#1b1a22;--mu:#6a6672;--ac:#6b2bff;--ac2:#6e6562;--or:#d96a12;--bd:#ded8d2;--scene:#e8e4de;--chip:#ebe6e0;--chipon:#6b2bff;--chiptx:#ffffff;
   --fd:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;--fb:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
 }
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1619;--card:#162226;--tx:#e6eef0;--mu:#9db0b6;--ac:#7cc3d6;--ac2:#d49478;--or:#f09a4a;--bd:#27373c;--scene:#101b1f;--chip:#1f2f34;--chipon:#7cc3d6;--chiptx:#0e1619;color-scheme:dark}}
-:root[data-theme="dark"]{--bg:#0e1619;--card:#162226;--tx:#e6eef0;--mu:#9db0b6;--ac:#7cc3d6;--ac2:#d49478;--or:#f09a4a;--bd:#27373c;--scene:#101b1f;--chip:#1f2f34;--chipon:#7cc3d6;--chiptx:#0e1619;color-scheme:dark}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121016;--card:#1b1822;--tx:#ece9f2;--mu:#a39fae;--ac:#a98bff;--ac2:#bdb3ad;--or:#f09a4a;--bd:#27373c;--scene:#101b1f;--chip:#1f2f34;--chipon:#a98bff;--chiptx:#121016;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#121016;--card:#1b1822;--tx:#ece9f2;--mu:#a39fae;--ac:#a98bff;--ac2:#bdb3ad;--or:#f09a4a;--bd:#27373c;--scene:#101b1f;--chip:#1f2f34;--chipon:#a98bff;--chiptx:#121016;color-scheme:dark}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--tx);font-family:var(--fb);font-size:15px;line-height:1.45;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:14px 28px}
 .wrap{max-width:1100px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
@@ -57,7 +57,7 @@ body.sp .wrap{max-width:none;gap:0}
 body.sp header,body.sp .ctl,body.sp h2,body.sp .zones,body.sp .note,body.sp footer,body.sp .hint,body.sp #pills,body.sp .info{display:none!important}
 body.sp .stage{height:100vh;height:100dvh;border:0;border-radius:0}
 </style>
-<style>.safeq{margin:2px 16px 10px;padding:9px 12px;border-left:3px solid var(--ac,#204f5f);background:var(--acs,#e0ecef);border-radius:8px;font-size:14px;font-weight:600;color:var(--ac,#204f5f);line-height:1.35;transition:opacity .3s}body.sp .safeq{display:none}</style>
+<style>.safeq{margin:2px 16px 10px;padding:9px 12px;border-left:3px solid var(--ac,#6b2bff);background:var(--acs,#ece6ff);border-radius:8px;font-size:14px;font-weight:600;color:var(--ac,#6b2bff);line-height:1.35;transition:opacity .3s}body.sp .safeq{display:none}</style>
 <script src="frases.js"></script>
 </head><body>
 <script>(function(){var H=location.hash||"",c=document.documentElement;

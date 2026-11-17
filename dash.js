@@ -1,7 +1,7 @@
 /* ===== Dashboards: sube un archivo y pide la información que quieres ver (constructor guiado o consulta tipo SQL) ===== */
 let DSH=[];
 const DS={file:"",wb:null,sheets:[],sheet:"",cols:[],rows:[],w:[],gf:[],v:"dash",edit:null,sql:"",sqlRes:null,sqlErr:"",name:"",id:"",pend:false,miss:[]};
-const DPAL=["#204f5f","#7c3f2a","#3f8f9e","#c98a5b","#5c8f6f","#8a5a8f","#d1a43f","#4f7fb0","#a04a4a","#6b7b8c"];
+const DPAL=["#6b2bff","#6e6562","#3f8f9e","#c98a5b","#5c8f6f","#8a5a8f","#d1a43f","#4f7fb0","#a04a4a","#6b7b8c"];
 const DOPS=[["count",_t(518,"Contar registros")],["sum",_t(519,"Sumar")],["avg",_t(520,"Promedio")],["min",_t(521,"Mínimo")],["max",_t(522,"Máximo")],["distinct",_t(523,"Valores distintos")]];
 const DTYPES=[["kpi",_t(524,"Tarjeta")],["bar",_t(525,"Barras")],["hbar",_t(526,"Barras horizontales")],["line",_t(527,"Línea")],["pie",_t(528,"Pastel")],["table",_t(529,"Tabla")]];
 const DCMP=[["=",_t(530,"es igual a")],["≠",_t(531,"es distinto de")],["contiene","contiene"],[_t(532,"no contiene"),_t(532,"no contiene")],[">",_t(533,"mayor que")],["≥",_t(534,"mayor o igual que")],["<",_t(535,"menor que")],["≤",_t(536,"menor o igual que")]];
@@ -246,7 +246,7 @@ const dsPng=(svg,w,h)=>new Promise(ok=>{const im=new Image();im.onload=()=>{try{
 async function dsPdf(){
  if(!window.jspdf){toast(_t(640,"No se pudo cargar el generador de PDF. Revisa tu conexión."));return;}
  busy(_t(641,"Generando PDF…"));await new Promise(r=>setTimeout(r,40));
- try{const {jsPDF}=window.jspdf,d=new jsPDF({unit:"mm",format:"a4"}),W=210,H=297,L=14,R=196,T=[32,79,95],B=[124,63,42],title=DS.name||_t(577,"Dashboard");let y=0,pg=1;
+ try{const {jsPDF}=window.jspdf,d=new jsPDF({unit:"mm",format:"a4"}),W=210,H=297,L=14,R=196,T=[107,43,255],B=[110,101,98],title=DS.name||_t(577,"Dashboard");let y=0,pg=1;
   const head=()=>{d.setFillColor(...T);d.rect(0,0,W,22,"F");d.setFillColor(...B);d.rect(0,22,W,1.6,"F");d.setTextColor(255,255,255);d.setFont("helvetica","bold");d.setFontSize(15);d.text(dsCut(title,40),L,14);d.setFont("helvetica","normal");d.setFontSize(8.5);d.text(_t(642,"Soluciones en Log-Cargo"),R,14,{align:"right"});y=31;};
   const foot=()=>{d.setFont("helvetica","normal");d.setFontSize(7);d.setTextColor(120,120,120);d.text("Log-Cargo | Desarrollado por M. Chagala Domínguez",L,H-8);d.text(_t(643,"Página ")+pg,R,H-8,{align:"right"});};
   const need=h=>{if(y+h>H-16){foot();d.addPage();pg++;head();}};

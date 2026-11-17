@@ -77,7 +77,7 @@ function tileSub(k){
 function viewHome(){
  const g=ME.guest,nm=g?(ME.nombre===_t(769,"Invitado")?"":ME.nombre):ME.nombre,hr=new Date().getHours(),sal=hr<12?_t(912,"Buenos días"):hr<19?_t(913,"Buenas tardes"):_t(914,"Buenas noches"),r=resumeItem();
  let fd=new Date().toLocaleDateString(_t(163,"es-MX"),{weekday:"long",day:"numeric",month:"long"});fd=fd.charAt(0).toUpperCase()+fd.slice(1);
- return `${festHero()}<div class="hero"><p>${sal}${nm?",":""}</p><h1>${nm?esc(nm):_t(915,"Bienvenido")}</h1><small>${esc(fd)}</small></div>
+ return `${festHero()}<div class="hero">${festOn()?"":seaChip()}<p>${sal}${nm?",":""}</p><h1>${nm?esc(nm):_t(915,"Bienvenido")}</h1><small>${esc(fd)}</small></div>
  ${r?`<button type="button" class="resume" ${r.m?`data-pgo="${r.m}:${r.id}"`:`data-tab="${r.go}"`}${_t(916,`><span><small>Continuar donde ibas</small><b>`)}${esc(r.t)}</b><em>${esc(r.s)}</em></span><i>›</i></button>`:""}
  <div class="tiles">${TILES.map((t,i)=>`<button type="button" class="tile" data-tab="${t[0]}"><span class="ti c${(i%2)+1}"><svg viewBox="0 0 24 24">${IC[t[0]]||IC.perfil}</svg></span><b>${t[1]}</b><small>${esc(tileSub(t[0]))}</small>${festOn()?`<span class="fi">${FA[["pump","mari","bat","pan","skull"][i%5]]}</span>`:""}${t[0]==="pend"&&pendCount()?`<span class="pb" style="top:12px;right:12px;left:auto">${pendCount()}</span>`:""}</button>`).join("")}</div>`;}
 function viewMore(){
@@ -165,7 +165,7 @@ function l3dMaybe(){
  LS.set(key,day+"|"+(cnt+1));
  setTimeout(()=>{if(document.getElementById("l3dsp")||!ME)return;
   const o=document.createElement("div");o.id="l3dsp";
-  o.innerHTML=`<iframe title="${_t(992,"Layout 3D")}" src="layout3d.html#splash${l3dTheme()}" onload="this.classList.add('on')"></iframe><div class="l3t"><b>Portal de Logística | Site SMO CRyD</b><span>Maquila CRyD · Layout 3D</span></div><button type="button" class="btn pri l3b" data-l3d="skip">Entrar</button><p class="l3q">${safeQ(LANG,"g")}</p><i class="l3p"></i>`;
+  o.innerHTML=`<iframe title="${_t(992,"Layout 3D")}" src="layout3d.html#splash${l3dTheme()}" onload="this.classList.add('on')"></iframe><div class="l3t"><b>Control Logístico</b><span>Site SMO CRyD · Layout 3D</span></div><button type="button" class="btn pri l3b" data-l3d="skip">Entrar</button><p class="l3q">${safeQ(LANG,"g")}</p><i class="l3p"></i>`;
   document.body.appendChild(o);L3DTM=setTimeout(l3dClose,7500);},700);}
 document.addEventListener("click",e=>{const b=e.target.closest("[data-l3d]");if(!b)return;
  if(b.dataset.l3d==="skip")l3dClose();
